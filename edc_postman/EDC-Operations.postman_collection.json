@@ -1,0 +1,1819 @@
+{
+  "info": {
+    "_postman_id": "701f9342-18a1-474f-b597-30c80ecc98f2",
+    "name": "EDC-Operations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "20697589"
+  },
+  "item": [
+    {
+      "name": "Provider-Operations",
+      "item": [
+        {
+          "name": "Asset Operations",
+          "item": [
+            {
+              "name": "Get Asset By ID",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v3/assets/{{ASSET_ID}}",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "assets",
+                    "{{ASSET_ID}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Assets",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v3/assets/request",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "assets",
+                    "request"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Asset",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v3/assets/{{ASSET_ID}}",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "assets",
+                    "{{ASSET_ID}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Policy Operations",
+          "item": [
+            {
+              "name": "Get Policy By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v2/policydefinitions/{{POLICY_ID}}",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "policydefinitions",
+                    "{{POLICY_ID}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Policies",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v2/policydefinitions/request",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "policydefinitions",
+                    "request"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "3.2 Delete policy",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v2/policydefinitions/{{POLICY_ID}}",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "policydefinitions",
+                    "{{POLICY_ID}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Contract Definitions Operations",
+          "item": [
+            {
+              "name": "Get Contract definition By ID",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v2/contractdefinitions/{{CONTRACT_ID}}",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "contractdefinitions",
+                    "{{CONTRACT_ID}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Contract definitions",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v2/contractdefinitions/request",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "contractdefinitions",
+                    "request"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Contract Definition",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {}
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v2/contractdefinitions/{{CONTRACT_ID}}",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "contractdefinitions",
+                    "{{CONTRACT_ID}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "ProviderBeingConsumer",
+          "item": [
+            {
+              "name": "Query Catalog Copy",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "var responseJson = pm.response.json();",
+                      "var offerId = responseJson[\"dcat:dataset\"][\"odrl:hasPolicy\"][\"@id\"];",
+                      "pm.collectionVariables.set(\"OFFER_ID\", offerId);"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "apikey",
+                  "apikey": [
+                    {
+                      "key": "value",
+                      "value": "tata-motors",
+                      "type": "string"
+                    },
+                    {
+                      "key": "key",
+                      "value": "x-api-key",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"@context\": {\r\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\",\r\n        \"odrl\": \"http://www.w3.org/ns/odrl/2/\"\r\n    },\r\n    \"@type\": \"CatalogRequest\",\r\n    \"counterPartyAddress\": \"{{CONSUMER_DSP_HOST}}\",\r\n    \"counterPartyId\": \"{{CONSUMER_BPNL}}\",\r\n    \"protocol\": \"dataspace-protocol-http\",\r\n    \"querySpec\": {\r\n        \"@type\": \"QuerySpec\",\r\n        \"offset\": 0,\r\n        \"limit\": 10,\r\n        \"filterExpression\": [\r\n            \r\n        ]\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v3/catalog/request",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "catalog",
+                    "request"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Initiate Negotiation Copy",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "var responseJson = pm.response.json();",
+                      "var negotiationId = responseJson[\"@id\"];",
+                      "pm.collectionVariables.set(\"NEGOTIATION_ID\", negotiationId);"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "apikey",
+                  "apikey": [
+                    {
+                      "key": "value",
+                      "value": "nissan-motors",
+                      "type": "string"
+                    },
+                    {
+                      "key": "key",
+                      "value": "x-api-key",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"@context\": {\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\n    },\n    \"@type\": \"ContractRequest\",\n    \"counterPartyAddress\": \"{{CONSUMER_DSP_HOST}}\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"counterPartyId\": \"{{CONSUMER_BPNL}}\",\n    \"policy\": {\n        \"@context\": \"http://www.w3.org/ns/odrl.jsonld\",\n        \"@id\": \"{{OFFER_ID}}\",\n        \"@type\": \"odrl:Offer\",\n        \"permission\": [],\n        \"target\": \"{{ASSET_ID}}\",\n        \"assigner\": \"{{CONSUMER_BPNL}}\"\n    }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v3/contractnegotiations",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "contractnegotiations"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Agreement Copy",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      "pm.sendRequest('https://postman-echo.com/delay/5');"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "var responseJson = pm.response.json();",
+                      "var agreementId = responseJson[\"contractAgreementId\"];",
+                      "pm.collectionVariables.set(\"AGREEMENT_ID\", agreementId);"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "apikey",
+                  "apikey": [
+                    {
+                      "key": "value",
+                      "value": "nissan-motors",
+                      "type": "string"
+                    },
+                    {
+                      "key": "key",
+                      "value": "x-api-key",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v3/contractnegotiations/{{NEGOTIATION_ID}}",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "contractnegotiations",
+                    "{{NEGOTIATION_ID}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Initialize transfer Copy",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "var responseJson = pm.response.json();",
+                      "console.log(responseJson)",
+                      "var transferProcessId = responseJson[\"@id\"];",
+                      "pm.collectionVariables.set(\"TRANSFER_ID\", transferProcessId);"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "apikey",
+                  "apikey": [
+                    {
+                      "key": "value",
+                      "value": "nissan-motors",
+                      "type": "string"
+                    },
+                    {
+                      "key": "key",
+                      "value": "x-api-key",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"@context\": {\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\n    },\n    \"@type\": \"TransferRequest\",\n    \"assetId\":\"{{ASSET_ID}}\",\n    \"counterPartyAddress\": \"{{CONSUMER_DSP_HOST}}\",\n    \"contractId\": \"{{AGREEMENT_ID}}\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"counterPartyId\": \"{{CONSUMER_BPNL}}\",\n    \"transferType\": \"HttpData-PULL\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v3/transferprocesses",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "transferprocesses"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Transferprocess Copy",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "var responseJson = pm.response.json();",
+                      "var transferProcessId = responseJson[0][\"transferProcessId\"];",
+                      "pm.collectionVariables.set(\"TRANSFER_ID\", transferProcessId);"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "apikey",
+                  "apikey": [
+                    {
+                      "key": "value",
+                      "value": "nissan-motors",
+                      "type": "string"
+                    },
+                    {
+                      "key": "key",
+                      "value": "x-api-key",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"@context\": {\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\n    },\n    \"@type\": \"QuerySpec\",\n    \"offset\": 0,\n    \"limit\": 1,\n    \"filterExpression\": [\n        {\n            \"operandLeft\": \"agreementId\",\n            \"operator\": \"=\",\n            \"operandRight\": \"{{AGREEMENT_ID}}\"\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v3/edrs/request",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "edrs",
+                    "request"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Authorization Copy",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "var responseJson = pm.response.json();",
+                      "var transferToken = responseJson[\"authorization\"];",
+                      "pm.collectionVariables.set(\"TRANSFER_TOKEN\", transferToken);"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "auth": {
+                  "type": "apikey",
+                  "apikey": [
+                    {
+                      "key": "value",
+                      "value": "nissan-motors",
+                      "type": "string"
+                    },
+                    {
+                      "key": "key",
+                      "value": "x-api-key",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{PROVIDER_MGMT_HOST}}/v2/edrs/{{TRANSFER_ID}}/dataaddress?auto_refresh=true",
+                  "host": [
+                    "{{PROVIDER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "edrs",
+                    "{{TRANSFER_ID}}",
+                    "dataaddress"
+                  ],
+                  "query": [
+                    {
+                      "key": "auto_refresh",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Call Public URL Copy",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "{{TRANSFER_TOKEN}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "https://nissan-motors-dataplane.tx.the-sense.io/api/public",
+                  "protocol": "https",
+                  "host": [
+                    "nissan-motors-dataplane",
+                    "tx",
+                    "the-sense",
+                    "io"
+                  ],
+                  "path": [
+                    "api",
+                    "public"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Create Asset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "tata-motors",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "x-api-key",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"@context\": {\r\n        \"edc\": \"https://w3id.org/edc/v0.0.1/ns/\",\r\n        \"cx-common\": \"https://w3id.org/catenax/ontology/common#\",\r\n        \"cx-taxo\": \"https://w3id.org/catenax/taxonomy#\",\r\n        \"dct\": \"https://purl.org/dc/terms/\"\r\n    },\r\n    \"@id\": \"{{ASSET_ID}}\",\r\n    \"properties\": {\r\n        \"type\": {\r\n            \"@id\": \"Asset\"\r\n        }\r\n    },\r\n    \"dataAddress\": {\r\n        \"@type\": \"DataAddress\",\r\n        \"type\": \"HttpData\",\r\n        \"baseUrl\": \"{{PROVIDER_BACKEND_URL}}\",\r\n        \"proxyQueryParams\": \"true\",\r\n        \"proxyPath\": \"true\",\r\n        \"proxyMethod\": \"true\",\r\n        \"proxyBody\": \"true\",\r\n        \"method\": \"POST\"\r\n    }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{PROVIDER_MGMT_HOST}}/v3/assets",
+              "host": [
+                "{{PROVIDER_MGMT_HOST}}"
+              ],
+              "path": [
+                "v3",
+                "assets"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Policy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "tata-motors",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "x-api-key",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"@context\": [\r\n    \"https://w3id.org/catenax/2025/9/policy/odrl.jsonld\",\r\n    \"https://w3id.org/catenax/2025/9/policy/context.jsonld\",\r\n    {\r\n      \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\r\n    }\r\n  ],\r\n    \"@type\": \"PolicyDefinition\",\r\n    \"@id\": \"{{POLICY_ID}}\",\r\n    \"policy\": {\r\n        \"@type\": \"Set\",\r\n        \"permission\": [        ]\r\n    }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{PROVIDER_MGMT_HOST}}/v3/policydefinitions",
+              "host": [
+                "{{PROVIDER_MGMT_HOST}}"
+              ],
+              "path": [
+                "v3",
+                "policydefinitions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Contract Definition",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "tata-motors",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "x-api-key",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "default"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"@context\": {\r\n    \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\r\n  },\r\n  \"@type\": \"ContractDefinition\",\r\n  \"@id\": \"{{CONTRACT_ID}}\",\r\n  \"accessPolicyId\": \"{{POLICY_ID}}\",\r\n  \"contractPolicyId\": \"{{POLICY_ID}}\",\r\n  \"assetsSelector\": \r\n    {\r\n      \"operandLeft\": \"https://w3id.org/edc/v0.0.1/ns/id\",\r\n      \"operator\": \"=\",\r\n      \"operandRight\": \"{{ASSET_ID}}\"\r\n    }\r\n  \r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{PROVIDER_MGMT_HOST}}/v3/contractdefinitions",
+              "host": [
+                "{{PROVIDER_MGMT_HOST}}"
+              ],
+              "path": [
+                "v3",
+                "contractdefinitions"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          {
+            "key": "value",
+            "value": "{{PROVIDER_API_KEY}}",
+            "type": "string"
+          },
+          {
+            "key": "key",
+            "value": "X-Api-Key",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consumer-Operations",
+      "item": [
+        {
+          "name": "ConsumerBeingProvider",
+          "item": [
+            {
+              "name": "Create Asset",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "apikey",
+                  "apikey": [
+                    {
+                      "key": "value",
+                      "value": "tata-motors",
+                      "type": "string"
+                    },
+                    {
+                      "key": "key",
+                      "value": "x-api-key",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"@context\": {\r\n        \"edc\": \"https://w3id.org/edc/v0.0.1/ns/\",\r\n        \"cx-common\": \"https://w3id.org/catenax/ontology/common#\",\r\n        \"cx-taxo\": \"https://w3id.org/catenax/taxonomy#\",\r\n        \"dct\": \"https://purl.org/dc/terms/\"\r\n    },\r\n    \"@id\": \"{{ASSET_ID}}\",\r\n    \"properties\": {\r\n        \"type\": {\r\n            \"@id\": \"Asset\"\r\n        }\r\n    },\r\n    \"dataAddress\": {\r\n        \"@type\": \"DataAddress\",\r\n        \"type\": \"HttpData\",\r\n        \"baseUrl\": \"{{PROVIDER_BACKEND_URL}}\",\r\n        \"proxyQueryParams\": \"true\",\r\n        \"proxyPath\": \"true\",\r\n        \"proxyMethod\": \"true\",\r\n        \"proxyBody\": \"true\",\r\n        \"method\": \"POST\"\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CONSUMER_MGMT_HOST}}/v3/assets",
+                  "host": [
+                    "{{CONSUMER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "assets"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Policy",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "apikey",
+                  "apikey": [
+                    {
+                      "key": "value",
+                      "value": "tata-motors",
+                      "type": "string"
+                    },
+                    {
+                      "key": "key",
+                      "value": "x-api-key",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"@context\": [\r\n    \"https://w3id.org/catenax/2025/9/policy/odrl.jsonld\",\r\n    \"https://w3id.org/catenax/2025/9/policy/context.jsonld\",\r\n    {\r\n      \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\r\n    }\r\n  ],\r\n    \"@type\": \"PolicyDefinition\",\r\n    \"@id\": \"{{POLICY_ID}}\",\r\n    \"policy\": {\r\n        \"@type\": \"Set\",\r\n        \"permission\": [        ]\r\n    }\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CONSUMER_MGMT_HOST}}/v3/policydefinitions",
+                  "host": [
+                    "{{CONSUMER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "policydefinitions"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Contract Definition",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "apikey",
+                  "apikey": [
+                    {
+                      "key": "value",
+                      "value": "tata-motors",
+                      "type": "string"
+                    },
+                    {
+                      "key": "key",
+                      "value": "x-api-key",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "default"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"@context\": {\r\n    \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\r\n  },\r\n  \"@type\": \"ContractDefinition\",\r\n  \"@id\": \"{{CONTRACT_ID}}\",\r\n  \"accessPolicyId\": \"{{POLICY_ID}}\",\r\n  \"contractPolicyId\": \"{{POLICY_ID}}\",\r\n  \"assetsSelector\": \r\n    {\r\n      \"operandLeft\": \"https://w3id.org/edc/v0.0.1/ns/id\",\r\n      \"operator\": \"=\",\r\n      \"operandRight\": \"{{ASSET_ID}}\"\r\n    }\r\n  \r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{CONSUMER_MGMT_HOST}}/v3/contractdefinitions",
+                  "host": [
+                    "{{CONSUMER_MGMT_HOST}}"
+                  ],
+                  "path": [
+                    "v3",
+                    "contractdefinitions"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Query Catalog",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var responseJson = pm.response.json();",
+                  "var offerId = responseJson[\"dcat:dataset\"][\"odrl:hasPolicy\"][\"@id\"];",
+                  "pm.collectionVariables.set(\"OFFER_ID\", offerId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "nissan-motors",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "x-api-key",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"@context\": {\r\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\",\r\n        \"odrl\": \"http://www.w3.org/ns/odrl/2/\"\r\n    },\r\n    \"@type\": \"CatalogRequest\",\r\n    \"counterPartyAddress\": \"{{PROVIDER_DSP_HOST}}\",\r\n    \"counterPartyId\": \"{{PROVIDER_BPNL}}\",\r\n    \"protocol\": \"dataspace-protocol-http\",\r\n    \"querySpec\": {\r\n        \"@type\": \"QuerySpec\",\r\n        \"offset\": 0,\r\n        \"limit\": 10,\r\n        \"filterExpression\": [\r\n            \r\n        ]\r\n    }\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{CONSUMER_MGMT_HOST}}/v3/catalog/request",
+              "host": [
+                "{{CONSUMER_MGMT_HOST}}"
+              ],
+              "path": [
+                "v3",
+                "catalog",
+                "request"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Initiate Negotiation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var responseJson = pm.response.json();",
+                  "var negotiationId = responseJson[\"@id\"];",
+                  "pm.collectionVariables.set(\"NEGOTIATION_ID\", negotiationId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "nissan-motors",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "x-api-key",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"@context\": {\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\n    },\n    \"@type\": \"ContractRequest\",\n    \"counterPartyAddress\": \"{{PROVIDER_DSP_HOST}}\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"counterPartyId\": \"{{PROVIDER_BPNL}}\",\n    \"policy\": {\n        \"@context\": \"http://www.w3.org/ns/odrl.jsonld\",\n        \"@id\": \"{{OFFER_ID}}\",\n        \"@type\": \"odrl:Offer\",\n        \"permission\": [],\n        \"target\": \"{{ASSET_ID}}\",\n        \"assigner\": \"{{PROVIDER_BPNL}}\"\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{CONSUMER_MGMT_HOST}}/v3/contractnegotiations",
+              "host": [
+                "{{CONSUMER_MGMT_HOST}}"
+              ],
+              "path": [
+                "v3",
+                "contractnegotiations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Agreement",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.sendRequest('https://postman-echo.com/delay/5');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var responseJson = pm.response.json();",
+                  "var agreementId = responseJson[\"contractAgreementId\"];",
+                  "pm.collectionVariables.set(\"AGREEMENT_ID\", agreementId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "nissan-motors",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "x-api-key",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{CONSUMER_MGMT_HOST}}/v3/contractnegotiations/{{NEGOTIATION_ID}}",
+              "host": [
+                "{{CONSUMER_MGMT_HOST}}"
+              ],
+              "path": [
+                "v3",
+                "contractnegotiations",
+                "{{NEGOTIATION_ID}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Initialize transfer",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var responseJson = pm.response.json();",
+                  "console.log(responseJson)",
+                  "var transferProcessId = responseJson[\"@id\"];",
+                  "pm.collectionVariables.set(\"TRANSFER_ID\", transferProcessId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "nissan-motors",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "x-api-key",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"@context\": {\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\n    },\n    \"@type\": \"TransferRequest\",\n    \"assetId\":\"{{ASSET_ID}}\",\n    \"counterPartyAddress\": \"{{PROVIDER_DSP_HOST}}\",\n    \"contractId\": \"{{AGREEMENT_ID}}\",\n    \"protocol\": \"dataspace-protocol-http\",\n    \"counterPartyId\": \"{{PROVIDER_BPNL}}\",\n    \"transferType\": \"HttpData-PULL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{CONSUMER_MGMT_HOST}}/v3/transferprocesses",
+              "host": [
+                "{{CONSUMER_MGMT_HOST}}"
+              ],
+              "path": [
+                "v3",
+                "transferprocesses"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Transferprocess",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var responseJson = pm.response.json();",
+                  "var transferProcessId = responseJson[0][\"transferProcessId\"];",
+                  "pm.collectionVariables.set(\"TRANSFER_ID\", transferProcessId);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "nissan-motors",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "x-api-key",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"@context\": {\n        \"@vocab\": \"https://w3id.org/edc/v0.0.1/ns/\"\n    },\n    \"@type\": \"QuerySpec\",\n    \"offset\": 0,\n    \"limit\": 1,\n    \"filterExpression\": [\n        {\n            \"operandLeft\": \"agreementId\",\n            \"operator\": \"=\",\n            \"operandRight\": \"{{AGREEMENT_ID}}\"\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{CONSUMER_MGMT_HOST}}/v3/edrs/request",
+              "host": [
+                "{{CONSUMER_MGMT_HOST}}"
+              ],
+              "path": [
+                "v3",
+                "edrs",
+                "request"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Authorization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var responseJson = pm.response.json();",
+                  "var transferToken = responseJson[\"authorization\"];",
+                  "pm.collectionVariables.set(\"TRANSFER_TOKEN\", transferToken);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "apikey",
+              "apikey": [
+                {
+                  "key": "value",
+                  "value": "nissan-motors",
+                  "type": "string"
+                },
+                {
+                  "key": "key",
+                  "value": "x-api-key",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{CONSUMER_MGMT_HOST}}/v2/edrs/{{TRANSFER_ID}}/dataaddress?auto_refresh=true",
+              "host": [
+                "{{CONSUMER_MGMT_HOST}}"
+              ],
+              "path": [
+                "v2",
+                "edrs",
+                "{{TRANSFER_ID}}",
+                "dataaddress"
+              ],
+              "query": [
+                {
+                  "key": "auto_refresh",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Call Public URL",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{TRANSFER_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "https://tata-motors-dataplane.tx.the-sense.io/api/public",
+              "protocol": "https",
+              "host": [
+                "tata-motors-dataplane",
+                "tx",
+                "the-sense",
+                "io"
+              ],
+              "path": [
+                "api",
+                "public"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "apikey",
+        "apikey": [
+          {
+            "key": "value",
+            "value": "{{CONSUMER_API_KEY}}",
+            "type": "string"
+          },
+          {
+            "key": "key",
+            "value": "X-Api-Key",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "password",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "x-api-key",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "PROVIDER_MGMT_HOST",
+      "value": "http://localhost:8192/management"
+    },
+    {
+      "key": "PROVIDER_DSP_HOST",
+      "value": "http://localhost:8195/api/v1/dsp"
+    },
+    {
+      "key": "PROVIDER_PUBLIC_URL",
+      "value": ""
+    },
+    {
+      "key": "PROVIDER_API_KEY",
+      "value": ""
+    },
+    {
+      "key": "PROVIDER_BPNL",
+      "value": "BPNL000000000001"
+    },
+    {
+      "key": "PROVIDER_BACKEND_URL",
+      "value": "http://localhost:8089/api/endpoint-data-reference"
+    },
+    {
+      "value": "",
+      "disabled": true
+    },
+    {
+      "key": "CONSUMER_MGMT_HOST",
+      "value": "http://localhost:9192/management"
+    },
+    {
+      "key": "CONSUMER_DSP_HOST",
+      "value": ""
+    },
+    {
+      "key": "CONSUMER_API_KEY",
+      "value": ""
+    },
+    {
+      "key": "CONSUMER_BPNL",
+      "value": ""
+    },
+    {
+      "value": "",
+      "disabled": true
+    },
+    {
+      "key": "ASSET_ID",
+      "value": "asset_1"
+    },
+    {
+      "key": "POLICY_ID",
+      "value": "policy_1"
+    },
+    {
+      "key": "CONTRACT_ID",
+      "value": "contract_1"
+    },
+    {
+      "value": "",
+      "disabled": true
+    },
+    {
+      "key": "OFFER_ID",
+      "value": ""
+    },
+    {
+      "key": "NEGOTIATION_ID",
+      "value": ""
+    },
+    {
+      "key": "AGREEMENT_ID",
+      "value": ""
+    },
+    {
+      "key": "TRANSFER_ID",
+      "value": ""
+    },
+    {
+      "key": "TRANSFER_TOKEN",
+      "value": ""
+    }
+  ]
+}
