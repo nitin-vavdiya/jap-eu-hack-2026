@@ -88,10 +88,11 @@ export class VPSigner {
       header: {
         alg: 'RS256',
         typ: 'vc+jwt',
+        cty: 'vc',
         kid: this.kid,
         iss: this.did,
         x5c: this.x5c,
-      } as jwt.JwtHeader & { iss: string; x5c: string[] },
+      } as jwt.JwtHeader & { cty: string; iss: string; x5c: string[] },
     });
   }
 
@@ -109,8 +110,11 @@ export class VPSigner {
 
     const payload = {
       '@context': ['https://www.w3.org/ns/credentials/v2'],
-      type: ['VerifiablePresentation'],
+      type: 'VerifiablePresentation',
       verifiableCredential,
+      issuer: this.did,
+      validFrom: new Date(now * 1000).toISOString(),
+      validUntil: new Date((now + 3600) * 1000).toISOString(),
       iss: this.did,
       sub: this.did,
       aud: audience || 'https://compliance.lab.gaia-x.eu/development',
@@ -125,10 +129,11 @@ export class VPSigner {
       header: {
         alg: 'RS256',
         typ: 'vp+jwt',
+        cty: 'vp',
         kid: this.kid,
         iss: this.did,
         x5c: this.x5c,
-      } as jwt.JwtHeader & { iss: string; x5c: string[] },
+      } as jwt.JwtHeader & { cty: string; iss: string; x5c: string[] },
     });
   }
 

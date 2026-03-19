@@ -37,6 +37,7 @@ export function buildLegalParticipantVC(org: OrgCredentialRecord, did?: string):
     id: `${baseUrl}/vc/${org.id}`,
     issuer: did,
     validFrom: org.validFrom || new Date().toISOString(),
+    validUntil: org.validUntil || new Date(Date.now() + 90 * 86400000).toISOString(),
     credentialSubject: {
       id: `${baseUrl}/vc/${org.id}#cs`,
       'https://schema.org/name': org.legalName,
@@ -62,10 +63,69 @@ export function buildTermsAndConditionsVC(did: string, orgId: string): Record<st
     id: `${baseUrl}/vc/${orgId}/tandc`,
     issuer: did,
     validFrom: new Date().toISOString(),
+    validUntil: new Date(Date.now() + 90 * 86400000).toISOString(),
     credentialSubject: {
       id: `${baseUrl}/vc/${orgId}/tandc#cs`,
       gaiaxTermsAndConditions: GAIAX_TERMS_AND_CONDITIONS_HASH,
     },
+  };
+}
+
+/**
+ * Build a self-signed Legal Registration Number VC.
+ * Maps the org's registration numbers to the appropriate gx: type
+ * (gx:VatID, gx:LeiCode, gx:EORI, gx:EUID, gx:TaxID).
+ */
+export function buildRegistrationNumberVC(
+  did: string,
+  orgId: string,
+  regNumber: LegalRegistrationNumber,
+  countryCode: string,
+): Record<string, unknown> {
+  const baseUrl = getVCBaseUrl();
+  const now = new Date().toISOString();
+  const validUntil = new Date(Date.now() + 365 * 86400000).toISOString();
+
+  // Determine the VC type and credential subject fields based on available registration numbers
+  let vcType: string;
+  const cs: Record<string, unknown> = {
+    id: `${baseUrl}/vc/${orgId}/lrn#cs`,
+    'gx:countryCode': countryCode,
+  };
+
+  // Property names must match SHACL shapes in gx-compliance.
+  // VatID uses gx:vatID, but LeiCode uses schema:leiCode, EORI uses gx:eori, etc.
+  if (regNumber.vatId) {
+    vcType = 'gx:VatID';
+    cs['gx:vatID'] = regNumber.vatId;
+  } else if (regNumber.leiCode) {
+    vcType = 'gx:LeiCode';
+    cs['https://schema.org/leiCode'] = regNumber.leiCode;
+  } else if (regNumber.eoriNumber) {
+    vcType = 'gx:EORI';
+    cs['gx:eori'] = regNumber.eoriNumber;
+  } else if (regNumber.euid) {
+    vcType = 'gx:EUID';
+    cs['gx:euid'] = regNumber.euid;
+  } else if (regNumber.taxId) {
+    vcType = 'gx:TaxID';
+    cs['gx:taxID'] = regNumber.taxId;
+  } else {
+    vcType = 'gx:LocalRegistrationNumber';
+    cs['gx:local'] = regNumber.localId || '';
+  }
+
+  return {
+    '@context': [
+      'https://www.w3.org/ns/credentials/v2',
+      'https://w3id.org/gaia-x/development#',
+    ],
+    type: ['VerifiableCredential', vcType],
+    id: `${baseUrl}/vc/${orgId}/lrn`,
+    issuer: did,
+    validFrom: now,
+    validUntil,
+    credentialSubject: cs,
   };
 }
 

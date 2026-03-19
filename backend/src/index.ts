@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import carsRouter from './routes/cars';
@@ -12,7 +13,7 @@ import orgCredentialsRouter from './routes/org-credentials';
 import { GaiaXClient, getVPSigner } from './services/gaiax';
 import db from './db';
 import { OrgCredentialRecord } from './services/gaiax/types';
-import { buildLegalParticipantVC, buildTermsAndConditionsVC } from './services/gaiax/vc-builder';
+import { buildLegalParticipantVC, buildTermsAndConditionsVC, buildRegistrationNumberVC, getVCBaseUrl } from './services/gaiax/vc-builder';
 
 const app = express();
 const PORT = 8000;
@@ -92,14 +93,9 @@ app.get('/vc/:id/lrn', (req, res) => {
   const record = db.get('org_credentials').find({ id: req.params.id }).value() as OrgCredentialRecord | undefined;
   if (!record) return res.status(404).json({ error: 'Credential not found' });
 
-  res.json({
-    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://w3id.org/gaia-x/development#'],
-    type: ['VerifiableCredential', 'gx:legalRegistrationNumber'],
-    credentialSubject: {
-      id: `${req.protocol}://${req.get('host')}/vc/${record.id}/lrn#cs`,
-      ...record.legalRegistrationNumber,
-    },
-  });
+  const signer = getVPSigner();
+  const lrn = buildRegistrationNumberVC(signer.getDid(), record.id, record.legalRegistrationNumber, record.legalAddress.countryCode);
+  res.json(lrn);
 });
 
 // Gaia-X health endpoint

@@ -3,7 +3,7 @@ import { GaiaXClient } from './client';
 import { GaiaXLiveClient } from './live-client';
 import { GaiaXMockAdapter } from './mock-adapter';
 import { getVPSigner } from './vp-signer';
-import { buildLegalParticipantVC, buildTermsAndConditionsVC, getVCBaseUrl } from './vc-builder';
+import { buildLegalParticipantVC, buildTermsAndConditionsVC, buildRegistrationNumberVC, getVCBaseUrl } from './vc-builder';
 import {
   OrgCredentialRecord,
   ComplianceResult,
@@ -202,12 +202,15 @@ export class GaiaXOrchestrator {
     this.emitProgress(org.id, 'compliance', 'in-progress');
     const complianceStart = Date.now();
 
-    // Build VP wrapping our own VCs only (LegalParticipant + T&C).
-    // Do NOT include the notary's RegistrationNumber VC — its issuer is the notary
-    // and we can't provide a gx:Issuer T&C VC on their behalf.
+    // Build VP with 3 self-signed VCs (Loire format):
+    // 1. LegalPerson VC, 2. Registration Number VC, 3. T&C (gx:Issuer) VC
+    const lrnPayload = buildRegistrationNumberVC(did, org.id, org.legalRegistrationNumber, org.legalAddress.countryCode);
+    const lrnJwt = signer.signVC(lrnPayload);
+    console.log(`[GaiaX] Signed Registration Number VC-JWT (${(lrnPayload.type as string[])[1]})`);
+
     const tandcPayload = buildTermsAndConditionsVC(did, org.id);
     const tandcJwt = signer.signVC(tandcPayload);
-    const vcsForVP = [vcJwt, tandcJwt];
+    const vcsForVP = [vcJwt, lrnJwt, tandcJwt];
     console.log(`[GaiaX] Signed T&C VC-JWT for compliance`);
 
     const vpJwt = signer.signVP(vcsForVP, endpointSet.compliance);

@@ -44,7 +44,8 @@ export default function OrgCredentialsList() {
 
   useEffect(() => {
     api.get(`${API}/org-credentials`).then(r => {
-      setCredentials(r.data)
+      const sorted = (r.data as OrgCredential[]).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      setCredentials(sorted)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
@@ -132,7 +133,7 @@ export default function OrgCredentialsList() {
                       </div>
                     </td>
                     <td className="px-5 py-4"><StatusBadge status={cred.verificationStatus} /></td>
-                    <td className="px-5 py-4 text-xs text-[#9AA0A6]">{new Date(cred.createdAt).toLocaleDateString()}</td>
+                    <td className="px-5 py-4 text-xs text-[#9AA0A6]">{new Date(cred.createdAt).toLocaleDateString()}<br/><span className="text-[10px]">{new Date(cred.createdAt).toLocaleTimeString()}</span></td>
                     <td className="px-5 py-4 text-right"><span className="text-[#4285F4] text-xs font-medium">View &rarr;</span></td>
                   </tr>
                 )

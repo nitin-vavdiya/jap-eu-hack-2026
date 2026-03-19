@@ -12,10 +12,10 @@ interface FormData {
 }
 
 const initial: FormData = {
-  legalName: '', vatId: '', eoriNumber: '', euid: '', leiCode: '', taxId: '', localId: '',
-  streetAddress: '', locality: '', postalCode: '', countryCode: '', countrySubdivisionCode: '',
+  legalName: 'smartSense Consulting Solutions Pvt. Ltd.', vatId: '', eoriNumber: '', euid: '', leiCode: '9695007586GCAKPYJ703', taxId: '', localId: '',
+  streetAddress: 'Bodakdev, SG Highway', locality: 'Ahmedabad', postalCode: '380054', countryCode: 'DE', countrySubdivisionCode: 'DE-BY',
   hqStreetAddress: '', hqLocality: '', hqPostalCode: '', hqCountryCode: '', hqCountrySubdivisionCode: '',
-  website: '', contactEmail: '', did: '',
+  website: 'https://www.smartsensesolutions.com', contactEmail: 'info@smartsensesolutions.com', did: '',
   validFrom: new Date().toISOString().split('T')[0],
   validUntil: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
   sameAsLegal: true,
