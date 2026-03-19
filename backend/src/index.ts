@@ -10,6 +10,7 @@ import walletRouter from './routes/wallet';
 import purchasesRouter from './routes/purchases';
 import vcRouter from './routes/vc';
 import orgCredentialsRouter from './routes/org-credentials';
+import edcRouter from './routes/edc';
 import { GaiaXClient, getVPSigner } from './services/gaiax';
 import db from './db';
 import { OrgCredentialRecord } from './services/gaiax/types';
@@ -36,6 +37,7 @@ app.use('/api/wallet', walletRouter);
 app.use('/api/purchases', purchasesRouter);
 app.use('/api/vc', vcRouter);
 app.use('/api/org-credentials', orgCredentialsRouter);
+app.use('/api/edc', edcRouter);
 
 // DID document for did:web resolution (needed by GXDCH compliance)
 // did:web resolution endpoints (/.well-known/did.json and /path/did.json)
