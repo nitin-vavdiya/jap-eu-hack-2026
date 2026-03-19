@@ -1,0 +1,243 @@
+{
+  "id": "eu-jap-hack",
+  "realm": "eu-jap-hack",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "loginTheme": "smartsense-loire",
+  "emailTheme": "smartsense-loire",
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "TATA fleet management admin" },
+      { "name": "customer", "description": "Car buyer and wallet owner" },
+      { "name": "insurance_agent", "description": "Insurance portal agent" },
+      { "name": "company_admin", "description": "Dataspace/company portal admin" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "portal-dataspace",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:3001/*"],
+      "webOrigins": ["http://localhost:3001"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "portal-tata-admin",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:3002/*"],
+      "webOrigins": ["http://localhost:3002"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "portal-tata-public",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:3003/*"],
+      "webOrigins": ["http://localhost:3003"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "portal-wallet",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:3004/*"],
+      "webOrigins": ["http://localhost:3004"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "portal-insurance",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:3005/*"],
+      "webOrigins": ["http://localhost:3005"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "portal-company",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:3006/*"],
+      "webOrigins": ["http://localhost:3006"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "backend-api",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "tata-admin",
+      "enabled": true,
+      "email": "tata-admin@tatamotors.com",
+      "firstName": "TATA",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "tata-admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "mario-sanchez",
+      "enabled": true,
+      "email": "mario.sanchez@email.com",
+      "firstName": "Mario",
+      "lastName": "Sanchez",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "mario",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["customer"]
+    },
+    {
+      "username": "digit-agent",
+      "enabled": true,
+      "email": "agent@digitinsurance.com",
+      "firstName": "Digit",
+      "lastName": "Agent",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "digit",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["insurance_agent"]
+    },
+    {
+      "username": "company-admin",
+      "enabled": true,
+      "email": "admin@company.eu",
+      "firstName": "Company",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "company",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["company_admin"]
+    }
+  ]
+}

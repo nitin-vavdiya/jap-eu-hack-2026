@@ -1,0 +1,248 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --sl-bg-primary: #FFFFFF;
+  --sl-bg-secondary: #F8FAFD;
+  --sl-border-subtle: #E5EAF0;
+  --sl-text-primary: #1F1F1F;
+  --sl-text-secondary: #5F6368;
+  --sl-text-tertiary: #9AA0A6;
+  --sl-accent-blue: #4285F4;
+  --sl-accent-blue-hover: #3367D6;
+  --sl-accent-blue-light: #E8F0FE;
+  --sl-accent-green: #34A853;
+  --sl-accent-red: #EA4335;
+  --sl-accent-red-light: #FCE8E6;
+  --sl-radius: 12px;
+  --sl-radius-sm: 8px;
+  --sl-shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
+  --sl-focus-ring: 0 0 0 3px rgba(66, 133, 244, 0.25);
+}
+
+* { box-sizing: border-box; }
+
+body.login-pf {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--sl-bg-secondary) !important;
+  color: var(--sl-text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#kc-header { padding: 0; margin: 0; background: none !important; }
+
+#kc-header-wrapper {
+  text-align: center;
+  padding: 0;
+  color: var(--sl-text-primary);
+  font-size: 0;
+}
+
+#kc-header-wrapper::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, #4285F4, #3367D6);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+}
+
+#kc-header-wrapper::after {
+  content: 'SmartSense Loire';
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--sl-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.login-pf .container-fluid {
+  padding: 0;
+  max-width: 420px;
+  width: 100%;
+}
+
+.login-pf .card-pf {
+  background: var(--sl-bg-primary);
+  border: 1px solid var(--sl-border-subtle);
+  border-radius: var(--sl-radius);
+  box-shadow: var(--sl-shadow-lg);
+  margin: 24px auto;
+  padding: 32px;
+  max-width: 420px;
+}
+
+#kc-content, #kc-content-wrapper { padding: 0; }
+
+#kc-page-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--sl-text-primary);
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+#kc-form-options, .instruction {
+  font-size: 13px;
+  color: var(--sl-text-secondary);
+  text-align: center;
+}
+
+.login-pf label, .login-pf .control-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sl-text-secondary);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.login-pf .pf-c-form-control,
+.login-pf input[type="text"],
+.login-pf input[type="password"],
+.login-pf input[type="email"] {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  color: var(--sl-text-primary);
+  background: var(--sl-bg-primary);
+  border: 1.5px solid var(--sl-border-subtle);
+  border-radius: var(--sl-radius-sm);
+  transition: border-color 200ms, box-shadow 200ms;
+  outline: none;
+}
+
+.login-pf .pf-c-form-control:focus,
+.login-pf input[type="text"]:focus,
+.login-pf input[type="password"]:focus,
+.login-pf input[type="email"]:focus {
+  border-color: var(--sl-accent-blue);
+  box-shadow: var(--sl-focus-ring);
+}
+
+.login-pf .pf-c-form-control::placeholder { color: var(--sl-text-tertiary); }
+
+.login-pf .pf-c-button.pf-m-primary,
+.login-pf input[type="submit"],
+.login-pf .btn-primary {
+  width: 100%;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: #FFFFFF;
+  background: var(--sl-accent-blue);
+  border: none;
+  border-radius: var(--sl-radius-sm);
+  cursor: pointer;
+  transition: background 200ms, box-shadow 200ms, transform 150ms;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.login-pf .pf-c-button.pf-m-primary:hover,
+.login-pf input[type="submit"]:hover,
+.login-pf .btn-primary:hover {
+  background: var(--sl-accent-blue-hover);
+  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.35);
+  transform: translateY(-1px);
+}
+
+.login-pf .pf-c-button.pf-m-primary:active,
+.login-pf input[type="submit"]:active {
+  transform: scale(0.98);
+}
+
+.login-pf .pf-c-button.pf-m-primary:focus,
+.login-pf input[type="submit"]:focus {
+  box-shadow: var(--sl-focus-ring);
+}
+
+.login-pf a, .login-pf .pf-c-button.pf-m-link {
+  color: var(--sl-accent-blue);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 200ms;
+}
+
+.login-pf a:hover { color: var(--sl-accent-blue-hover); text-decoration: none; }
+
+.login-pf .pf-c-alert, .login-pf .alert {
+  border-radius: var(--sl-radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  border: none;
+}
+
+.login-pf .pf-c-alert.pf-m-danger, .login-pf .alert-error, .login-pf .alert-danger {
+  background: var(--sl-accent-red-light);
+  color: var(--sl-accent-red);
+  border-left: 3px solid var(--sl-accent-red);
+}
+
+.login-pf .pf-c-alert.pf-m-success, .login-pf .alert-success {
+  background: #E6F4EA;
+  color: var(--sl-accent-green);
+  border-left: 3px solid var(--sl-accent-green);
+}
+
+.login-pf .pf-c-alert.pf-m-info, .login-pf .alert-info {
+  background: var(--sl-accent-blue-light);
+  color: var(--sl-accent-blue);
+  border-left: 3px solid var(--sl-accent-blue);
+}
+
+.login-pf .checkbox label, .login-pf .pf-c-check__label {
+  font-size: 13px;
+  color: var(--sl-text-secondary);
+}
+
+.login-pf input[type="checkbox"] { accent-color: var(--sl-accent-blue); }
+
+#kc-form-options .kc-form-options-wrapper { text-align: center; margin-top: 16px; }
+
+#kc-social-providers {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--sl-border-subtle);
+}
+
+.login-pf-page .login-pf-page-header { margin-bottom: 0; }
+
+#kc-locale { position: fixed; top: 16px; right: 16px; }
+
+#kc-registration {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--sl-text-tertiary);
+}
+
+#kc-registration a { font-weight: 600; }
+
+.login-pf .form-group { margin-bottom: 16px; }
+
+@media (max-width: 480px) {
+  .login-pf .card-pf { margin: 16px; padding: 24px; border-radius: var(--sl-radius-sm); }
+}
+
+.login-pf-page .login-pf-brand img, #kc-logo-wrapper { display: none; }
+
+#kc-content::after {
+  content: 'Secured by SmartSense Loire Trust Framework';
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  color: var(--sl-text-tertiary);
+  margin-top: 32px;
+  padding-bottom: 24px;
+  letter-spacing: 0.02em;
+}

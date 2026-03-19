@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  keycloak:
+    image: keycloak/keycloak:26.0
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+      - ./keycloak/themes/smartsense-loire:/opt/keycloak/themes/smartsense-loire
+
+  waltid-wallet-api:
+    image: waltid/wallet-api:latest
+    ports:
+      - "7001:7001"
+    volumes:
+      - ./waltid/wallet-api/db.conf:/waltid-wallet-api/config/db.conf
+      - ./waltid/wallet-api/auth.conf:/waltid-wallet-api/config/auth.conf
+      - ./waltid/wallet-api/web.conf:/waltid-wallet-api/config/web.conf
+
+  waltid-issuer-api:
+    image: waltid/issuer-api:latest
+    ports:
+      - "7002:7002"
+    volumes:
+      - ./waltid/issuer-api/issuer-service.conf:/waltid-issuer-api/config/issuer-service.conf
+      - ./waltid/issuer-api/web.conf:/waltid-issuer-api/config/web.conf
+      - ./waltid/issuer-api/credential-issuer-metadata.conf:/waltid-issuer-api/config/credential-issuer-metadata.conf
+
+  waltid-verifier-api:
+    image: waltid/verifier-api:latest
+    ports:
+      - "7003:7003"
+    volumes:
+      - ./waltid/verifier-api/verifier-service.conf:/waltid-verifier-api/config/verifier-service.conf
+      - ./waltid/verifier-api/web.conf:/waltid-verifier-api/config/web.conf

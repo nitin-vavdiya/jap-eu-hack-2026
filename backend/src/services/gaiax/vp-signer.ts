@@ -1,0 +1,245 @@
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import jwt from 'jsonwebtoken';
+
+const KEYS_DIR = path.join(__dirname, '../../../.keys');
+const PRIVATE_KEY_PATH = path.join(KEYS_DIR, 'gaiax-private.pem');
+const PUBLIC_KEY_PATH = path.join(KEYS_DIR, 'gaiax-public.pem');
+
+/**
+ * VP-JWT signer for Gaia-X compliance submission.
+ *
+ * Uses did:web with a persistent RSA keypair saved to disk.
+ * The DID domain is configurable via GAIAX_DID_DOMAIN env var
+ * (set to your ngrok domain for public resolution).
+ *
+ * Includes a self-signed X.509 certificate in x5c for the
+ * GXDCH compliance service trust chain.
+ */
+export class VPSigner {
+  private privateKey: string;
+  private publicKey: string;
+  private did: string;
+  private kid: string;
+  private x5c: string[];
+
+  constructor() {
+    // Load or generate persistent keypair
+    if (fs.existsSync(PRIVATE_KEY_PATH) && fs.existsSync(PUBLIC_KEY_PATH)) {
+      this.privateKey = fs.readFileSync(PRIVATE_KEY_PATH, 'utf-8');
+      this.publicKey = fs.readFileSync(PUBLIC_KEY_PATH, 'utf-8');
+    } else {
+      const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+        publicKeyEncoding: { type: 'spki', format: 'pem' },
+        privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+      });
+      this.privateKey = privateKey;
+      this.publicKey = publicKey;
+
+      // Persist to disk
+      if (!fs.existsSync(KEYS_DIR)) fs.mkdirSync(KEYS_DIR, { recursive: true });
+      fs.writeFileSync(PRIVATE_KEY_PATH, privateKey, { mode: 0o600 });
+      fs.writeFileSync(PUBLIC_KEY_PATH, publicKey);
+      console.log(`[VPSigner] Generated and saved new keypair to ${KEYS_DIR}`);
+    }
+
+    // Build did:web from configurable domain
+    // Use path-based DID (did:web:domain:path) to avoid stale caches on compliance service
+    const domain = process.env.GAIAX_DID_DOMAIN || 'localhost%3A8000';
+    const didPath = process.env.GAIAX_DID_PATH || 'v1';
+    this.did = `did:web:${domain}:${didPath}`;
+    this.kid = `${this.did}#key-1`;
+
+    // Generate self-signed X.509 cert for x5c header
+    this.x5c = this.generateSelfSignedCert();
+    console.log(`[VPSigner] DID: ${this.did}`);
+  }
+
+  getDid(): string { return this.did; }
+  getKid(): string { return this.kid; }
+
+  getPublicKeyJwk(): Record<string, unknown> {
+    const keyObject = crypto.createPublicKey(this.publicKey);
+    const jwk = keyObject.export({ format: 'jwk' });
+    return { ...jwk, kid: this.kid, alg: 'RS256', x5c: this.x5c };
+  }
+
+  getX5c(): string[] { return this.x5c; }
+
+  signVC(vcPayload: Record<string, unknown>): string {
+    const now = Math.floor(Date.now() / 1000);
+    // VC-JOSE-COSE spec: VC claims go at root of JWT payload (not inside a 'vc' wrapper)
+    const payload = {
+      ...vcPayload,
+      iss: this.did,
+      sub: vcPayload.credentialSubject
+        ? (vcPayload.credentialSubject as Record<string, unknown>)['id'] || (vcPayload.credentialSubject as Record<string, unknown>)['@id'] || this.did
+        : this.did,
+      nbf: now,
+      exp: now + 365 * 24 * 3600,
+      iat: now,
+      jti: vcPayload.id || `urn:uuid:${crypto.randomUUID()}`,
+    };
+
+    return jwt.sign(payload, this.privateKey, {
+      algorithm: 'RS256',
+      header: {
+        alg: 'RS256',
+        typ: 'vc+jwt',
+        kid: this.kid,
+        iss: this.did,
+        x5c: this.x5c,
+      } as jwt.JwtHeader & { iss: string; x5c: string[] },
+    });
+  }
+
+  signVP(vcJwts: string[], audience?: string): string {
+    const now = Math.floor(Date.now() / 1000);
+
+    // VC-JOSE-COSE spec: VP claims go at root of JWT payload (not inside a 'vp' wrapper)
+    // gx-compliance reads payload['verifiableCredential'] directly
+    // EnvelopedVerifiableCredential id uses 'data:application/vc+jwt,' media type
+    const verifiableCredential = vcJwts.map((vcJwt) => ({
+      '@context': 'https://www.w3.org/ns/credentials/v2',
+      type: 'EnvelopedVerifiableCredential',
+      id: `data:application/vc+jwt,${vcJwt}`,
+    }));
+
+    const payload = {
+      '@context': ['https://www.w3.org/ns/credentials/v2'],
+      type: ['VerifiablePresentation'],
+      verifiableCredential,
+      iss: this.did,
+      sub: this.did,
+      aud: audience || 'https://compliance.lab.gaia-x.eu/development',
+      nbf: now,
+      exp: now + 3600,
+      iat: now,
+      jti: `urn:uuid:${crypto.randomUUID()}`,
+    };
+
+    return jwt.sign(payload, this.privateKey, {
+      algorithm: 'RS256',
+      header: {
+        alg: 'RS256',
+        typ: 'vp+jwt',
+        kid: this.kid,
+        iss: this.did,
+        x5c: this.x5c,
+      } as jwt.JwtHeader & { iss: string; x5c: string[] },
+    });
+  }
+
+  // ─── Self-signed X.509 certificate generation ─────────────────
+
+  private generateSelfSignedCert(): string[] {
+    try {
+      const now = new Date();
+      const notAfter = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+      const cert = this.buildSelfSignedCertDER(
+        this.privateKey, this.publicKey,
+        'CN=SmartSense Loire Demo,O=SmartSense Loire SAS,C=FR',
+        now, notAfter,
+      );
+      // Format as PEM with proper line breaks for jose.importX509 compatibility
+      // The compliance service checks for '-----BEGIN CERTIFICATE-----' prefix
+      const b64 = cert.toString('base64');
+      const lines = b64.match(/.{1,64}/g) || [];
+      const pem = `-----BEGIN CERTIFICATE-----\n${lines.join('\n')}\n-----END CERTIFICATE-----`;
+      return [pem];
+    } catch (e) {
+      console.warn('[VPSigner] Failed to generate self-signed cert:', (e as Error).message);
+      return [];
+    }
+  }
+
+  private buildSelfSignedCertDER(
+    privateKeyPem: string, publicKeyPem: string,
+    subjectDN: string, notBefore: Date, notAfter: Date,
+  ): Buffer {
+    const pubKeyDer = crypto.createPublicKey(publicKeyPem).export({ type: 'spki', format: 'der' });
+    const serialNumber = crypto.randomBytes(16);
+    serialNumber[0] &= 0x7f;
+
+    const tbs = this.buildTBS(serialNumber, this.parseDN(subjectDN), pubKeyDer, notBefore, notAfter);
+
+    const signer = crypto.createSign('SHA256');
+    signer.update(tbs);
+    const signature = signer.sign(privateKeyPem);
+
+    const algId = this.seq(Buffer.concat([
+      this.oid([1, 2, 840, 113549, 1, 1, 11]),
+      Buffer.from([0x05, 0x00]),
+    ]));
+
+    return this.seq(Buffer.concat([tbs, algId, this.bitStr(signature)]));
+  }
+
+  private buildTBS(serial: Buffer, subject: Buffer, pubKeyDer: Buffer, notBefore: Date, notAfter: Date): Buffer {
+    return this.seq(Buffer.concat([
+      Buffer.from([0xa0, 0x03, 0x02, 0x01, 0x02]), // v3
+      this.int(serial),
+      this.seq(Buffer.concat([this.oid([1, 2, 840, 113549, 1, 1, 11]), Buffer.from([0x05, 0x00])])),
+      subject, // issuer = subject (self-signed)
+      this.seq(Buffer.concat([this.utcTime(notBefore), this.utcTime(notAfter)])),
+      subject,
+      pubKeyDer,
+    ]));
+  }
+
+  private parseDN(dn: string): Buffer {
+    const oids: Record<string, number[]> = {
+      CN: [2, 5, 4, 3], O: [2, 5, 4, 10], C: [2, 5, 4, 6],
+      L: [2, 5, 4, 7], ST: [2, 5, 4, 8], OU: [2, 5, 4, 11],
+    };
+    const rdns = dn.split(',').map(p => p.trim()).map(part => {
+      const [key, ...rest] = part.split('=');
+      const val = rest.join('=');
+      const o = oids[key.toUpperCase()];
+      if (!o) return Buffer.alloc(0);
+      const str = key.toUpperCase() === 'C'
+        ? this.wrap(0x13, Buffer.from(val, 'ascii'))
+        : this.wrap(0x0c, Buffer.from(val, 'utf-8'));
+      return this.wrap(0x31, this.seq(Buffer.concat([this.oid(o), str])));
+    }).filter(b => b.length > 0);
+    return this.seq(Buffer.concat(rdns));
+  }
+
+  // ASN.1 DER helpers
+  private len(n: number): Buffer {
+    if (n < 0x80) return Buffer.from([n]);
+    if (n < 0x100) return Buffer.from([0x81, n]);
+    return Buffer.from([0x82, (n >> 8) & 0xff, n & 0xff]);
+  }
+  private wrap(tag: number, c: Buffer): Buffer { return Buffer.concat([Buffer.from([tag]), this.len(c.length), c]); }
+  private seq(c: Buffer): Buffer { return this.wrap(0x30, c); }
+  private int(v: Buffer): Buffer { const pad = v[0] & 0x80; return this.wrap(0x02, pad ? Buffer.concat([Buffer.from([0]), v]) : v); }
+  private bitStr(c: Buffer): Buffer { return this.wrap(0x03, Buffer.concat([Buffer.from([0]), c])); }
+  private oid(components: number[]): Buffer {
+    const b: number[] = [40 * components[0] + components[1]];
+    for (let i = 2; i < components.length; i++) {
+      let v = components[i];
+      if (v < 128) { b.push(v); } else {
+        const enc: number[] = [];
+        enc.unshift(v & 0x7f); v >>= 7;
+        while (v > 0) { enc.unshift((v & 0x7f) | 0x80); v >>= 7; }
+        b.push(...enc);
+      }
+    }
+    return this.wrap(0x06, Buffer.from(b));
+  }
+  private utcTime(d: Date): Buffer {
+    const p = (n: number) => n.toString().padStart(2, '0');
+    const s = `${p(d.getUTCFullYear() % 100)}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z`;
+    return this.wrap(0x17, Buffer.from(s, 'ascii'));
+  }
+}
+
+// Singleton
+let _signer: VPSigner | null = null;
+export function getVPSigner(): VPSigner {
+  if (!_signer) _signer = new VPSigner();
+  return _signer;
+}

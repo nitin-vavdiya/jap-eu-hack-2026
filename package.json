@@ -1,0 +1,30 @@
+{
+  "name": "eu-jap-hack-2026",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dataspace\" \"npm run dev:admin\" \"npm run dev:public\" \"npm run dev:wallet\" \"npm run dev:insurance\" \"npm run dev:company\"",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:dataspace": "npm run dev --workspace=apps/portal-dataspace",
+    "dev:admin": "npm run dev --workspace=apps/portal-tata-admin",
+    "dev:public": "npm run dev --workspace=apps/portal-tata-public",
+    "dev:wallet": "npm run dev --workspace=apps/portal-wallet",
+    "dev:insurance": "npm run dev --workspace=apps/portal-insurance",
+    "dev:company": "npm run dev --workspace=apps/portal-company",
+    "build": "npm run build --workspaces --if-present",
+    "test": "jest",
+    "test:gaiax": "jest --testPathPattern=tests/gaiax",
+    "verify:gaiax": "npx ts-node scripts/verify-gaiax.ts",
+    "seed:org": "npx ts-node scripts/seed-org-credential.ts"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "concurrently": "^8.2.2",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.6"
+  }
+}
