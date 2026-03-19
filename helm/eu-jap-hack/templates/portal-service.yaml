@@ -1,0 +1,27 @@
+{{- $portals := dict
+  "portal-dataspace" .Values.portalDataspace
+  "portal-tata-admin" .Values.portalTataAdmin
+  "portal-tata-public" .Values.portalTataPublic
+  "portal-wallet" .Values.portalWallet
+  "portal-insurance" .Values.portalInsurance
+  "portal-company" .Values.portalCompany
+}}
+{{- range $name, $val := $portals }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eu-jap-hack.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "eu-jap-hack.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ $val.service.port }}
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+{{- end }}

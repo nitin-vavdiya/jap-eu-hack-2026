@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id           String   @id @default(uuid())
+  name         String
+  vatId        String?
+  eoriNumber   String?
+  cin          String?
+  gstNumber    String?
+  country      String?
+  city         String?
+  address      String?
+  adminName    String?
+  adminEmail   String?
+  did          String?
+  credentialId String?
+  registeredAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("companies")
+}
+
+model Credential {
+  id                String   @id @default(uuid())
+  type              String
+  issuerId          String
+  issuerName        String?
+  subjectId         String?
+  issuedAt          DateTime @default(now())
+  expiresAt         DateTime?
+  status            String   @default("active")
+  credentialSubject Json
+
+  walletEntries     WalletCredential[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("credentials")
+}
+
+model Wallet {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  credentials WalletCredential[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("wallets")
+}
+
+model WalletCredential {
+  id           String @id @default(uuid())
+  walletId     String
+  credentialId String
+
+  wallet     Wallet     @relation(fields: [walletId], references: [id])
+  credential Credential @relation(fields: [credentialId], references: [id])
+
+  @@unique([walletId, credentialId])
+  @@map("wallet_credentials")
+}
+
+model Car {
+  id       String  @id @default(uuid())
+  vin      String  @unique
+  make     String
+  model    String
+  year     Int
+  price    Float?
+  status   String  @default("available")
+  ownerId  String?
+  dpp      Json?
+
+  purchases        Purchase[]
+  insurancePolicies InsurancePolicy[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("cars")
+}
+
+model Consent {
+  id            String   @id @default(uuid())
+  requesterId   String
+  requesterName String?
+  userId        String
+  vin           String
+  purpose       String?
+  dataRequested Json?
+  dataExcluded  Json?
+  status        String   @default("pending")
+  resolvedAt    DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("consents")
+}
+
+model Purchase {
+  id           String   @id @default(uuid())
+  userId       String
+  vin          String
+  make         String?
+  model        String?
+  year         Int?
+  price        Float?
+  purchaseDate DateTime @default(now())
+  dealerName   String?
+  credentialId String?
+
+  car       Car      @relation(fields: [vin], references: [vin])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("purchases")
+}
+
+model InsurancePolicy {
+  id               String   @id @default(uuid())
+  policyNumber     String   @unique
+  userId           String
+  vin              String
+  make             String?
+  model            String?
+  year             Int?
+  startDate        DateTime
+  endDate          DateTime
+  coverageType     String   @default("Comprehensive")
+  coverageAmount   Float    @default(50000)
+  annualPremium    Float    @default(1200)
+  premiumBreakdown Json?
+  status           String   @default("active")
+  credentialId     String?
+
+  car       Car      @relation(fields: [vin], references: [vin])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("insurance_policies")
+}
+
+model OrgCredential {
+  id                      String   @id @default(uuid())
+  companyId               String
+  legalName               String
+  legalRegistrationNumber Json
+  legalAddress            Json
+  headquartersAddress     Json
+  website                 String?
+  contactEmail            String
+  did                     String?
+  validFrom               DateTime
+  validUntil              DateTime
+  verificationStatus      String   @default("draft")
+  verificationAttempts    Json     @default("[]")
+  vcPayload               Json?
+  vcJwt                   String?
+  complianceResult        Json?
+  notaryResult            Json?
+  issuedVCs               Json     @default("[]")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@map("org_credentials")
+}

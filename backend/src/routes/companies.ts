@@ -1,18 +1,18 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db';
+import prisma from '../db';
 import { requireRole } from '../middleware/auth';
 import { issueCredentialSimple } from '../services/waltid';
 
 const router = Router();
 
-router.get('/', (req, res) => {
-  const companies = db.get('companies').value();
+router.get('/', async (req, res) => {
+  const companies = await prisma.company.findMany();
   res.json(companies);
 });
 
-router.get('/:id', (req, res) => {
-  const company = db.get('companies').find({ id: req.params.id }).value();
+router.get('/:id', async (req, res) => {
+  const company = await prisma.company.findUnique({ where: { id: req.params.id } });
   if (!company) return res.status(404).json({ error: 'Company not found' });
   res.json(company);
 });
@@ -28,44 +28,10 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
   const companyId = uuidv4();
   const credentialId = uuidv4();
 
-  const credential = {
-    id: credentialId,
-    type: 'OrgVC',
-    issuerId: 'eu-dataspace',
-    issuerName: 'EU APAC Dataspace',
-    subjectId: companyId,
-    issuedAt: new Date().toISOString(),
-    status: 'active',
-    credentialSubject: {
-      companyName: name,
-      companyDid: `did:eu-dataspace:${companyId}`,
-      registrationNumber: vatId || eoriNumber || cin || gstNumber,
-      vatId,
-      eoriNumber,
-      cin,
-      gstNumber,
-      country,
-      city,
-      address,
-      adminName,
-      adminEmail,
-      incorporationDate: new Date().toISOString()
-    }
-  };
-
-  db.get('credentials').push(credential).write();
-
-  // Also issue via walt.id OID4VCI (non-blocking)
-  issueCredentialSimple({
-    type: 'OrgVC',
-    issuerDid: 'did:web:eu-dataspace',
-    subjectDid: `did:eu-dataspace:${companyId}`,
-    credentialSubject: credential.credentialSubject,
-  }).catch(() => {});
-
-  const company = {
-    id: companyId,
-    name,
+  const credentialSubject = {
+    companyName: name,
+    companyDid: `did:eu-dataspace:${companyId}`,
+    registrationNumber: vatId || eoriNumber || cin || gstNumber,
     vatId,
     eoriNumber,
     cin,
@@ -75,12 +41,47 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
     address,
     adminName,
     adminEmail,
-    did: `did:eu-dataspace:${companyId}`,
-    registeredAt: new Date().toISOString(),
-    credentialId
+    incorporationDate: new Date().toISOString(),
   };
 
-  db.get('companies').push(company).write();
+  const credential = await prisma.credential.create({
+    data: {
+      id: credentialId,
+      type: 'OrgVC',
+      issuerId: 'eu-dataspace',
+      issuerName: 'EU APAC Dataspace',
+      subjectId: companyId,
+      status: 'active',
+      credentialSubject,
+    },
+  });
+
+  // Also issue via walt.id OID4VCI (non-blocking)
+  issueCredentialSimple({
+    type: 'OrgVC',
+    issuerDid: 'did:web:eu-dataspace',
+    subjectDid: `did:eu-dataspace:${companyId}`,
+    credentialSubject,
+  }).catch(() => {});
+
+  const company = await prisma.company.create({
+    data: {
+      id: companyId,
+      name,
+      vatId,
+      eoriNumber,
+      cin,
+      gstNumber,
+      country,
+      city,
+      address,
+      adminName,
+      adminEmail,
+      did: `did:eu-dataspace:${companyId}`,
+      credentialId,
+    },
+  });
+
   res.status(201).json({ company, credential });
 });
 

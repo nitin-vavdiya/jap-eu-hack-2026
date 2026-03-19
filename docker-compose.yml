@@ -38,3 +38,78 @@ services:
     volumes:
       - ./waltid/verifier-api/verifier-service.conf:/waltid-verifier-api/config/verifier-service.conf
       - ./waltid/verifier-api/web.conf:/waltid-verifier-api/config/web.conf
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eu_jap_hack
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/eu_jap_hack
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  portal-dataspace:
+    build:
+      context: .
+      dockerfile: apps/portal-dataspace/Dockerfile
+    ports:
+      - "3001:80"
+
+  portal-tata-admin:
+    build:
+      context: .
+      dockerfile: apps/portal-tata-admin/Dockerfile
+    ports:
+      - "3002:80"
+
+  portal-tata-public:
+    build:
+      context: .
+      dockerfile: apps/portal-tata-public/Dockerfile
+    ports:
+      - "3003:80"
+
+  portal-wallet:
+    build:
+      context: .
+      dockerfile: apps/portal-wallet/Dockerfile
+    ports:
+      - "3004:80"
+
+  portal-insurance:
+    build:
+      context: .
+      dockerfile: apps/portal-insurance/Dockerfile
+    ports:
+      - "3005:80"
+
+  portal-company:
+    build:
+      context: .
+      dockerfile: apps/portal-company/Dockerfile
+    ports:
+      - "3006:80"
+
+volumes:
+  postgres_data:

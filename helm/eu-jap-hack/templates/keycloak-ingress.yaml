@@ -1,0 +1,34 @@
+{{- if .Values.keycloak.ingress.host }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "eu-jap-hack.fullname" . }}-keycloak
+  labels:
+    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+  annotations:
+    haproxy.org/server-ssl: "false"
+    {{- if .Values.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.tls.clusterIssuer | quote }}
+    haproxy.org/ssl-redirect: "true"
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingressClassName }}
+  {{- if .Values.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.keycloak.ingress.host }}
+      secretName: {{ include "eu-jap-hack.fullname" . }}-keycloak-tls
+  {{- end }}
+  rules:
+    - host: {{ .Values.keycloak.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eu-jap-hack.fullname" . }}-keycloak
+                port:
+                  number: {{ .Values.keycloak.service.port }}
+{{- end }}

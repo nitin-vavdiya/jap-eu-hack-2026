@@ -1,25 +1,25 @@
 import { Router } from 'express';
-import db from '../db';
-import { optionalAuth, requireRole } from '../middleware/auth';
+import prisma from '../db';
+import { requireRole } from '../middleware/auth';
 import { createAsset, createContractDefinition } from '../services/edcService';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
 const ENABLE_EDC = process.env.ENABLE_EDC !== 'false';
 
-router.get('/', (req, res) => {
-  const cars = db.get('cars').value();
+router.get('/', async (req, res) => {
+  const cars = await prisma.car.findMany();
   res.json(cars);
 });
 
-router.get('/:vin', (req, res) => {
-  const car = db.get('cars').find({ vin: req.params.vin }).value();
+router.get('/:vin', async (req, res) => {
+  const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
   if (!car) return res.status(404).json({ error: 'Car not found' });
   res.json(car);
 });
 
 router.post('/', requireRole('admin'), async (req, res) => {
-  const { v4: uuidv4 } = require('uuid');
   const car = { id: uuidv4(), ...req.body };
   const vin = car.vin;
 
@@ -36,15 +36,31 @@ router.post('/', requireRole('admin'), async (req, res) => {
     }
   }
 
-  db.get('cars').push(car).write();
-  res.status(201).json(car);
+  const created = await prisma.car.create({
+    data: {
+      id: car.id,
+      vin: car.vin,
+      make: car.make,
+      model: car.model,
+      year: car.year,
+      price: car.price,
+      status: car.status || 'available',
+      ownerId: car.ownerId,
+      dpp: car.dpp || undefined,
+    },
+  });
+  res.status(201).json(created);
 });
 
-router.put('/:vin', requireRole('admin'), (req, res) => {
-  const car = db.get('cars').find({ vin: req.params.vin });
-  if (!car.value()) return res.status(404).json({ error: 'Car not found' });
-  car.assign(req.body).write();
-  res.json(car.value());
+router.put('/:vin', requireRole('admin'), async (req, res) => {
+  const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
+  if (!car) return res.status(404).json({ error: 'Car not found' });
+
+  const updated = await prisma.car.update({
+    where: { vin: req.params.vin },
+    data: req.body,
+  });
+  res.json(updated);
 });
 
 export default router;

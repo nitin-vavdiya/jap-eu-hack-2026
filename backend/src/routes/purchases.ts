@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db';
+import prisma from '../db';
 import { requireRole } from '../middleware/auth';
 import { issueCredentialSimple } from '../services/waltid';
 import { getVCBaseUrl } from '../services/gaiax/vc-builder';
 
 const router = Router();
 
-router.get('/', (req, res) => {
-  const purchases = db.get('purchases').value();
+router.get('/', async (req, res) => {
+  const purchases = await prisma.purchase.findMany();
   res.json(purchases);
 });
 
@@ -16,84 +16,97 @@ router.post('/', requireRole('customer'), async (req, res) => {
   const userId = req.user?.preferred_username || req.body.userId;
   const { vin, userInfo } = req.body;
 
-  const car = db.get('cars').find({ vin }).value();
+  const car = await prisma.car.findUnique({ where: { vin } });
   if (!car) return res.status(404).json({ error: 'Car not found' });
   if (car.status === 'sold') return res.status(400).json({ error: 'Car already sold' });
 
   const credentialId = uuidv4();
   const purchaseId = uuidv4();
-  const purchaseDate = new Date().toISOString();
+  const purchaseDate = new Date();
   const ownerName = userInfo?.name || [req.user?.given_name, req.user?.family_name].filter(Boolean).join(' ') || 'Mario Sanchez';
 
   // Create Ownership VC — issuer links to the seller's resolvable Legal Participant VC
   const baseUrl = getVCBaseUrl();
   const issuerCredentialUrl = `${baseUrl}/vc/org-cred-tata-001`;
-  const credential = {
-    id: credentialId,
-    type: 'OwnershipVC',
-    issuerId: issuerCredentialUrl,
-    issuerName: 'TATA Motors',
-    subjectId: userId,
-    issuedAt: purchaseDate,
-    status: 'active',
-    credentialSubject: {
-      ownerName,
-      ownerDid: `did:smartsense:${userId}`,
-      vin,
-      make: car.make,
-      model: car.model,
-      year: car.year,
-      purchaseDate,
-      purchasePrice: car.price,
-      dealerName: 'TATA Motors Official'
-    }
+
+  const credentialSubject = {
+    ownerName,
+    ownerDid: `did:smartsense:${userId}`,
+    vin,
+    make: car.make,
+    model: car.model,
+    year: car.year,
+    purchaseDate: purchaseDate.toISOString(),
+    purchasePrice: car.price,
+    dealerName: 'TATA Motors Official',
   };
 
-  db.get('credentials').push(credential).write();
+  const credential = await prisma.credential.create({
+    data: {
+      id: credentialId,
+      type: 'OwnershipVC',
+      issuerId: issuerCredentialUrl,
+      issuerName: 'TATA Motors',
+      subjectId: userId,
+      status: 'active',
+      credentialSubject,
+    },
+  });
 
   // Also issue via walt.id OID4VCI (non-blocking)
   issueCredentialSimple({
     type: 'OwnershipVC',
     issuerDid: 'did:web:tata-motors',
     subjectDid: `did:smartsense:${userId}`,
-    credentialSubject: credential.credentialSubject,
+    credentialSubject,
   }).catch(() => {});
 
   // Update car status and owner
-  db.get('cars').find({ vin }).assign({
-    status: 'sold',
+  const dpp = (car.dpp as any) || {};
+  dpp.ownershipChain = dpp.ownershipChain || {};
+  dpp.ownershipChain.currentOwner = {
+    ownerName,
     ownerId: userId,
-    'dpp.ownershipChain.currentOwner': {
-      ownerName,
-      ownerId: userId,
-      purchaseDate,
-      purchasePrice: car.price,
-      country: userInfo?.country || 'IT'
-    }
-  }).write();
-
-  // Add to wallet
-  const wallet = db.get('wallet').get(userId).value();
-  if (wallet) {
-    db.get('wallet').get(userId).get('credentialIds').push(credentialId).write();
-  } else {
-    db.get('wallet').set(userId, { credentialIds: [credentialId] }).write();
-  }
-
-  const purchase = {
-    id: purchaseId,
-    userId,
-    vin,
-    make: car.make,
-    model: car.model,
-    year: car.year,
-    price: car.price,
-    purchaseDate,
-    dealerName: 'TATA Motors Official',
-    credentialId
+    purchaseDate: purchaseDate.toISOString(),
+    purchasePrice: car.price,
+    country: userInfo?.country || 'IT',
   };
 
-  db.get('purchases').push(purchase).write();
+  await prisma.car.update({
+    where: { vin },
+    data: {
+      status: 'sold',
+      ownerId: userId,
+      dpp,
+    },
+  });
+
+  // Add to wallet
+  let wallet = await prisma.wallet.findUnique({ where: { userId } });
+  if (!wallet) {
+    wallet = await prisma.wallet.create({ data: { userId } });
+  }
+  await prisma.walletCredential.upsert({
+    where: { walletId_credentialId: { walletId: wallet.id, credentialId } },
+    update: {},
+    create: { walletId: wallet.id, credentialId },
+  });
+
+  const purchase = await prisma.purchase.create({
+    data: {
+      id: purchaseId,
+      userId,
+      vin,
+      make: car.make,
+      model: car.model,
+      year: car.year,
+      price: car.price,
+      purchaseDate,
+      dealerName: 'TATA Motors Official',
+      credentialId,
+    },
+  });
+
   res.status(201).json({ purchase, credential });
 });
 

@@ -1,0 +1,243 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# -- Ingress class name (haproxy)
+ingressClassName: haproxy
+
+# -- TLS configuration via cert-manager
+tls:
+  enabled: true
+  clusterIssuer: letsencrypt-prod
+
+# =============================================================================
+# Backend API
+# =============================================================================
+backend:
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 8000
+  ingress:
+    host: ""  # e.g. api.example.com
+  env:
+    DATABASE_URL: ""  # e.g. postgresql://user:pass@host:5432/db
+    ENABLE_EDC: "true"
+    AUTH_ENABLED: "false"
+    GAIAX_DID_DOMAIN: ""
+    GAIAX_DID_PATH: ""
+    EDC_BASE_URL: ""
+    EDC_API_KEY: ""
+    BPN_NUMBER: ""
+    APP_BASE_URL: ""
+    EDC_ACCESS_POLICY_ID: ""
+    EDC_CONTRACT_POLICY_ID: ""
+    EDC_CONSUMER_MANAGEMENT_URL: ""
+    EDC_CONSUMER_API_KEY: ""
+    EDC_PARTNER_BPN: ""
+    EDC_PARTNER_DSP_URL: ""
+    EDC_NEGOTIATION_INITIAL_DELAY_MS: "5000"
+    EDC_NEGOTIATION_POLL_INTERVAL_MS: "5000"
+    EDC_NEGOTIATION_MAX_RETRIES: "3"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# =============================================================================
+# Frontend Portals (all share the same structure)
+# =============================================================================
+portalDataspace:
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/portal-dataspace
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+  ingress:
+    host: ""  # e.g. dataspace.example.com
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+portalTataAdmin:
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/portal-tata-admin
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+  ingress:
+    host: ""  # e.g. admin.example.com
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+portalTataPublic:
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/portal-tata-public
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+  ingress:
+    host: ""  # e.g. public.example.com
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+portalWallet:
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/portal-wallet
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+  ingress:
+    host: ""  # e.g. wallet.example.com
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+portalInsurance:
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/portal-insurance
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+  ingress:
+    host: ""  # e.g. insurance.example.com
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+portalCompany:
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/portal-company
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+  ingress:
+    host: ""  # e.g. company.example.com
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# =============================================================================
+# Keycloak
+# =============================================================================
+keycloak:
+  replicaCount: 1
+  image:
+    repository: keycloak/keycloak
+    tag: "26.0"
+    pullPolicy: IfNotPresent
+  service:
+    port: 8080
+  ingress:
+    host: ""  # e.g. auth.example.com
+  env:
+    KEYCLOAK_ADMIN: admin
+    KEYCLOAK_ADMIN_PASSWORD: admin
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# =============================================================================
+# Walt.id Services
+# =============================================================================
+waltidWalletApi:
+  replicaCount: 1
+  image:
+    repository: waltid/wallet-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 7001
+  ingress:
+    host: ""  # e.g. waltid-wallet.example.com
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+waltidIssuerApi:
+  replicaCount: 1
+  image:
+    repository: waltid/issuer-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 7002
+  ingress:
+    host: ""  # e.g. waltid-issuer.example.com
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+waltidVerifierApi:
+  replicaCount: 1
+  image:
+    repository: waltid/verifier-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 7003
+  ingress:
+    host: ""  # e.g. waltid-verifier.example.com
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

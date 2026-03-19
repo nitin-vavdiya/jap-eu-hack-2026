@@ -1,0 +1,65 @@
+# Example values for deployment — replace hosts with your actual URLs
+# Usage: helm install eu-jap-hack ./helm/eu-jap-hack -f ./helm/eu-jap-hack/values-example.yaml
+
+global:
+  imageRegistry: "ghcr.io/smartsensesolutions"
+  # imagePullSecrets:
+  #   - name: ghcr-pull-secret
+
+ingressClassName: haproxy
+
+tls:
+  enabled: true
+  clusterIssuer: letsencrypt-prod
+
+backend:
+  image:
+    repository: eu-jap-hack/backend
+    tag: latest
+  ingress:
+    host: api.eu-jap-hack.example.com
+  env:
+    DATABASE_URL: "postgresql://postgres:postgres@postgres-host:5432/eu_jap_hack"
+    ENABLE_EDC: "true"
+    AUTH_ENABLED: "false"
+    APP_BASE_URL: "https://api.eu-jap-hack.example.com"
+
+portalDataspace:
+  ingress:
+    host: dataspace.eu-jap-hack.example.com
+
+portalTataAdmin:
+  ingress:
+    host: admin.eu-jap-hack.example.com
+
+portalTataPublic:
+  ingress:
+    host: public.eu-jap-hack.example.com
+
+portalWallet:
+  ingress:
+    host: wallet.eu-jap-hack.example.com
+
+portalInsurance:
+  ingress:
+    host: insurance.eu-jap-hack.example.com
+
+portalCompany:
+  ingress:
+    host: company.eu-jap-hack.example.com
+
+keycloak:
+  ingress:
+    host: auth.eu-jap-hack.example.com
+
+waltidWalletApi:
+  ingress:
+    host: waltid-wallet.eu-jap-hack.example.com
+
+waltidIssuerApi:
+  ingress:
+    host: waltid-issuer.eu-jap-hack.example.com
+
+waltidVerifierApi:
+  ingress:
+    host: waltid-verifier.eu-jap-hack.example.com

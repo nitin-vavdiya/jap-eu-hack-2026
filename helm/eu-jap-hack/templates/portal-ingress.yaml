@@ -1,0 +1,45 @@
+{{- $portals := dict
+  "portal-dataspace" .Values.portalDataspace
+  "portal-tata-admin" .Values.portalTataAdmin
+  "portal-tata-public" .Values.portalTataPublic
+  "portal-wallet" .Values.portalWallet
+  "portal-insurance" .Values.portalInsurance
+  "portal-company" .Values.portalCompany
+}}
+{{- range $name, $val := $portals }}
+{{- if $val.ingress.host }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "eu-jap-hack.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "eu-jap-hack.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}
+  annotations:
+    haproxy.org/server-ssl: "false"
+    {{- if $.Values.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ $.Values.tls.clusterIssuer | quote }}
+    haproxy.org/ssl-redirect: "true"
+    {{- end }}
+spec:
+  ingressClassName: {{ $.Values.ingressClassName }}
+  {{- if $.Values.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ $val.ingress.host }}
+      secretName: {{ include "eu-jap-hack.fullname" $ }}-{{ $name }}-tls
+  {{- end }}
+  rules:
+    - host: {{ $val.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "eu-jap-hack.fullname" $ }}-{{ $name }}
+                port:
+                  number: {{ $val.service.port }}
+{{- end }}
+{{- end }}

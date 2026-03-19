@@ -12,7 +12,7 @@ import vcRouter from './routes/vc';
 import orgCredentialsRouter from './routes/org-credentials';
 import edcRouter from './routes/edc';
 import { GaiaXClient, getVPSigner } from './services/gaiax';
-import db from './db';
+import prisma from './db';
 import { OrgCredentialRecord } from './services/gaiax/types';
 import { buildLegalParticipantVC, buildTermsAndConditionsVC, buildRegistrationNumberVC, getVCBaseUrl } from './services/gaiax/vc-builder';
 
@@ -40,7 +40,6 @@ app.use('/api/org-credentials', orgCredentialsRouter);
 app.use('/api/edc', edcRouter);
 
 // DID document for did:web resolution (needed by GXDCH compliance)
-// did:web resolution endpoints (/.well-known/did.json and /path/did.json)
 const didJsonHandler = (_req: any, res: any) => {
   const signer = getVPSigner();
   res.json({
@@ -60,43 +59,45 @@ app.get('/.well-known/did.json', didJsonHandler);
 app.get('/:path/did.json', didJsonHandler);
 
 // VC resolution endpoints — makes VC URIs publicly resolvable
-app.get('/vc/:id', (req, res) => {
-  const record = db.get('org_credentials').find({ id: req.params.id }).value() as OrgCredentialRecord | undefined;
-  if (!record) return res.status(404).json({ error: 'Credential not found' });
+app.get('/vc/:id', async (req, res) => {
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Credential not found' });
 
+  const record = row as unknown as OrgCredentialRecord;
   const signer = getVPSigner();
   const vc = buildLegalParticipantVC(record, signer.getDid());
 
-  // If compliance issued a credential, include it
   const response: Record<string, unknown> = {
     ...vc,
-    verificationStatus: record.verificationStatus,
+    verificationStatus: row.verificationStatus,
   };
-  if (record.complianceResult) {
-    response.complianceResult = record.complianceResult;
+  if (row.complianceResult) {
+    response.complianceResult = row.complianceResult;
   }
-  if (record.issuedVCs && record.issuedVCs.length > 0) {
-    response.issuedVCs = record.issuedVCs;
+  const issuedVCs = (row.issuedVCs as any[]) || [];
+  if (issuedVCs.length > 0) {
+    response.issuedVCs = issuedVCs;
   }
 
   res.json(response);
 });
 
-app.get('/vc/:id/tandc', (req, res) => {
-  const record = db.get('org_credentials').find({ id: req.params.id }).value() as OrgCredentialRecord | undefined;
-  if (!record) return res.status(404).json({ error: 'Credential not found' });
+app.get('/vc/:id/tandc', async (req, res) => {
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Credential not found' });
 
   const signer = getVPSigner();
-  const tandc = buildTermsAndConditionsVC(signer.getDid(), record.id);
+  const tandc = buildTermsAndConditionsVC(signer.getDid(), row.id);
   res.json(tandc);
 });
 
-app.get('/vc/:id/lrn', (req, res) => {
-  const record = db.get('org_credentials').find({ id: req.params.id }).value() as OrgCredentialRecord | undefined;
-  if (!record) return res.status(404).json({ error: 'Credential not found' });
+app.get('/vc/:id/lrn', async (req, res) => {
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Credential not found' });
 
+  const record = row as unknown as OrgCredentialRecord;
   const signer = getVPSigner();
-  const lrn = buildRegistrationNumberVC(signer.getDid(), record.id, record.legalRegistrationNumber, record.legalAddress.countryCode);
+  const lrn = buildRegistrationNumberVC(signer.getDid(), row.id, record.legalRegistrationNumber, record.legalAddress.countryCode);
   res.json(lrn);
 });
 
@@ -116,6 +117,12 @@ app.get('/api/gaiax/health', async (_req, res) => {
     const err = e as Error;
     res.status(500).json({ error: 'Health check failed', message: err.message });
   }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
 });
 
 app.listen(PORT, () => {

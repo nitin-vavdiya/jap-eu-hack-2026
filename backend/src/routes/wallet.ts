@@ -1,38 +1,48 @@
 import { Router } from 'express';
-import db from '../db';
+import prisma from '../db';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/:userId', authenticate, (req, res) => {
-  const wallet = db.get('wallet').get(req.params.userId).value();
-  if (!wallet) return res.json({ userId: req.params.userId, credentialIds: [], credentials: [] });
-
-  const credentials = wallet.credentialIds.map((id: string) =>
-    db.get('credentials').find({ id }).value()
-  ).filter(Boolean);
-
-  res.json({ userId: req.params.userId, credentialIds: wallet.credentialIds, credentials });
-});
-
-router.post('/:userId/credentials', authenticate, (req, res) => {
-  const { credentialId } = req.body;
-  const wallet = db.get('wallet').get(req.params.userId).value();
+router.get('/:userId', authenticate, async (req, res) => {
+  const wallet = await prisma.wallet.findUnique({
+    where: { userId: req.params.userId },
+    include: { credentials: { include: { credential: true } } },
+  });
 
   if (!wallet) {
-    db.get('wallet').set(req.params.userId, { credentialIds: [credentialId] }).write();
-  } else {
-    if (!wallet.credentialIds.includes(credentialId)) {
-      db.get('wallet').get(req.params.userId).get('credentialIds').push(credentialId).write();
-    }
+    return res.json({ userId: req.params.userId, credentialIds: [], credentials: [] });
   }
 
-  const updatedWallet = db.get('wallet').get(req.params.userId).value();
-  const credentials = updatedWallet.credentialIds.map((id: string) =>
-    db.get('credentials').find({ id }).value()
-  ).filter(Boolean);
+  const credentialIds = wallet.credentials.map((wc) => wc.credentialId);
+  const credentials = wallet.credentials.map((wc) => wc.credential);
 
-  res.json({ userId: req.params.userId, credentialIds: updatedWallet.credentialIds, credentials });
+  res.json({ userId: req.params.userId, credentialIds, credentials });
+});
+
+router.post('/:userId/credentials', authenticate, async (req, res) => {
+  const { credentialId } = req.body;
+
+  let wallet = await prisma.wallet.findUnique({ where: { userId: req.params.userId } });
+  if (!wallet) {
+    wallet = await prisma.wallet.create({ data: { userId: req.params.userId } });
+  }
+
+  await prisma.walletCredential.upsert({
+    where: { walletId_credentialId: { walletId: wallet.id, credentialId } },
+    update: {},
+    create: { walletId: wallet.id, credentialId },
+  });
+
+  const updatedWallet = await prisma.wallet.findUnique({
+    where: { userId: req.params.userId },
+    include: { credentials: { include: { credential: true } } },
+  });
+
+  const credentialIds = updatedWallet!.credentials.map((wc) => wc.credentialId);
+  const credentials = updatedWallet!.credentials.map((wc) => wc.credential);
+
+  res.json({ userId: req.params.userId, credentialIds, credentials });
 });
 
 export default router;

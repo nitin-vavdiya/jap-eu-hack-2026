@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db';
+import prisma from '../db';
 import { requireRole } from '../middleware/auth';
 import { GaiaXClient } from '../services/gaiax/client';
 import { GaiaXLiveClient } from '../services/gaiax/live-client';
@@ -15,8 +15,27 @@ const gaiaxClient = new GaiaXClient();
 const gaiaxLiveClient = new GaiaXLiveClient();
 const orchestrator = new GaiaXOrchestrator(gaiaxClient);
 
+// Helper to convert Prisma OrgCredential row to the OrgCredentialRecord shape used by services
+function toRecord(row: any): OrgCredentialRecord {
+  return {
+    ...row,
+    legalRegistrationNumber: row.legalRegistrationNumber as any,
+    legalAddress: row.legalAddress as any,
+    headquartersAddress: row.headquartersAddress as any,
+    verificationAttempts: (row.verificationAttempts as any) || [],
+    issuedVCs: (row.issuedVCs as any) || [],
+    vcPayload: row.vcPayload as any,
+    complianceResult: row.complianceResult as any,
+    notaryResult: row.notaryResult as any,
+    validFrom: row.validFrom.toISOString(),
+    validUntil: row.validUntil.toISOString(),
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
 // POST /api/org-credentials - Create org credential
-router.post('/', requireRole('company_admin'), (req: Request, res: Response) => {
+router.post('/', requireRole('company_admin'), async (req: Request, res: Response) => {
   const data = req.body;
   const errors = validateOrgCredentialFields(data);
   if (errors.length > 0) {
@@ -24,7 +43,7 @@ router.post('/', requireRole('company_admin'), (req: Request, res: Response) => 
   }
 
   const id = uuidv4();
-  const now = new Date().toISOString();
+  const now = new Date();
   const signer = getVPSigner();
 
   const record: OrgCredentialRecord = {
@@ -56,92 +75,100 @@ router.post('/', requireRole('company_admin'), (req: Request, res: Response) => 
     website: data.website,
     contactEmail: data.contactEmail,
     did: data.did || signer.getDid(),
-    validFrom: data.validFrom || now,
-    validUntil: data.validUntil || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    validFrom: (data.validFrom || now.toISOString()),
+    validUntil: (data.validUntil || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()),
     verificationStatus: 'draft',
     verificationAttempts: [],
     issuedVCs: [],
-    createdAt: now,
-    updatedAt: now,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
   };
 
   record.vcPayload = buildLegalParticipantVC(record);
-
-  // Sign the VC as JWT immediately
   record.vcJwt = signer.signVC(record.vcPayload as unknown as Record<string, unknown>);
 
-  if (!db.has('org_credentials').value()) {
-    db.set('org_credentials', []).write();
-  }
+  await prisma.orgCredential.create({
+    data: {
+      id: record.id,
+      companyId: record.companyId,
+      legalName: record.legalName,
+      legalRegistrationNumber: record.legalRegistrationNumber as any,
+      legalAddress: record.legalAddress as any,
+      headquartersAddress: record.headquartersAddress as any,
+      website: record.website,
+      contactEmail: record.contactEmail,
+      did: record.did,
+      validFrom: new Date(record.validFrom),
+      validUntil: new Date(record.validUntil),
+      verificationStatus: record.verificationStatus,
+      verificationAttempts: record.verificationAttempts as any,
+      vcPayload: record.vcPayload as any,
+      vcJwt: record.vcJwt,
+      issuedVCs: record.issuedVCs as any,
+    },
+  });
 
-  db.get('org_credentials').push(record).write();
   res.status(201).json(record);
 });
 
 // GET /api/org-credentials - List all
-router.get('/', (_req: Request, res: Response) => {
-  if (!db.has('org_credentials').value()) {
-    return res.json([]);
-  }
-  const records = db.get('org_credentials').value();
-  res.json(records);
+router.get('/', async (_req: Request, res: Response) => {
+  const rows = await prisma.orgCredential.findMany();
+  res.json(rows.map(toRecord));
 });
 
 // GET /api/org-credentials/:id - Get by ID
-router.get('/:id', (req: Request, res: Response) => {
-  if (!db.has('org_credentials').value()) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  const record = db.get('org_credentials').find({ id: req.params.id }).value();
-  if (!record) return res.status(404).json({ error: 'Organization credential not found' });
-  res.json(record);
+router.get('/:id', async (req: Request, res: Response) => {
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Organization credential not found' });
+  res.json(toRecord(row));
 });
 
 // POST /api/org-credentials/:id/verify - Trigger GXDCH verification (real or mock)
 router.post('/:id/verify', requireRole('company_admin'), async (req: Request, res: Response) => {
-  if (!db.has('org_credentials').value()) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  const record = db.get('org_credentials').find({ id: req.params.id }).value() as OrgCredentialRecord | undefined;
-  if (!record) return res.status(404).json({ error: 'Organization credential not found' });
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Organization credential not found' });
 
-  db.get('org_credentials').find({ id: req.params.id }).assign({
-    verificationStatus: 'verifying',
-    updatedAt: new Date().toISOString(),
-  }).write();
+  const record = toRecord(row);
+
+  await prisma.orgCredential.update({
+    where: { id: req.params.id },
+    data: { verificationStatus: 'verifying' },
+  });
 
   try {
     const result = await orchestrator.verify(record);
 
-    // For real GXDCH: notary success + compliance attempt = verified (for demo)
-    // In production: only compliance success = verified
     const notaryOk = result.notaryResult.status === 'success';
     const complianceOk = result.complianceResult.status === 'compliant';
     const isVerified = complianceOk || (notaryOk && !gaiaxClient.isMockMode);
 
-    db.get('org_credentials').find({ id: req.params.id }).assign({
-      verificationStatus: isVerified ? 'verified' : 'failed',
-      vcPayload: result.vc,
-      vcJwt: getVPSigner().signVC(result.vc as unknown as Record<string, unknown>),
-      complianceResult: result.complianceResult,
-      notaryResult: result.notaryResult,
-      issuedVCs: [...(record.issuedVCs || []), ...result.issuedVCs],
-      verificationAttempts: [...record.verificationAttempts, ...result.attempts],
-      updatedAt: new Date().toISOString(),
-    }).write();
+    const updated = await prisma.orgCredential.update({
+      where: { id: req.params.id },
+      data: {
+        verificationStatus: isVerified ? 'verified' : 'failed',
+        vcPayload: result.vc as any,
+        vcJwt: getVPSigner().signVC(result.vc as unknown as Record<string, unknown>),
+        complianceResult: result.complianceResult as any,
+        notaryResult: result.notaryResult as any,
+        issuedVCs: [...(record.issuedVCs || []), ...result.issuedVCs] as any,
+        verificationAttempts: [...record.verificationAttempts, ...result.attempts] as any,
+      },
+    });
 
-    const updated = db.get('org_credentials').find({ id: req.params.id }).value();
-    res.json(updated);
+    res.json(toRecord(updated));
   } catch (e: unknown) {
     const err = e as Error;
-    db.get('org_credentials').find({ id: req.params.id }).assign({
-      verificationStatus: 'failed',
-      verificationAttempts: [
-        ...record.verificationAttempts,
-        { id: uuidv4(), timestamp: new Date().toISOString(), endpointSetUsed: 'none', step: 'failed' as const, status: 'error' as const, durationMs: 0, error: err.message },
-      ],
-      updatedAt: new Date().toISOString(),
-    }).write();
+    await prisma.orgCredential.update({
+      where: { id: req.params.id },
+      data: {
+        verificationStatus: 'failed',
+        verificationAttempts: [
+          ...record.verificationAttempts,
+          { id: uuidv4(), timestamp: new Date().toISOString(), endpointSetUsed: 'none', step: 'failed', status: 'error', durationMs: 0, error: err.message },
+        ] as any,
+      },
+    });
 
     res.status(500).json({ error: 'Verification failed', message: err.message });
   }
@@ -149,19 +176,16 @@ router.post('/:id/verify', requireRole('company_admin'), async (req: Request, re
 
 // POST /api/org-credentials/:id/notary-check - Check registration number via real GXDCH notary
 router.post('/:id/notary-check', requireRole('company_admin'), async (req: Request, res: Response) => {
-  if (!db.has('org_credentials').value()) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  const record = db.get('org_credentials').find({ id: req.params.id }).value() as OrgCredentialRecord | undefined;
-  if (!record) return res.status(404).json({ error: 'Not found' });
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Not found' });
 
+  const record = toRecord(row);
   const signer = getVPSigner();
   const regEntry = gaiaxLiveClient.getNotaryType(record.legalRegistrationNumber);
   if (!regEntry) {
     return res.status(400).json({ error: 'No supported registration number type (need VAT, EORI, LEI, or Tax ID)' });
   }
 
-  // Use the lab notary directly
   const notaryUrl = 'https://registrationnumber.notary.lab.gaia-x.eu/v2';
   const result = await gaiaxLiveClient.verifyRegistrationNumber(
     notaryUrl,
@@ -180,12 +204,11 @@ router.post('/:id/notary-check', requireRole('company_admin'), async (req: Reque
 });
 
 // GET /api/org-credentials/:id/status
-router.get('/:id/status', (req: Request, res: Response) => {
-  if (!db.has('org_credentials').value()) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  const record = db.get('org_credentials').find({ id: req.params.id }).value() as OrgCredentialRecord | undefined;
-  if (!record) return res.status(404).json({ error: 'Not found' });
+router.get('/:id/status', async (req: Request, res: Response) => {
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Not found' });
+
+  const record = toRecord(row);
 
   res.json({
     id: record.id,
@@ -214,12 +237,11 @@ router.get('/:id/status', (req: Request, res: Response) => {
 });
 
 // GET /api/org-credentials/:id/proof
-router.get('/:id/proof', (req: Request, res: Response) => {
-  if (!db.has('org_credentials').value()) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  const record = db.get('org_credentials').find({ id: req.params.id }).value() as OrgCredentialRecord | undefined;
-  if (!record) return res.status(404).json({ error: 'Not found' });
+router.get('/:id/proof', async (req: Request, res: Response) => {
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Not found' });
+
+  const record = toRecord(row);
 
   res.json({
     vcPayload: record.vcPayload,
@@ -232,13 +254,11 @@ router.get('/:id/proof', (req: Request, res: Response) => {
 });
 
 // GET /api/org-credentials/:id/issued-vcs - List issued VCs for this credential
-router.get('/:id/issued-vcs', (req: Request, res: Response) => {
-  if (!db.has('org_credentials').value()) {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  const record = db.get('org_credentials').find({ id: req.params.id }).value() as OrgCredentialRecord | undefined;
-  if (!record) return res.status(404).json({ error: 'Not found' });
+router.get('/:id/issued-vcs', async (req: Request, res: Response) => {
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Not found' });
 
+  const record = toRecord(row);
   res.json(record.issuedVCs || []);
 });
 
@@ -254,7 +274,6 @@ router.post('/test-verification', requireRole('company_admin'), async (_req: Req
     id: `test-${uuidv4().slice(0, 8)}`,
     companyId: 'test-company',
     legalName: 'TATA Motors Limited',
-    // Use a known valid EU VAT for real notary verification (Google Germany GmbH)
     legalRegistrationNumber: { vatId: 'DE129274202' },
     legalAddress: { streetAddress: 'Bombay House, 24 Homi Mody Street', locality: 'Mumbai', postalCode: '400001', countryCode: 'IN', countrySubdivisionCode: 'IN-MH' },
     headquartersAddress: { streetAddress: 'Bombay House, 24 Homi Mody Street', locality: 'Mumbai', postalCode: '400001', countryCode: 'IN', countrySubdivisionCode: 'IN-MH' },

@@ -231,7 +231,7 @@ export default function CarDetail() {
                     </button>
                     {openSection === globalIdx && (
                       <div className="px-5 pb-4">
-                        {isVC && (content as Record<string, unknown>)?.legalParticipantId && (
+                        {isVC && !!(content as Record<string, unknown>)?.legalParticipantId && (
                           <a
                             href={`http://localhost:8000/vc/${(content as Record<string, unknown>).legalParticipantId}`}
                             target="_blank"
