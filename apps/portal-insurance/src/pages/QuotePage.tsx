@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import { useAuthUser, createAuthAxios } from '@eu-jap-hack/auth'
 import { calculatePremium } from '../lib/premiumCalculator'
-
-const API_BASE = 'http://localhost:8000/api'
 
 export default function QuotePage() {
   const { vin } = useParams<{ vin: string }>()
@@ -19,11 +16,34 @@ export default function QuotePage() {
   const [consentPremium, setConsentPremium] = useState(false)
   const [consentTerms, setConsentTerms] = useState(false)
 
+  const [edcError, setEdcError] = useState('')
+
   useEffect(() => {
-    axios.get(`${API_BASE}/cars/${vin}`).then(r => { setCar(r.data); setLoading(false) })
+    const abortController = new AbortController()
+    api.post(`/edc/negotiate`, { vin }, { signal: abortController.signal })
+      .then(r => { setCar(r.data); setLoading(false) })
+      .catch(e => {
+        if (abortController.signal.aborted) return
+        const err = e as { response?: { data?: { error?: string; details?: string } } }
+        setEdcError(err.response?.data?.details || err.response?.data?.error || 'EDC negotiation failed')
+        setLoading(false)
+      })
+    return () => { abortController.abort() }
   }, [vin])
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full"></div></div>
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <div className="animate-spin w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+      <p className="text-xs text-gray-400">Negotiating data transfer via EDC...</p>
+    </div>
+  )
+  if (edcError) return (
+    <div className="max-w-sm mx-auto mt-24 px-6 text-center">
+      <p className="text-sm text-red-500 mb-4">EDC Negotiation Failed</p>
+      <p className="text-xs text-gray-400 mb-6">{edcError}</p>
+      <button onClick={() => navigate('/')} className="text-sm text-orange-500 hover:underline">Try Again</button>
+    </div>
+  )
   if (!car) return <div className="p-8 text-center text-gray-400">Car not found</div>
 
   const dpp = car.dpp as Record<string, unknown> | null | undefined

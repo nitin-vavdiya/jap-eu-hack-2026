@@ -463,6 +463,66 @@
         "endDate": "2027-03-19T12:59:53.048Z",
         "insurer": "Digit Insurance"
       }
+    },
+    {
+      "id": "a58b6589-aaa3-41ad-bb01-de327ad1ea37",
+      "type": "OwnershipVC",
+      "issuerId": "tata-motors",
+      "issuerName": "TATA Motors",
+      "subjectId": "mario-sanchez",
+      "issuedAt": "2026-03-19T17:46:27.609Z",
+      "status": "active",
+      "credentialSubject": {
+        "ownerName": "Digit Agent",
+        "ownerDid": "did:smartsense:mario-sanchez",
+        "vin": "TATA102",
+        "make": "TATA",
+        "model": "Tata EV 1",
+        "year": 2025,
+        "purchaseDate": "2026-03-19T17:46:27.609Z",
+        "purchasePrice": 25000,
+        "dealerName": "TATA Motors Official"
+      }
+    },
+    {
+      "id": "d2339aea-7ba7-4c32-a503-3c5f6a27df13",
+      "type": "OwnershipVC",
+      "issuerId": "tata-motors",
+      "issuerName": "TATA Motors",
+      "subjectId": "mario-sanchez",
+      "issuedAt": "2026-03-19T18:49:23.924Z",
+      "status": "active",
+      "credentialSubject": {
+        "ownerName": "Mario Sanchez",
+        "ownerDid": "did:smartsense:mario-sanchez",
+        "vin": "TATA2026EV0001",
+        "make": "TATA",
+        "model": "Nexon EV Prime",
+        "year": 2026,
+        "purchaseDate": "2026-03-19T18:49:23.924Z",
+        "purchasePrice": 28000,
+        "dealerName": "TATA Motors Official"
+      }
+    },
+    {
+      "id": "20f9d7ba-9474-4c30-ab24-32232f7d5cfe",
+      "type": "OwnershipVC",
+      "issuerId": "tata-motors",
+      "issuerName": "TATA Motors",
+      "subjectId": "mario-sanchez",
+      "issuedAt": "2026-03-19T19:02:20.038Z",
+      "status": "active",
+      "credentialSubject": {
+        "ownerName": "TATA Admin",
+        "ownerDid": "did:smartsense:mario-sanchez",
+        "vin": "TATA003",
+        "make": "TATA",
+        "model": "TATA 03",
+        "year": 2025,
+        "purchaseDate": "2026-03-19T19:02:20.038Z",
+        "purchasePrice": 25000,
+        "dealerName": "TATA Motors Official"
+      }
     }
   ],
   "wallet": {
@@ -481,7 +541,10 @@
         "82cbb40f-824c-47eb-a9bb-11daffb4ca2d",
         "3fe684ec-39e3-4c64-a892-f57a09770490",
         "04b7d3e9-c2c9-4eed-b4bb-71a2cc2007db",
-        "40ee1433-9e34-4df1-80d3-7cb8a31647f3"
+        "40ee1433-9e34-4df1-80d3-7cb8a31647f3",
+        "a58b6589-aaa3-41ad-bb01-de327ad1ea37",
+        "d2339aea-7ba7-4c32-a503-3c5f6a27df13",
+        "20f9d7ba-9474-4c30-ab24-32232f7d5cfe"
       ]
     }
   },
@@ -623,6 +686,78 @@
       "createdAt": "2026-03-19T12:58:38.931Z",
       "expiresAt": "2026-03-20T12:58:38.931Z",
       "resolvedAt": "2026-03-19T12:58:56.125Z"
+    },
+    {
+      "id": "f83c0f96-4b72-4984-a28b-a8513fa55188",
+      "requesterId": "digit-agent",
+      "requesterName": "Digit Insurance",
+      "userId": "mario-sanchez",
+      "vin": "TATA102",
+      "purpose": "Insurance premium calculation based on vehicle condition and history",
+      "dataRequested": [
+        "Vehicle Identity",
+        "Current Condition",
+        "Damage History",
+        "Service History",
+        "Ownership Chain"
+      ],
+      "dataExcluded": [
+        "Personal Financial Data",
+        "Medical Records",
+        "Location History"
+      ],
+      "status": "approved",
+      "createdAt": "2026-03-19T17:46:45.481Z",
+      "expiresAt": "2026-03-20T17:46:45.481Z",
+      "resolvedAt": "2026-03-19T18:40:48.382Z"
+    },
+    {
+      "id": "4e4b02c5-39a5-4620-b5e2-af9600fea58a",
+      "requesterId": "digit-agent",
+      "requesterName": "Digit Insurance",
+      "userId": "mario-sanchez",
+      "vin": "TATA2026EV0001",
+      "purpose": "Insurance premium calculation based on vehicle condition and history",
+      "dataRequested": [
+        "Vehicle Identity",
+        "Current Condition",
+        "Damage History",
+        "Service History",
+        "Ownership Chain"
+      ],
+      "dataExcluded": [
+        "Personal Financial Data",
+        "Medical Records",
+        "Location History"
+      ],
+      "status": "approved",
+      "createdAt": "2026-03-19T18:50:01.798Z",
+      "expiresAt": "2026-03-20T18:50:01.798Z",
+      "resolvedAt": "2026-03-19T18:50:06.162Z"
+    },
+    {
+      "id": "cdf5649a-f951-4b18-b2fd-48791417c0a9",
+      "requesterId": "digit-agent",
+      "requesterName": "Digit Insurance",
+      "userId": "mario-sanchez",
+      "vin": "TATA003",
+      "purpose": "Insurance premium calculation based on vehicle condition and history",
+      "dataRequested": [
+        "Vehicle Identity",
+        "Current Condition",
+        "Damage History",
+        "Service History",
+        "Ownership Chain"
+      ],
+      "dataExcluded": [
+        "Personal Financial Data",
+        "Medical Records",
+        "Location History"
+      ],
+      "status": "approved",
+      "createdAt": "2026-03-19T19:03:35.832Z",
+      "expiresAt": "2026-03-20T19:03:35.832Z",
+      "resolvedAt": "2026-03-19T19:03:43.419Z"
     }
   ],
   "purchases": [
@@ -709,6 +844,42 @@
       "purchaseDate": "2026-03-19T12:58:11.684Z",
       "dealerName": "TATA Motors Official",
       "credentialId": "04b7d3e9-c2c9-4eed-b4bb-71a2cc2007db"
+    },
+    {
+      "id": "f0d23cc2-6ed5-48a9-9aad-dd4bc731e4ad",
+      "userId": "mario-sanchez",
+      "vin": "TATA102",
+      "make": "TATA",
+      "model": "Tata EV 1",
+      "year": 2025,
+      "price": 25000,
+      "purchaseDate": "2026-03-19T17:46:27.609Z",
+      "dealerName": "TATA Motors Official",
+      "credentialId": "a58b6589-aaa3-41ad-bb01-de327ad1ea37"
+    },
+    {
+      "id": "6987d7d1-f267-4dc4-aa90-0ddaf83f7a82",
+      "userId": "mario-sanchez",
+      "vin": "TATA2026EV0001",
+      "make": "TATA",
+      "model": "Nexon EV Prime",
+      "year": 2026,
+      "price": 28000,
+      "purchaseDate": "2026-03-19T18:49:23.924Z",
+      "dealerName": "TATA Motors Official",
+      "credentialId": "d2339aea-7ba7-4c32-a503-3c5f6a27df13"
+    },
+    {
+      "id": "d081ef3f-e809-4240-81c0-b66ef4a8bcf6",
+      "userId": "mario-sanchez",
+      "vin": "TATA003",
+      "make": "TATA",
+      "model": "TATA 03",
+      "year": 2025,
+      "price": 25000,
+      "purchaseDate": "2026-03-19T19:02:20.038Z",
+      "dealerName": "TATA Motors Official",
+      "credentialId": "20f9d7ba-9474-4c30-ab24-32232f7d5cfe"
     }
   ],
   "insurance_policies": [
@@ -9375,6 +9546,677 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "id": "7ee486a6-e23a-4795-b917-c2390988b911",
+      "vin": "TATA101",
+      "make": "TATA",
+      "model": "Nexon 1",
+      "variant": "",
+      "year": 2025,
+      "price": 25000,
+      "imageUrl": "",
+      "status": "available",
+      "aas": {
+        "idShort": "AAS_TATA101",
+        "globalAssetId": "urn:uuid:5f14b681-7791-4cb6-a919-60b91337aeac",
+        "specificAssetIds": [
+          {
+            "name": "manufacturerId",
+            "value": "BPNL00000003TATA"
+          },
+          {
+            "name": "van",
+            "value": "TATA101"
+          }
+        ],
+        "submodelDescriptors": [
+          {
+            "idShort": "DigitalProductPassport",
+            "semanticId": "urn:samm:io.catenax.generic.digital_product_passport:5.0.0#DigitalProductPassport"
+          },
+          {
+            "idShort": "VehicleSubmodel",
+            "semanticId": "urn:samm:io.catenax.vehicle.product_description:1.0.0#ProductDescription"
+          }
+        ]
+      },
+      "dpp": {
+        "semanticId": "urn:samm:io.catenax.generic.digital_product_passport:5.0.0#DigitalProductPassport",
+        "metadata": {
+          "passportIdentifier": "5352d011-b915-4a2b-b93d-981e98271691",
+          "version": "1.0.0",
+          "status": "draft",
+          "issueDate": "2026-03-19T17:32:31.572Z",
+          "expirationDate": "2027-03-19T17:32:31.573Z",
+          "lastModification": "2026-03-19T17:32:31.572Z"
+        },
+        "identification": {
+          "type": {
+            "manufacturerPartId": "TATA-NEXON-1",
+            "nameAtManufacturer": "TATA Nexon 1"
+          },
+          "serial": "TATA101",
+          "codes": [],
+          "dataCarrier": "https://dpp.tata.com/TATA101",
+          "classification": "Passenger Vehicle",
+          "color": "",
+          "bodyType": "SUV"
+        },
+        "operation": {
+          "manufacturer": {
+            "bpnl": "BPNL00000003TATA",
+            "name": "TATA Motors Limited"
+          },
+          "facility": "Pune Manufacturing Plant",
+          "manufacturingDate": "2026-03-19",
+          "country": "India",
+          "importInfo": "",
+          "certificationBody": "ARAI"
+        },
+        "sustainability": {
+          "carbonFootprint": 0,
+          "materialFootprint": 0,
+          "durabilityScore": 8,
+          "repairabilityScore": 7.5,
+          "status": "Assessed"
+        },
+        "materials": {
+          "recycledMaterialPercent": 25,
+          "batteryChemistry": "NMC",
+          "recyclabilityPercent": 85,
+          "batterySupplier": "LG Energy Solution",
+          "batteryCountryOfOrigin": "South Korea",
+          "materialComposition": [],
+          "substancesOfConcern": [],
+          "sustainabilityCertifications": [
+            "ISO 14001"
+          ],
+          "hazardousSubstances": []
+        },
+        "characteristics": {
+          "lifespan": {
+            "years": 15,
+            "km": 300000
+          },
+          "physicalDimensions": {
+            "lengthMm": 4000,
+            "widthMm": 1810,
+            "heightMm": 1620,
+            "weightKg": 1600
+          }
+        },
+        "commercial": {
+          "price": 25000,
+          "currency": "EUR",
+          "placedOnMarket": "2026-03-19"
+        },
+        "handling": {
+          "applicable": false
+        },
+        "sources": [],
+        "additionalData": [],
+        "performance": {
+          "motorType": "BEV",
+          "batteryCapacityKwh": 40,
+          "rangeKm": 350,
+          "chargingStandard": "CCS2",
+          "chargingTimeHours": 8,
+          "transmissionType": "Automatic",
+          "powerKw": 105,
+          "torqueNm": 215,
+          "topSpeedKmh": 150,
+          "acceleration0to100": 9
+        },
+        "emissions": {
+          "co2GPerKm": 0,
+          "euroStandard": "Euro 6d",
+          "energyLabel": "A+++",
+          "electricConsumptionKwhPer100km": 15.5
+        },
+        "stateOfHealth": {
+          "overallRating": 9.5,
+          "exteriorCondition": 9.5,
+          "interiorCondition": 9.5,
+          "mechanicalCondition": 9.5,
+          "batteryHealthPercent": 100,
+          "inspectionDate": "2026-03-19",
+          "inspectedBy": "TATA Quality Assurance",
+          "notes": "Factory new condition"
+        },
+        "serviceHistory": {
+          "totalServiceRecords": 0,
+          "lastServiceDate": "",
+          "currentMileageKm": 0,
+          "records": []
+        },
+        "damageHistory": {
+          "totalIncidents": 0,
+          "incidents": []
+        },
+        "ownershipChain": {
+          "currentOwner": {
+            "ownerName": "TATA Motors (Inventory)",
+            "ownerId": "tata-motors",
+            "purchaseDate": "2026-03-19T17:32:31.572Z",
+            "purchasePrice": 25000,
+            "country": "India"
+          },
+          "previousOwners": [],
+          "totalOwners": 0
+        },
+        "compliance": {
+          "euTypeApprovalNumber": "",
+          "roadworthyCertificateExpiry": "",
+          "emissionsTestDate": "2026-03-19",
+          "safetyRatingNcap": 5,
+          "homologationStatus": "Approved"
+        },
+        "manufacturerCredential": {
+          "credentialId": "cred-org-tata-446359e2",
+          "type": "ManufacturerVC",
+          "issuer": "EU APAC Dataspace",
+          "issuerDid": "did:eu-dataspace:tata-motors-001",
+          "holder": "TATA Motors Limited",
+          "holderDid": "did:bpn:BPNL00000003TATA",
+          "issuedAt": "2026-03-19T17:32:31.572Z",
+          "status": "active",
+          "credentialSubject": {
+            "companyName": "TATA Motors Limited",
+            "registrationNumber": "L28920MH1945PLC004520",
+            "manufacturingLicense": "EU-MFG-2024-TATA-001",
+            "isoQualityCertification": "ISO 9001:2015",
+            "iatf16949Certified": true,
+            "manufacturingCountry": "India",
+            "authorizedEUDistributor": true
+          }
+        }
+      }
+    },
+    {
+      "id": "beb7ad62-eccd-4836-94ea-a7773eb0a45e",
+      "vin": "TATA102",
+      "make": "TATA",
+      "model": "Tata EV 1",
+      "variant": "",
+      "year": 2025,
+      "price": 25000,
+      "imageUrl": "",
+      "status": "sold",
+      "aas": {
+        "idShort": "AAS_TATA102",
+        "globalAssetId": "urn:uuid:ca39a904-bb12-4b9b-a468-fee8bd1895b5",
+        "specificAssetIds": [
+          {
+            "name": "manufacturerId",
+            "value": "BPNL00000003TATA"
+          },
+          {
+            "name": "van",
+            "value": "TATA102"
+          }
+        ],
+        "submodelDescriptors": [
+          {
+            "idShort": "DigitalProductPassport",
+            "semanticId": "urn:samm:io.catenax.generic.digital_product_passport:5.0.0#DigitalProductPassport"
+          },
+          {
+            "idShort": "VehicleSubmodel",
+            "semanticId": "urn:samm:io.catenax.vehicle.product_description:1.0.0#ProductDescription"
+          }
+        ]
+      },
+      "dpp": {
+        "semanticId": "urn:samm:io.catenax.generic.digital_product_passport:5.0.0#DigitalProductPassport",
+        "metadata": {
+          "passportIdentifier": "40a3e7c1-82a1-4ea3-8319-b38761be34fb",
+          "version": "1.0.0",
+          "status": "draft",
+          "issueDate": "2026-03-19T17:41:09.788Z",
+          "expirationDate": "2027-03-19T17:41:09.788Z",
+          "lastModification": "2026-03-19T17:41:09.788Z"
+        },
+        "identification": {
+          "type": {
+            "manufacturerPartId": "TATA-TATA-EV-1",
+            "nameAtManufacturer": "TATA Tata EV 1"
+          },
+          "serial": "TATA102",
+          "codes": [],
+          "dataCarrier": "https://dpp.tata.com/TATA102",
+          "classification": "Passenger Vehicle",
+          "color": "",
+          "bodyType": "SUV"
+        },
+        "operation": {
+          "manufacturer": {
+            "bpnl": "BPNL00000003TATA",
+            "name": "TATA Motors Limited"
+          },
+          "facility": "Pune Manufacturing Plant",
+          "manufacturingDate": "2026-03-19",
+          "country": "India",
+          "importInfo": "",
+          "certificationBody": "ARAI"
+        },
+        "sustainability": {
+          "carbonFootprint": 0,
+          "materialFootprint": 0,
+          "durabilityScore": 8,
+          "repairabilityScore": 7.5,
+          "status": "Assessed"
+        },
+        "materials": {
+          "recycledMaterialPercent": 25,
+          "batteryChemistry": "NMC",
+          "recyclabilityPercent": 85,
+          "batterySupplier": "LG Energy Solution",
+          "batteryCountryOfOrigin": "South Korea",
+          "materialComposition": [],
+          "substancesOfConcern": [],
+          "sustainabilityCertifications": [
+            "ISO 14001"
+          ],
+          "hazardousSubstances": []
+        },
+        "characteristics": {
+          "lifespan": {
+            "years": 15,
+            "km": 300000
+          },
+          "physicalDimensions": {
+            "lengthMm": 4000,
+            "widthMm": 1810,
+            "heightMm": 1620,
+            "weightKg": 1600
+          }
+        },
+        "commercial": {
+          "price": 25000,
+          "currency": "EUR",
+          "placedOnMarket": "2026-03-19"
+        },
+        "handling": {
+          "applicable": false
+        },
+        "sources": [],
+        "additionalData": [],
+        "performance": {
+          "motorType": "BEV",
+          "batteryCapacityKwh": 40,
+          "rangeKm": 350,
+          "chargingStandard": "CCS2",
+          "chargingTimeHours": 8,
+          "transmissionType": "Automatic",
+          "powerKw": 105,
+          "torqueNm": 215,
+          "topSpeedKmh": 150,
+          "acceleration0to100": 9
+        },
+        "emissions": {
+          "co2GPerKm": 0,
+          "euroStandard": "Euro 6d",
+          "energyLabel": "A+++",
+          "electricConsumptionKwhPer100km": 15.5
+        },
+        "stateOfHealth": {
+          "overallRating": 9.5,
+          "exteriorCondition": 9.5,
+          "interiorCondition": 9.5,
+          "mechanicalCondition": 9.5,
+          "batteryHealthPercent": 100,
+          "inspectionDate": "2026-03-19",
+          "inspectedBy": "TATA Quality Assurance",
+          "notes": "Factory new condition"
+        },
+        "serviceHistory": {
+          "totalServiceRecords": 0,
+          "lastServiceDate": "",
+          "currentMileageKm": 0,
+          "records": []
+        },
+        "damageHistory": {
+          "totalIncidents": 0,
+          "incidents": []
+        },
+        "ownershipChain": {
+          "currentOwner": {
+            "ownerName": "TATA Motors (Inventory)",
+            "ownerId": "tata-motors",
+            "purchaseDate": "2026-03-19T17:41:09.788Z",
+            "purchasePrice": 25000,
+            "country": "India"
+          },
+          "previousOwners": [],
+          "totalOwners": 0
+        },
+        "compliance": {
+          "euTypeApprovalNumber": "",
+          "roadworthyCertificateExpiry": "",
+          "emissionsTestDate": "2026-03-19",
+          "safetyRatingNcap": 5,
+          "homologationStatus": "Approved"
+        },
+        "manufacturerCredential": {
+          "credentialId": "cred-org-tata-151b33dc",
+          "type": "ManufacturerVC",
+          "issuer": "EU APAC Dataspace",
+          "issuerDid": "did:eu-dataspace:tata-motors-001",
+          "holder": "TATA Motors Limited",
+          "holderDid": "did:bpn:BPNL00000003TATA",
+          "issuedAt": "2026-03-19T17:41:09.788Z",
+          "status": "active",
+          "credentialSubject": {
+            "companyName": "TATA Motors Limited",
+            "registrationNumber": "L28920MH1945PLC004520",
+            "manufacturingLicense": "EU-MFG-2024-TATA-001",
+            "isoQualityCertification": "ISO 9001:2015",
+            "iatf16949Certified": true,
+            "manufacturingCountry": "India",
+            "authorizedEUDistributor": true
+          }
+        }
+      },
+      "ownerId": "mario-sanchez",
+      "dpp.ownershipChain.currentOwner": {
+        "ownerName": "Digit Agent",
+        "ownerId": "mario-sanchez",
+        "purchaseDate": "2026-03-19T17:46:27.609Z",
+        "purchasePrice": 25000,
+        "country": "IT"
+      }
+    },
+    {
+      "id": "57e73a27-0334-4c19-898a-fe2f98fceb7c",
+      "vin": "TATA2026EV0001",
+      "make": "TATA",
+      "model": "Nexon EV Prime",
+      "variant": "LR Edition",
+      "year": 2026,
+      "price": 28000,
+      "imageUrl": "",
+      "status": "sold",
+      "ownerId": "mario-sanchez",
+      "dpp": {
+        "semanticId": "urn:samm:io.catenax.generic.digital_product_passport:6.0.0#DigitalProductPassport",
+        "metadata": {
+          "passportIdentifier": "urn:uuid:new-car-001",
+          "version": "1.0.0",
+          "status": "draft",
+          "issueDate": "2026-03-20",
+          "expirationDate": "2027-03-20",
+          "lastModification": "2026-03-20"
+        },
+        "identification": {
+          "type": {
+            "manufacturerPartId": "TATA-NXE-PRIME",
+            "nameAtManufacturer": "TATA Nexon EV Prime LR Edition"
+          },
+          "serial": "TATA2026EV0001"
+        },
+        "performance": {
+          "motorType": "BEV",
+          "batteryCapacityKwh": 45,
+          "rangeKm": 480,
+          "chargingStandard": "CCS2",
+          "chargingTimeHours": 0.8,
+          "transmissionType": "Single-speed automatic",
+          "powerKw": 155,
+          "torqueNm": 270,
+          "topSpeedKmh": 160,
+          "acceleration0to100": 7.5
+        },
+        "emissions": {
+          "co2GPerKm": 0,
+          "euroStandard": "Euro 6d",
+          "energyLabel": "A+++",
+          "electricConsumptionKwhPer100km": 13.5
+        },
+        "stateOfHealth": {
+          "overallRating": 9.8,
+          "exteriorCondition": 10,
+          "interiorCondition": 10,
+          "mechanicalCondition": 9.5,
+          "batteryHealthPercent": 100,
+          "inspectionDate": "2026-03-20",
+          "inspectedBy": "TATA Quality Assurance",
+          "notes": "Factory new condition"
+        },
+        "damageHistory": {
+          "totalIncidents": 0,
+          "incidents": []
+        },
+        "serviceHistory": {
+          "totalServiceRecords": 0,
+          "lastServiceDate": "",
+          "currentMileageKm": 0,
+          "records": []
+        },
+        "ownershipChain": {
+          "currentOwner": {
+            "ownerName": "Mario Sanchez",
+            "ownerId": "mario-sanchez",
+            "purchaseDate": "2026-03-20T00:00:00.000Z",
+            "purchasePrice": 28000,
+            "country": "IT"
+          },
+          "previousOwners": [],
+          "totalOwners": 1
+        }
+      },
+      "dpp.ownershipChain.currentOwner": {
+        "ownerName": "Mario Sanchez",
+        "ownerId": "mario-sanchez",
+        "purchaseDate": "2026-03-19T18:49:23.924Z",
+        "purchasePrice": 28000,
+        "country": "IT"
+      }
+    },
+    {
+      "id": "156c8b81-373b-4f09-ab79-6ef88cf79a06",
+      "vin": "TATA2026EV0002",
+      "make": "TATA",
+      "model": "Nexon EV Prime",
+      "variant": "LR Edition",
+      "year": 2026,
+      "price": 28000,
+      "imageUrl": "",
+      "status": "available"
+    },
+    {
+      "id": "7b050bd2-f8e0-4627-80d1-bec7b211b2b4",
+      "vin": "TATA003",
+      "make": "TATA",
+      "model": "TATA 03",
+      "variant": "",
+      "year": 2025,
+      "price": 25000,
+      "imageUrl": "",
+      "status": "sold",
+      "aas": {
+        "idShort": "AAS_TATA003",
+        "globalAssetId": "urn:uuid:9d44ef4a-bec1-4596-9889-dea8a055586e",
+        "specificAssetIds": [
+          {
+            "name": "manufacturerId",
+            "value": "BPNL00000003TATA"
+          },
+          {
+            "name": "van",
+            "value": "TATA003"
+          }
+        ],
+        "submodelDescriptors": [
+          {
+            "idShort": "DigitalProductPassport",
+            "semanticId": "urn:samm:io.catenax.generic.digital_product_passport:5.0.0#DigitalProductPassport"
+          },
+          {
+            "idShort": "VehicleSubmodel",
+            "semanticId": "urn:samm:io.catenax.vehicle.product_description:1.0.0#ProductDescription"
+          }
+        ]
+      },
+      "dpp": {
+        "semanticId": "urn:samm:io.catenax.generic.digital_product_passport:5.0.0#DigitalProductPassport",
+        "metadata": {
+          "passportIdentifier": "65e5f4e8-a96c-46d5-a0e5-6189f15ac88e",
+          "version": "1.0.0",
+          "status": "draft",
+          "issueDate": "2026-03-19T19:01:08.401Z",
+          "expirationDate": "2027-03-19T19:01:08.402Z",
+          "lastModification": "2026-03-19T19:01:08.401Z"
+        },
+        "identification": {
+          "type": {
+            "manufacturerPartId": "TATA-TATA-03",
+            "nameAtManufacturer": "TATA TATA 03"
+          },
+          "serial": "TATA003",
+          "codes": [],
+          "dataCarrier": "https://dpp.tata.com/TATA003",
+          "classification": "Passenger Vehicle",
+          "color": "",
+          "bodyType": "SUV"
+        },
+        "operation": {
+          "manufacturer": {
+            "bpnl": "BPNL00000003TATA",
+            "name": "TATA Motors Limited"
+          },
+          "facility": "Pune Manufacturing Plant",
+          "manufacturingDate": "2026-03-19",
+          "country": "India",
+          "importInfo": "",
+          "certificationBody": "ARAI"
+        },
+        "sustainability": {
+          "carbonFootprint": 0,
+          "materialFootprint": 0,
+          "durabilityScore": 8,
+          "repairabilityScore": 7.5,
+          "status": "Assessed"
+        },
+        "materials": {
+          "recycledMaterialPercent": 25,
+          "batteryChemistry": "NMC",
+          "recyclabilityPercent": 85,
+          "batterySupplier": "LG Energy Solution",
+          "batteryCountryOfOrigin": "South Korea",
+          "materialComposition": [],
+          "substancesOfConcern": [],
+          "sustainabilityCertifications": [
+            "ISO 14001"
+          ],
+          "hazardousSubstances": []
+        },
+        "characteristics": {
+          "lifespan": {
+            "years": 15,
+            "km": 300000
+          },
+          "physicalDimensions": {
+            "lengthMm": 4000,
+            "widthMm": 1810,
+            "heightMm": 1620,
+            "weightKg": 1600
+          }
+        },
+        "commercial": {
+          "price": 25000,
+          "currency": "EUR",
+          "placedOnMarket": "2026-03-19"
+        },
+        "handling": {
+          "applicable": false
+        },
+        "sources": [],
+        "additionalData": [],
+        "performance": {
+          "motorType": "BEV",
+          "batteryCapacityKwh": 40,
+          "rangeKm": 350,
+          "chargingStandard": "CCS2",
+          "chargingTimeHours": 8,
+          "transmissionType": "Automatic",
+          "powerKw": 105,
+          "torqueNm": 215,
+          "topSpeedKmh": 150,
+          "acceleration0to100": 9
+        },
+        "emissions": {
+          "co2GPerKm": 0,
+          "euroStandard": "Euro 6d",
+          "energyLabel": "A+++",
+          "electricConsumptionKwhPer100km": 15.5
+        },
+        "stateOfHealth": {
+          "overallRating": 9.5,
+          "exteriorCondition": 9.5,
+          "interiorCondition": 9.5,
+          "mechanicalCondition": 9.5,
+          "batteryHealthPercent": 100,
+          "inspectionDate": "2026-03-19",
+          "inspectedBy": "TATA Quality Assurance",
+          "notes": "Factory new condition"
+        },
+        "serviceHistory": {
+          "totalServiceRecords": 0,
+          "lastServiceDate": "",
+          "currentMileageKm": 0,
+          "records": []
+        },
+        "damageHistory": {
+          "totalIncidents": 0,
+          "incidents": []
+        },
+        "ownershipChain": {
+          "currentOwner": {
+            "ownerName": "TATA Motors (Inventory)",
+            "ownerId": "tata-motors",
+            "purchaseDate": "2026-03-19T19:01:08.401Z",
+            "purchasePrice": 25000,
+            "country": "India"
+          },
+          "previousOwners": [],
+          "totalOwners": 0
+        },
+        "compliance": {
+          "euTypeApprovalNumber": "",
+          "roadworthyCertificateExpiry": "",
+          "emissionsTestDate": "2026-03-19",
+          "safetyRatingNcap": 5,
+          "homologationStatus": "Approved"
+        },
+        "manufacturerCredential": {
+          "credentialId": "cred-org-tata-038208bb",
+          "type": "ManufacturerVC",
+          "issuer": "EU APAC Dataspace",
+          "issuerDid": "did:eu-dataspace:tata-motors-001",
+          "holder": "TATA Motors Limited",
+          "holderDid": "did:bpn:BPNL00000003TATA",
+          "issuedAt": "2026-03-19T19:01:08.401Z",
+          "status": "active",
+          "credentialSubject": {
+            "companyName": "TATA Motors Limited",
+            "registrationNumber": "L28920MH1945PLC004520",
+            "manufacturingLicense": "EU-MFG-2024-TATA-001",
+            "isoQualityCertification": "ISO 9001:2015",
+            "iatf16949Certified": true,
+            "manufacturingCountry": "India",
+            "authorizedEUDistributor": true
+          }
+        }
+      },
+      "ownerId": "mario-sanchez",
+      "dpp.ownershipChain.currentOwner": {
+        "ownerName": "TATA Admin",
+        "ownerId": "mario-sanchez",
+        "purchaseDate": "2026-03-19T19:02:20.038Z",
+        "purchasePrice": 25000,
+        "country": "IT"
       }
     }
   ],
