@@ -181,7 +181,7 @@ export async function initiateTransfer(assetId: string, contractAgreementId: str
   return response.data['@id'];
 }
 
-// Step 5: Get transfer process (EDR entry)
+// Step 5: Get transfer process (EDR entry) — polls with retries
 export async function getTransferProcess(contractAgreementId: string): Promise<string> {
   const payload = {
     '@context': {
@@ -199,14 +199,25 @@ export async function getTransferProcess(contractAgreementId: string): Promise<s
     ],
   };
 
-  const response = await axios.post(`${EDC_MGMT_URL}/v3/edrs/request`, payload, { headers, timeout: 10000 });
-  const entries = response.data;
+  for (let attempt = 1; attempt <= NEGOTIATION_MAX_RETRIES; attempt++) {
+    console.log(`[EDC Consumer] EDR poll attempt ${attempt}/${NEGOTIATION_MAX_RETRIES}`);
+    const response = await axios.post(`${EDC_MGMT_URL}/v3/edrs/request`, payload, { headers, timeout: 10000 });
+    console.log('[EDC Consumer] EDR response:', JSON.stringify(response.data, null, 2));
+    const entries = response.data;
 
-  if (!entries || entries.length === 0) {
-    throw new Error('No EDR entry found for the agreement');
+    if (entries && entries.length > 0) {
+      const transferId = entries[0].transferProcessId || entries[0]['@id'];
+      console.log(`[EDC Consumer] Transfer process ID: ${transferId}`);
+      return transferId;
+    }
+
+    if (attempt < NEGOTIATION_MAX_RETRIES) {
+      console.log(`[EDC Consumer] No EDR yet, waiting ${NEGOTIATION_POLL_INTERVAL}ms before retry...`);
+      await sleep(NEGOTIATION_POLL_INTERVAL);
+    }
   }
 
-  return entries[0].transferProcessId || entries[0]['@id'];
+  throw new Error(`No EDR entry found for the agreement after ${NEGOTIATION_MAX_RETRIES} retries`);
 }
 
 // Step 6: Get auth code (data address with endpoint + token)
