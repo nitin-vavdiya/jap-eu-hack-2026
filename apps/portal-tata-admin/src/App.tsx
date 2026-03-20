@@ -5,6 +5,7 @@ import CarList from './pages/CarList'
 import CarDPP from './pages/CarDPP'
 import CreateCar from './pages/CreateCar'
 import VehicleRegistry from './pages/VehicleRegistry'
+import CaddePage from './pages/CaddePage'
 
 const API = getApiBase()
 
@@ -73,6 +74,9 @@ export default function App() {
             </div>
           </a>
           <div className="flex items-center gap-4">
+            <a href="/cadde" className="text-xs text-[#5F6368] hover:text-[#1F1F1F] font-medium transition-colors">
+              CADDE
+            </a>
             <a href="/" className="text-xs text-[#5F6368] hover:text-[#1F1F1F] font-medium transition-colors">
               Fleet
             </a>
@@ -96,6 +100,7 @@ export default function App() {
           <Route path="/car/:vin" element={<CarDPP />} />
           <Route path="/create" element={<CreateCar />} />
           <Route path="/registry" element={<VehicleRegistry />} />
+          <Route path="/cadde" element={<CaddePage />} />
         </Routes>
       </ProtectedRoute>
     </div>
