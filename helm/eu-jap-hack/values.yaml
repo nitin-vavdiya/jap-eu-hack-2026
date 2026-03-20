@@ -187,6 +187,34 @@ portalCompany:
       memory: 128Mi
 
 # =============================================================================
+# Keycloak Identity Provider
+# =============================================================================
+keycloak:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/keycloak
+    tag: latest
+    pullPolicy: IfNotPresent
+  adminUsername: admin
+  adminPassword: ""  # required — set in values-custom or secret
+  db:
+    url: ""  # e.g. jdbc:postgresql://postgres:5432/keycloak
+    username: ""
+    password: ""
+  service:
+    port: 8080
+  ingress:
+    host: ""  # e.g. centralidp.example.com
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# =============================================================================
 # Walt.id Services
 # =============================================================================
 waltidWalletApi:
