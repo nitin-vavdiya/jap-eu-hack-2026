@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { getApiBase } from '@eu-jap-hack/auth'
+import { getApiBase, getPortalDataspaceUrl } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 
@@ -67,7 +67,7 @@ export default function CompanyList() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-sm text-gray-400 mb-4">No organizations registered yet</p>
-          <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer"
+          <a href={getPortalDataspaceUrl()} target="_blank" rel="noopener noreferrer"
             className="bg-gray-900 text-white px-5 py-2 rounded text-sm hover:bg-gray-800">
             Register First Organization
           </a>

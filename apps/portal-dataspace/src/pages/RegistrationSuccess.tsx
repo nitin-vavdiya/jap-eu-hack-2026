@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { getPortalCompanyUrl } from '@eu-jap-hack/auth'
 
 export default function RegistrationSuccess() {
   const { companyId } = useParams()
@@ -30,7 +31,7 @@ export default function RegistrationSuccess() {
         <button onClick={() => navigate('/')} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded text-sm font-medium hover:bg-gray-50 transition-colors">
           Register Another
         </button>
-        <a href="http://localhost:3006" target="_blank" rel="noopener noreferrer"
+        <a href={getPortalCompanyUrl()} target="_blank" rel="noopener noreferrer"
           className="flex-1 bg-gray-900 text-white py-2.5 rounded text-sm font-medium hover:bg-gray-800 text-center transition-colors">
           Company Portal
         </a>

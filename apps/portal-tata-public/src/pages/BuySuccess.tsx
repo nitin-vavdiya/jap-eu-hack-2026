@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { getApiBase } from '@eu-jap-hack/auth'
+import { getApiBase, getPortalWalletUrl } from '@eu-jap-hack/auth'
 
 export default function BuySuccess() {
   const { vin } = useParams()
@@ -50,7 +50,7 @@ export default function BuySuccess() {
         <button onClick={() => navigate('/')} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded text-sm font-medium hover:bg-gray-50 transition-colors">
           Back to Showroom
         </button>
-        <a href="http://localhost:3004" target="_blank" rel="noopener noreferrer"
+        <a href={getPortalWalletUrl()} target="_blank" rel="noopener noreferrer"
           className="flex-1 bg-gray-900 text-white py-2.5 rounded text-sm font-medium hover:bg-gray-800 text-center transition-colors">
           Open Wallet
         </a>

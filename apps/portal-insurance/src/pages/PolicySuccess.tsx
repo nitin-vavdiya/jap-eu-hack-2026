@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { getPortalWalletUrl } from '@eu-jap-hack/auth'
 
 export default function PolicySuccess() {
   const { policyNumber } = useParams()
@@ -26,7 +27,7 @@ export default function PolicySuccess() {
         <button onClick={() => navigate('/')} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded text-sm font-medium hover:bg-gray-50 transition-colors">
           New Quote
         </button>
-        <a href="http://localhost:3004" target="_blank" rel="noopener noreferrer"
+        <a href={getPortalWalletUrl()} target="_blank" rel="noopener noreferrer"
           className="flex-1 bg-gray-900 text-white py-2.5 rounded text-sm font-medium hover:bg-gray-800 text-center transition-colors">
           Open Wallet
         </a>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import { ProtectedRoute, useAuthUser, createAuthAxios, ROLES, PortalTheme, getApiBase } from '@eu-jap-hack/auth'
+import { ProtectedRoute, useAuthUser, createAuthAxios, ROLES, PortalTheme, getApiBase, getPortalDataspaceUrl } from '@eu-jap-hack/auth'
 import CarList from './pages/CarList'
 import CarDPP from './pages/CarDPP'
 import CreateCar from './pages/CreateCar'
@@ -48,7 +48,7 @@ function OrgVerificationBanner() {
         <p className="text-xs text-[#5F6368]">
           <span className="font-medium text-[#F59E0B]">Organization not verified.</span>
           {' '}Register and verify your organization credential in the{' '}
-          <a href="http://localhost:3001" className="text-[#4285F4] font-medium hover:underline">Dataspace Portal</a>
+          <a href={getPortalDataspaceUrl()} className="text-[#4285F4] font-medium hover:underline">Dataspace Portal</a>
           {' '}to unlock full functionality.
         </p>
       </div>

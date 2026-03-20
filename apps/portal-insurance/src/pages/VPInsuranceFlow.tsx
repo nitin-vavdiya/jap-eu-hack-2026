@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase, getPortalWalletUrl } from '@eu-jap-hack/auth'
 import { calculatePremium } from '../lib/premiumCalculator'
 
 const API_BASE = getApiBase()
@@ -370,7 +370,7 @@ export default function VPInsuranceFlow() {
 
           <div>
             <a
-              href={`http://localhost:3004/present/${requestId}`}
+              href={`${getPortalWalletUrl()}/present/${requestId}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#34A853] hover:bg-[#2d9249] text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"

@@ -1,4 +1,4 @@
-export { getKeycloakUrl, getKeycloakRealm, getKeycloakAuthority, getApiBase } from './config';
+export { getKeycloakUrl, getKeycloakRealm, getKeycloakAuthority, getApiBase, getPortalDataspaceUrl, getPortalWalletUrl, getPortalCompanyUrl } from './config';
 
 export const ROLES = {
   ADMIN: 'admin',

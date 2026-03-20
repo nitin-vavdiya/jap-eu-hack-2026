@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
-import { ProtectedRoute, useAuthUser, ROLES, PortalTheme } from '@eu-jap-hack/auth'
+import { ProtectedRoute, useAuthUser, ROLES, PortalTheme, getPortalDataspaceUrl } from '@eu-jap-hack/auth'
 import CompanyList from './pages/CompanyList'
 import CompanyDetail from './pages/CompanyDetail'
 
@@ -38,7 +38,7 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <a href="http://localhost:3001" target="_blank" rel="noopener noreferrer"
+            <a href={getPortalDataspaceUrl()} target="_blank" rel="noopener noreferrer"
               className="text-xs text-gray-400 border border-gray-200 px-3 py-1.5 rounded hover:bg-gray-50 transition-colors">
               + Register
             </a>
