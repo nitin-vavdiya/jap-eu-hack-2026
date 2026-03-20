@@ -3,7 +3,7 @@ set -euo pipefail
 
 REGISTRY="public.ecr.aws/smartsensesolutions"
 REPO="eu-jap-hack"
-VERSION="${VERSION:-1.0.2}"
+VERSION="${VERSION:-1.0.4}"
 
 echo "==> Logging in to ECR Public..."
 aws ecr-public get-login-password --region us-east-1 \
