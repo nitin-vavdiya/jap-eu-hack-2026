@@ -30,7 +30,7 @@ RUN --mount=type=cache,target=/root/.npm \
 # Copy built output, Prisma schema, and generated client from build stage
 COPY --from=base /app/backend/dist ./backend/dist
 COPY --from=base /app/backend/prisma ./backend/prisma
-COPY --from=base /app/backend/node_modules/.prisma ./backend/node_modules/.prisma
+COPY --from=base /app/node_modules/.prisma ./node_modules/.prisma
 
 # Entrypoint script: run migrations + seed, then start
 COPY backend/docker-entrypoint.sh ./backend/docker-entrypoint.sh
