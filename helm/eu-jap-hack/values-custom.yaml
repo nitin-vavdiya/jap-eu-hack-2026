@@ -26,7 +26,7 @@ backend:
   env:
     DATABASE_URL: "postgresql://<path:k8s-stack/data/jap-eu-hack#dbuser>:<path:k8s-stack/data/jap-eu-hack#dbpass>@<path:k8s-stack/data/jap-eu-hack#dbhost>:5432/<path:k8s-stack/data/jap-eu-hack#dbname>"
     ENABLE_EDC: "true"
-    AUTH_ENABLED: "true"
+    AUTH_ENABLED: "false"
     KEYCLOAK_URL: "https://centralidp.tx.the-sense.io/auth"
     KEYCLOAK_REALM: "eu-jap-hack"
     GAIAX_DID_DOMAIN: "jeh-api.tx.the-sense.io"
