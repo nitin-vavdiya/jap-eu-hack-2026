@@ -4,23 +4,20 @@ FROM node:20-alpine AS build
 ARG APP_NAME
 WORKDIR /app
 
-# Copy root workspace config
+# Copy root workspace config + only required package.jsons
 COPY package.json package-lock.json ./
-
-# Copy all workspace package.jsons (npm ci needs all workspaces present)
 COPY packages/auth/package.json ./packages/auth/
 COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/ui-tokens/package.json ./packages/ui-tokens/
-COPY apps/portal-dataspace/package.json ./apps/portal-dataspace/
-COPY apps/portal-tata-admin/package.json ./apps/portal-tata-admin/
-COPY apps/portal-tata-public/package.json ./apps/portal-tata-public/
-COPY apps/portal-wallet/package.json ./apps/portal-wallet/
-COPY apps/portal-insurance/package.json ./apps/portal-insurance/
-COPY apps/portal-company/package.json ./apps/portal-company/
-COPY backend/package.json ./backend/
+COPY apps/${APP_NAME}/package.json ./apps/${APP_NAME}/
 
-# Install all dependencies
-RUN npm ci
+# Install only target app + shared package dependencies (cached npm store)
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --workspace=apps/${APP_NAME} \
+           --workspace=packages/auth \
+           --workspace=packages/shared-types \
+           --workspace=packages/ui-tokens \
+           --include-workspace-root
 
 # Copy shared workspace packages (source needed at build time)
 COPY packages ./packages

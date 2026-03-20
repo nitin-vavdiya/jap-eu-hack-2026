@@ -6,8 +6,9 @@ COPY package.json package-lock.json ./
 COPY packages ./packages
 COPY backend/package.json ./backend/
 
-# Install dependencies
-RUN npm ci --workspace=backend --include-workspace-root
+# Install dependencies (cached npm store)
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --workspace=backend --include-workspace-root
 
 # Copy backend source (includes prisma/)
 COPY backend ./backend
@@ -23,14 +24,13 @@ COPY package.json package-lock.json ./
 COPY packages ./packages
 COPY backend/package.json ./backend/
 
-RUN npm ci --workspace=backend --include-workspace-root --omit=dev
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --workspace=backend --include-workspace-root --omit=dev
 
-# Copy built output and Prisma schema (for migrations)
+# Copy built output, Prisma schema, and generated client from build stage
 COPY --from=base /app/backend/dist ./backend/dist
 COPY --from=base /app/backend/prisma ./backend/prisma
-
-# Generate Prisma client in production stage
-RUN cd backend && npx prisma generate
+COPY --from=base /app/backend/node_modules/.prisma ./backend/node_modules/.prisma
 
 # Entrypoint script: run migrations + seed, then start
 COPY backend/docker-entrypoint.sh ./backend/docker-entrypoint.sh
