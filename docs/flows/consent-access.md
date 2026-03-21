@@ -8,46 +8,47 @@ This flow is also Phase 1–2 of the [Insurance VP Verification](insurance-verif
 
 ## Actors
 
-| Actor | Portal | Role |
-|---|---|---|
-| Requester (Digit Agent) | `portal-insurance` | Requests data access |
-| Owner (Mario Sanchez) | `portal-wallet` | Approves or denies |
-| Backend | `backend` | Manages consent state + access sessions |
+| Actor                   | Portal             | Role                                    |
+| ----------------------- | ------------------ | --------------------------------------- |
+| Requester (Digit Agent) | `portal-insurance` | Requests data access                    |
+| Owner (Mario Sanchez)   | `portal-wallet`    | Approves or denies                      |
+| Backend                 | `backend`          | Manages consent state + access sessions |
 
 ---
 
 ## Flow Diagram
 
-```
-Requester                 Backend                    Owner (Mario)
-    │                        │                            │
-    ├─ POST /consent/request ►│                            │
-    │   { vin, purpose }     │                            │
-    │◄─ { consentId }        │                            │
-    │                        │   [notification pending]   │
-    ├─ GET /consent/check ───►│                            │
-    │   (polling every 5s)   │                            │
-    │◄─ { status: "pending" }─┤                            │
-    │                        │                            │
-    │                        │◄── GET /consent/pending/:userId
-    │                        │    (wallet polls for requests)
-    │                        │──────────────────────────►│
-    │                        │    { consent request }    │
-    │                        │                         Mario sees modal
-    │                        │                            │
-    │                        │◄── PUT /consent/:id/approve┤
-    │                        │    (Mario clicks "Approve")│
-    │                        │                            │
-    │                        ├─ Update Consent.status="approved"
-    │                        ├─ Create AccessSession (1hr TTL)
-    │                        │                            │
-    ├─ GET /consent/check ───►│                            │
-    │◄─ { status: "approved", accessToken } ─────────────  │
-    │                        │                            │
-    ├─ GET /vehicle-registry/ │                            │
-    │    vehicles/:vin/dpp   │                            │
-    │    x-access-token: <token> ────────────────────────  │
-    │◄─ { dpp payload }      │                            │
+```mermaid
+sequenceDiagram
+    participant Requester as Requester<br/>(portal-insurance)
+    participant Backend as Backend<br/>(backend)
+    participant Owner as Owner (Mario)<br/>(portal-wallet)
+
+    Requester->>Backend: POST /consent/request { vin, purpose }
+    Backend-->>Requester: { consentId }
+
+    Note over Backend, Owner: [Notification Pending]
+
+    loop Polling every 5s
+        Requester->>Backend: GET /consent/check
+        Backend-->>Requester: { status: "pending" }
+    end
+
+    Owner->>Backend: GET /consent/pending/:userId (Polling)
+    Backend-->>Owner: { consent request }
+
+    Note right of Owner: Mario sees modal
+
+    Owner->>Backend: PUT /consent/:id/approve
+
+    Note over Backend: Update Consent status = "approved"
+    Note over Backend: Create AccessSession (1hr TTL)
+
+    Requester->>Backend: GET /consent/check
+    Backend-->>Requester: { status: "approved", accessToken }
+
+    Requester->>Backend: GET /vehicle-registry/vehicles/:vin/dpp<br/>x-access-token: <accessToken>
+    Backend-->>Requester: { dpp payload }
 ```
 
 ---
@@ -76,9 +77,9 @@ Response:
 
 ```json
 {
-  "consentId": "consent-uuid",
-  "status": "pending",
-  "expiresAt": "2026-03-20T11:00:00Z"
+    "consentId": "consent-uuid",
+    "status": "pending",
+    "expiresAt": "2026-03-20T11:00:00Z"
 }
 ```
 
@@ -95,10 +96,11 @@ GET /api/consent/check?requesterId=digit-agent&ownerId=mario-sanchez&vin=1HGBH41
 ```
 
 Returns:
+
 ```json
 {
-  "consentId": "consent-uuid",
-  "status": "pending"   // pending | approved | denied
+    "consentId": "consent-uuid",
+    "status": "pending" // pending | approved | denied
 }
 ```
 
@@ -124,6 +126,7 @@ Authorization: Bearer <mario_jwt>
 ```
 
 The backend:
+
 1. Updates `Consent.status = "approved"` and `resolvedAt = now()`
 2. Creates an `AccessSession`:
 
@@ -153,10 +156,10 @@ On the next poll cycle, `GET /api/consent/check` returns:
 
 ```json
 {
-  "consentId": "consent-uuid",
-  "status": "approved",
-  "accessToken": "sess-uuid-here",
-  "expiresAt": "2026-03-20T11:00:00Z"
+    "consentId": "consent-uuid",
+    "status": "approved",
+    "accessToken": "sess-uuid-here",
+    "expiresAt": "2026-03-20T11:00:00Z"
 }
 ```
 
@@ -170,6 +173,7 @@ x-access-token: sess-uuid-here
 ```
 
 The backend validates:
+
 1. `AccessSession` exists with matching `vin` and `requesterId`
 2. Session is not expired (`expiresAt > now()`)
 3. Session is not already `used` (for single-use sessions)
@@ -180,12 +184,12 @@ If valid, returns the full DPP payload.
 
 ## Access Session Details
 
-| Field | Value | Notes |
-|---|---|---|
-| TTL | 1 hour | Starts from approval time |
-| Token format | UUID v4 | Used as both ID and bearer token |
-| Single-use | Optional | `used` flag can be checked by endpoint handlers |
-| Scope | Per-VIN | Session only grants access to the specific VIN it was created for |
+| Field        | Value    | Notes                                                             |
+| ------------ | -------- | ----------------------------------------------------------------- |
+| TTL          | 1 hour   | Starts from approval time                                         |
+| Token format | UUID v4  | Used as both ID and bearer token                                  |
+| Single-use   | Optional | `used` flag can be checked by endpoint handlers                   |
+| Scope        | Per-VIN  | Session only grants access to the specific VIN it was created for |
 
 ---
 
@@ -203,14 +207,14 @@ Returns all consents where `ownerId = mario-sanchez`, with status and resolution
 
 ## Failure Scenarios
 
-| Scenario | Behavior |
-|---|---|
-| Duplicate consent request | Returns existing pending consent (idempotent) |
-| Owner denies | Requester poll returns `{ status: "denied" }` |
-| Consent expires before decision | Marked `expired` (TTL-based cleanup) |
-| Access token expired | `401` — "Access session expired" |
-| Wrong requester uses token | `403` — `requesterId` mismatch |
-| VIN mismatch | `403` — session is scoped to specific VIN |
+| Scenario                        | Behavior                                      |
+| ------------------------------- | --------------------------------------------- |
+| Duplicate consent request       | Returns existing pending consent (idempotent) |
+| Owner denies                    | Requester poll returns `{ status: "denied" }` |
+| Consent expires before decision | Marked `expired` (TTL-based cleanup)          |
+| Access token expired            | `401` — "Access session expired"              |
+| Wrong requester uses token      | `403` — `requesterId` mismatch                |
+| VIN mismatch                    | `403` — session is scoped to specific VIN     |
 
 ---
 
