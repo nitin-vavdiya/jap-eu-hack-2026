@@ -42,6 +42,11 @@ on:
         required: false
         type: boolean
         default: false
+      build_keycloak:
+        description: "Build keycloak image"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   authorize:
@@ -171,6 +176,18 @@ jobs:
           push: true
           tags: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_NAMESPACE }}/backend:${{ inputs.version }}
 
+      # --- Keycloak image (dedicated Dockerfile) ---
+
+      - name: Build & push keycloak
+        if: ${{ inputs.build_keycloak }}
+        uses: docker/build-push-action@v6
+        with:
+          context: keycloak/
+          file: keycloak/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_NAMESPACE }}/keycloak:${{ inputs.version }}
+
   update-helm-values:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -228,6 +245,11 @@ jobs:
             echo "Updated portalCompany → ${VERSION}"
           fi
 
+          if [ "${{ inputs.build_keycloak }}" = "true" ]; then
+            yq -i ".keycloak.image.tag = \"${VERSION}\"" "${VALUES_FILE}"
+            echo "Updated keycloak → ${VERSION}"
+          fi
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
@@ -246,4 +268,5 @@ jobs:
             - ${{ inputs.build_portal_wallet && 'portal-wallet' || '~~portal-wallet~~' }}
             - ${{ inputs.build_portal_insurance && 'portal-insurance' || '~~portal-insurance~~' }}
             - ${{ inputs.build_portal_company && 'portal-company' || '~~portal-company~~' }}
+            - ${{ inputs.build_keycloak && 'keycloak' || '~~keycloak~~' }}
           base: main

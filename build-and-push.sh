@@ -3,7 +3,7 @@ set -euo pipefail
 
 REGISTRY="public.ecr.aws/smartsensesolutions"
 REPO="eu-jap-hack"
-VERSION="${VERSION:-1.0.6}"
+VERSION="${VERSION:-1.0.8}"
 
 echo "==> Logging in to ECR Public..."
 aws ecr-public get-login-password --region us-east-1 \
@@ -37,5 +37,13 @@ docker buildx build \
   -f backend/Dockerfile \
   --push \
   .
+
+echo "==> Building keycloak image (version: ${VERSION})..."
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t "${REGISTRY}/${REPO}/keycloak:${VERSION}" \
+  -f keycloak/Dockerfile \
+  --push \
+  keycloak/
 
 echo "==> All images pushed successfully."

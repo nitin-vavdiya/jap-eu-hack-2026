@@ -27,7 +27,7 @@ backend:
     DATABASE_URL: "postgresql://<path:k8s-stack/data/jap-eu-hack#dbuser>:<path:k8s-stack/data/jap-eu-hack#dbpass>@<path:k8s-stack/data/jap-eu-hack#dbhost>:5432/<path:k8s-stack/data/jap-eu-hack#dbname>"
     ENABLE_EDC: "true"
     AUTH_ENABLED: "false"
-    KEYCLOAK_URL: "https://centralidp.tx.the-sense.io/auth"
+    KEYCLOAK_URL: "https://auth.tx.the-sense.io"
     KEYCLOAK_REALM: "eu-jap-hack"
     GAIAX_DID_DOMAIN: "jeh-api.tx.the-sense.io"
     GAIAX_DID_PATH: "v7"
@@ -70,7 +70,7 @@ portalDataspace:
   ingress:
     host: "jeh-dataspace.tx.the-sense.io"
   env:
-    VITE_KEYCLOAK_URL: "https://centralidp.tx.the-sense.io/auth"
+    VITE_KEYCLOAK_URL: "https://auth.tx.the-sense.io"
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
     VITE_API_BASE_URL: "https://jeh-api.tx.the-sense.io/api"
     VITE_PORTAL_COMPANY_URL: "https://jeh-company.tx.the-sense.io"
@@ -93,7 +93,7 @@ portalTataAdmin:
   ingress:
     host: "jeh-admin.tx.the-sense.io"
   env:
-    VITE_KEYCLOAK_URL: "https://centralidp.tx.the-sense.io/auth"
+    VITE_KEYCLOAK_URL: "https://auth.tx.the-sense.io"
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
     VITE_API_BASE_URL: "https://jeh-api.tx.the-sense.io/api"
     VITE_PORTAL_DATASPACE_URL: "https://jeh-dataspace.tx.the-sense.io"
@@ -116,7 +116,7 @@ portalTataPublic:
   ingress:
     host: "jeh-public.tx.the-sense.io"
   env:
-    VITE_KEYCLOAK_URL: "https://centralidp.tx.the-sense.io/auth"
+    VITE_KEYCLOAK_URL: "https://auth.tx.the-sense.io"
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
     VITE_API_BASE_URL: "https://jeh-api.tx.the-sense.io/api"
     VITE_PORTAL_WALLET_URL: "https://jeh-wallet.tx.the-sense.io"
@@ -139,7 +139,7 @@ portalWallet:
   ingress:
     host: "jeh-wallet.tx.the-sense.io"
   env:
-    VITE_KEYCLOAK_URL: "https://centralidp.tx.the-sense.io/auth"
+    VITE_KEYCLOAK_URL: "https://auth.tx.the-sense.io"
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
     VITE_API_BASE_URL: "https://jeh-api.tx.the-sense.io/api"
   resources:
@@ -161,7 +161,7 @@ portalInsurance:
   ingress:
     host: "jeh-insurance.tx.the-sense.io"
   env:
-    VITE_KEYCLOAK_URL: "https://centralidp.tx.the-sense.io/auth"
+    VITE_KEYCLOAK_URL: "https://auth.tx.the-sense.io"
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
     VITE_API_BASE_URL: "https://jeh-api.tx.the-sense.io/api"
     VITE_PORTAL_WALLET_URL: "https://jeh-wallet.tx.the-sense.io"
@@ -184,7 +184,7 @@ portalCompany:
   ingress:
     host: "jeh-company.tx.the-sense.io"
   env:
-    VITE_KEYCLOAK_URL: "https://centralidp.tx.the-sense.io/auth"
+    VITE_KEYCLOAK_URL: "https://auth.tx.the-sense.io"
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
     VITE_API_BASE_URL: "https://jeh-api.tx.the-sense.io/api"
     VITE_PORTAL_DATASPACE_URL: "https://jeh-dataspace.tx.the-sense.io"
@@ -204,7 +204,7 @@ keycloak:
   replicaCount: 1
   image:
     repository: eu-jap-hack/keycloak
-    tag: "1.0.0"
+    tag: "1.0.8"
     pullPolicy: Always
   adminUsername: admin
   adminPassword: "<path:k8s-stack/data/jap-eu-hack#keycloakAdminPassword>"
