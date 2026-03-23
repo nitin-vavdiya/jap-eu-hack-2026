@@ -204,7 +204,7 @@ keycloak:
   replicaCount: 1
   image:
     repository: eu-jap-hack/keycloak
-    tag: "1.0.8"
+    tag: "1.0.9"
     pullPolicy: Always
   adminUsername: admin
   adminPassword: "<path:k8s-stack/data/jap-eu-hack#keycloakAdminPassword>"
