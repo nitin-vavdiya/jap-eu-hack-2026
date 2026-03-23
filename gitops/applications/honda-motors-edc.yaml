@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: edc-honda-motors
+  namespace: argocd
+  labels:
+    tenant: honda-motors
+    managed-by: edc-provisioning
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/smartSenseSolutions/jap-eu-hack-2026
+    targetRevision: HEAD
+    path: edc/tx-edc-eleven
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-honda-motors.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: edc-honda-motors
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -45,6 +45,7 @@ backend:
     CADDE_ASSET_ID: "asset_7"
     CADDE_PARTNER_EDC_DSP_URL: "https://tata-motors-protocol.tx.the-sense.io/api/v1/dsp"
     CADDE_PARTNER_EDC_BPN: "BPNL00000000024R"
+    PROVISIONING_SERVICE_URL: "http://eu-jap-hack-provisioning:3001"
     WALTID_ISSUER_URL: "http://eu-jap-hack-waltid-issuer:7002"
     WALTID_WALLET_URL: "http://eu-jap-hack-waltid-wallet:7001"
     WALTID_VERIFIER_URL: "http://eu-jap-hack-waltid-verifier:7003"
@@ -223,6 +224,40 @@ keycloak:
     limits:
       cpu: 1000m
       memory: 1Gi
+
+# =============================================================================
+# EDC Provisioning Service
+# =============================================================================
+provisioning:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/provisioning
+    tag: "1.0.0"
+    pullPolicy: Always
+  service:
+    port: 3001
+  env:
+    PORT: "3001"
+    BACKEND_URL: "http://eu-jap-hack-backend:8000"
+    POSTGRES_ADMIN_URL: "postgresql://<path:k8s-stack/data/jap-eu-hack#dbuser>:<path:k8s-stack/data/jap-eu-hack#dbpass>@<path:k8s-stack/data/jap-eu-hack#dbhost>:5432/postgres"
+    VAULT_ADDR: "http://vault.vault.svc.cluster.local:8200"
+    VAULT_TOKEN: "<path:k8s-stack/data/jap-eu-hack#vaultProvisioningToken>"
+    GIT_REPO_PATH: "/repo"
+    GIT_REMOTE_URL: "https://github.com/smartSenseSolutions/jap-eu-hack-2026"
+    GIT_AUTH_TOKEN: "<path:k8s-stack/data/jap-eu-hack#githubProvisioningPat>"
+    GIT_USER_NAME: "edc-provisioning-bot"
+    GIT_USER_EMAIL: "edc-provisioning@the-sense.io"
+    GIT_REPO_URL: "https://github.com/smartSenseSolutions/jap-eu-hack-2026"
+    ARGOCD_SERVER_URL: "http://argocd-server.argocd.svc.cluster.local"
+    ARGOCD_AUTH_TOKEN: "<path:k8s-stack/data/jap-eu-hack#argocdProvisioningToken>"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
 
 # =============================================================================
 # Walt.id Services

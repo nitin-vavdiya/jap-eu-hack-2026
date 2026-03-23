@@ -43,6 +43,7 @@ backend:
     CADDE_ASSET_ID: ""
     CADDE_PARTNER_EDC_DSP_URL: ""
     CADDE_PARTNER_EDC_BPN: ""
+    PROVISIONING_SERVICE_URL: ""  # e.g. http://eu-jap-hack-provisioning:3001
   resources:
     requests:
       cpu: 100m
@@ -273,3 +274,37 @@ waltidVerifierApi:
     limits:
       cpu: 500m
       memory: 512Mi
+
+# =============================================================================
+# EDC Provisioning Service (internal-only, no Ingress)
+# =============================================================================
+provisioning:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: eu-jap-hack/provisioning
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    port: 3001
+  env:
+    PORT: "3001"
+    BACKEND_URL: ""               # e.g. http://eu-jap-hack-backend:8000
+    POSTGRES_ADMIN_URL: ""        # postgresql://admin:pass@host:5432/postgres  [secret]
+    VAULT_ADDR: ""                # http://vault.vault.svc.cluster.local:8200
+    VAULT_TOKEN: ""               # [secret]
+    GIT_REPO_PATH: "/repo"
+    GIT_REMOTE_URL: ""            # https://github.com/org/repo
+    GIT_AUTH_TOKEN: ""            # GitHub PAT with Contents write  [secret]
+    GIT_USER_NAME: "edc-provisioning-bot"
+    GIT_USER_EMAIL: "edc-provisioning@the-sense.io"
+    GIT_REPO_URL: ""              # same as GIT_REMOTE_URL (used in Argo Application source.repoURL)
+    ARGOCD_SERVER_URL: ""         # http://argocd-server.argocd.svc.cluster.local (optional)
+    ARGOCD_AUTH_TOKEN: ""         # [secret] optional
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi

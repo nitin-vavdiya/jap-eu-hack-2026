@@ -1,0 +1,33 @@
+{{!-- Handlebars template for a per-tenant Argo CD Application manifest.
+     Variables: tenantCode, gitRepoUrl
+     Rendered by: provisioning/src/services/argo.ts
+     Output:     gitops/applications/{{tenantCode}}-edc.yaml
+     Argo CD watches gitops/applications/ and auto-syncs on new files (poll ~3 min).
+--}}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: edc-{{tenantCode}}
+  namespace: argocd
+  labels:
+    tenant: {{tenantCode}}
+    managed-by: edc-provisioning
+spec:
+  project: default
+  source:
+    repoURL: {{gitRepoUrl}}
+    targetRevision: HEAD
+    path: edc/tx-edc-eleven
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-{{tenantCode}}.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: edc-{{tenantCode}}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
