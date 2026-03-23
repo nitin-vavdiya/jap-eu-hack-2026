@@ -21,11 +21,43 @@ model Company {
   adminEmail   String?
   did          String?
   credentialId String?
+  bpn          String?  @unique
+  tenantCode   String?  @unique
   registeredAt DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  edcProvisioning EdcProvisioning?
+
   @@map("companies")
+}
+
+model EdcProvisioning {
+  id          String  @id @default(uuid())
+  companyId   String  @unique
+  company     Company @relation(fields: [companyId], references: [id])
+
+  status    String  @default("pending")
+  attempts  Int     @default(0)
+  lastError String?
+
+  managementUrl String?
+  protocolUrl   String?
+  dataplaneUrl  String?
+  apiKey        String?
+
+  helmRelease  String?
+  argoAppName  String?
+  k8sNamespace String?
+  vaultPath    String?
+  dbName       String?
+  dbUser       String?
+
+  provisionedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("edc_provisioning")
 }
 
 model Credential {

@@ -1,12 +1,17 @@
+{{!-- Handlebars template for per-tenant EDC Helm values.
+     Variables: tenantCode, bpn
+     Rendered by: provisioning/src/services/helm.ts
+     Output:     edc/tx-edc-eleven/values-{{tenantCode}}.yaml
+--}}
 install:
   postgresql: false
   vault: false
-fullnameOverride: "tx-ecd-connector-tata-motors"
-nameOverride: "tx-ecd-connector-tata-motors"
+fullnameOverride: "tx-ecd-connector-{{tenantCode}}"
+nameOverride: "tx-ecd-connector-{{tenantCode}}"
 participant:
-  id: "BPNLxYz1234abcd"
+  id: "{{bpn}}"
 iatp:
-  id: "did:web:wallet.tx.the-sense.io:BPNLxYz1234abcd"
+  id: "did:web:wallet.tx.the-sense.io:{{bpn}}"
   trustedIssuers:
     - "did:web:wallet.tx.the-sense.io:BPNL000000000000"
   sts:
@@ -15,7 +20,7 @@ iatp:
     oauth:
       token_url: https://wallet.tx.the-sense.io/oauth/token
       client:
-        id: "BPNLxYz1234abcd"
+        id: "{{bpn}}"
         secret_alias: "edc-stub"
 
 controlplane:
@@ -36,7 +41,7 @@ controlplane:
     management:
       port: 8081
       path: /management
-      authKey: "tata-motors"
+      authKey: "{{tenantCode}}"
       jwksUrl:
     control:
       port: 8083
@@ -50,7 +55,7 @@ controlplane:
     catalog:
       port: 8085
       path: /catalog
-      authKey: "tata-motors"
+      authKey: "{{tenantCode}}"
 
   bdrs:
     cache_validity_seconds: 600
@@ -71,7 +76,7 @@ controlplane:
 
   ingresses:
     - enabled: true
-      hostname: "tata-motors-protocol.tx.the-sense.io"
+      hostname: "{{tenantCode}}-protocol.tx.the-sense.io"
       annotations: {}
       endpoints:
         - protocol
@@ -79,12 +84,12 @@ controlplane:
       className: "nginx"
       tls:
         enabled: true
-        secretName: "edc-protocol-tata-motors"
+        secretName: "edc-protocol-{{tenantCode}}"
       certManager:
         issuer: ""
         clusterIssuer: "letsencrypt-prod"
     - enabled: true
-      hostname: "tata-motors-controlplane.tx.the-sense.io"
+      hostname: "{{tenantCode}}-controlplane.tx.the-sense.io"
       annotations: {}
       endpoints:
         - management
@@ -92,7 +97,7 @@ controlplane:
       className: "nginx"
       tls:
         enabled: true
-        secretName: "edc-control-tata-motors-intranet"
+        secretName: "edc-control-{{tenantCode}}-intranet"
       certManager:
         issuer: ""
         clusterIssuer: "letsencrypt-prod"
@@ -153,14 +158,14 @@ dataplane:
 
   ingresses:
     - enabled: true
-      hostname: "tata-motors-dataplane.tx.the-sense.io"
+      hostname: "{{tenantCode}}-dataplane.tx.the-sense.io"
       annotations: {}
       endpoints:
         - public
       className: "nginx"
       tls:
         enabled: true
-        secretName: "edc-dataplane-tata-motors"
+        secretName: "edc-dataplane-{{tenantCode}}"
       certManager:
         issuer: ""
         clusterIssuer: "letsencrypt-prod"
@@ -175,7 +180,7 @@ dataplane:
   replicaCount: 1
 
 postgresql:
-  jdbcUrl: "jdbc:postgresql://<path:k8s-stack/data/tx_edc_connector_tata-motors#dbhost>:5432/<path:k8s-stack/data/tx_edc_connector_tata-motors#dbname>"
+  jdbcUrl: "jdbc:postgresql://<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbhost>:5432/<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbname>"
   primary:
     persistence:
       enabled: false
@@ -183,9 +188,9 @@ postgresql:
     persistence:
       enabled: false
   auth:
-    database: "<path:k8s-stack/data/tx_edc_connector_tata-motors#dbname>"
-    username: "<path:k8s-stack/data/tx_edc_connector_tata-motors#dbuser>"
-    password: "<path:k8s-stack/data/tx_edc_connector_tata-motors#dbpass>"
+    database: "<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbname>"
+    username: "<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbuser>"
+    password: "<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbpass>"
 
 vault:
   injector:
@@ -196,7 +201,7 @@ vault:
     postStart:
   hashicorp:
     url: "https://vault.the-sense.io"
-    token: "<path:k8s-stack/data/tx_edc_connector_tata-motors#vault-token>"
+    token: "<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#vault-token>"
     timeout: 30
     healthCheck:
       enabled: false
