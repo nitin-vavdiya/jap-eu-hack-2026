@@ -27,11 +27,24 @@ model Company {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  users           CompanyUser[]
   edcProvisioning EdcProvisioning?
   orgCredentials  OrgCredential[]
   credentials     Credential[]
 
   @@map("companies")
+}
+
+model CompanyUser {
+  id         String   @id @default(uuid())
+  keycloakId String   @unique
+  email      String?
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("company_users")
 }
 
 model EdcProvisioning {

@@ -11,6 +11,15 @@ try {
   console.error('Migration failed:', e);
   process.exit(1);
 }
+
+console.log('Generating Prisma client...');
+try {
+  execSync('npx prisma generate', { stdio: 'inherit', cwd: process.cwd() });
+  console.log('Prisma client generated.');
+} catch (e) {
+  console.error('Prisma generate failed:', e);
+  process.exit(1);
+}
 import carsRouter from './routes/cars';
 import credentialsRouter from './routes/credentials';
 import consentRouter from './routes/consent';

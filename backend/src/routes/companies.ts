@@ -11,10 +11,12 @@ import { getVPSigner } from '../services/gaiax/vp-signer';
 import { OrgCredentialRecord } from '../services/gaiax/types';
 import { GaiaXClient } from '../services/gaiax/client';
 import { GaiaXOrchestrator } from '../services/gaiax/orchestrator';
+import { createKeycloakUser } from '../services/keycloakAdmin';
 
 const router = Router();
 
 const PROVISIONING_SERVICE_URL = process.env.PROVISIONING_SERVICE_URL || 'http://localhost:3001';
+const ENABLE_EDC_PROVISIONING = process.env.ENABLE_EDC_PROVISIONING === 'true';
 
 /**
  * Derive a unique tenantCode for the company name.
@@ -146,6 +148,9 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
     hqStreetAddress, hqLocality, hqPostalCode, hqCountryCode, hqCountrySubdivisionCode,
     // Contact — new: contactEmail, old: adminEmail
     contactEmail, adminEmail: adminEmailOld,
+    // Admin user account (Keycloak)
+    adminUserEmail,
+    adminUserPassword,
     // Extra
     website,
     did: inputDid,
@@ -209,6 +214,21 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
       tenantCode,
     },
   });
+
+  // Create Keycloak user and store the mapping
+  let userCreated = false;
+  let userError: string | undefined;
+  if (adminUserEmail && adminUserPassword) {
+    try {
+      const keycloakId = await createKeycloakUser(adminUserEmail, adminUserPassword, adminName);
+      await prisma.companyUser.create({ data: { keycloakId, email: adminUserEmail, companyId } });
+      console.log(`[onboarding] Keycloak user ${adminUserEmail} (${keycloakId}) linked to company ${companyId}`);
+      userCreated = true;
+    } catch (err: any) {
+      userError = err.response?.data?.errorMessage || err.message;
+      console.error(`[onboarding] Keycloak user creation failed: ${userError}`);
+    }
+  }
 
   const credential = await prisma.credential.create({
     data: {
@@ -319,22 +339,26 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
       console.error(`[onboarding] Gaia-X verification failed for OrgCredential ${orgCredId}:`, err.message);
     });
 
-  // Create initial EDC provisioning record (status: pending)
-  await prisma.edcProvisioning.create({
-    data: { companyId, status: 'pending' },
-  });
-  console.log(`[onboarding] Created EDC provisioning record for company ${companyId} (status: pending)`);
+  if (ENABLE_EDC_PROVISIONING) {
+    // Create initial EDC provisioning record (status: pending)
+    await prisma.edcProvisioning.create({
+      data: { companyId, status: 'pending' },
+    });
+    console.log(`[onboarding] Created EDC provisioning record for company ${companyId} (status: pending)`);
 
-  // Trigger provisioning microservice (fire-and-forget — response returned immediately)
-  console.log(`[onboarding] Triggering provisioning service for company ${companyId} (${tenantCode})`);
-  axios
-    .post(`${PROVISIONING_SERVICE_URL}/provision`, { companyId, tenantCode, bpn })
-    .then(() => console.log(`[onboarding] Provisioning triggered successfully for ${tenantCode}`))
-    .catch((err) =>
-      console.error(`[onboarding] Provisioning trigger failed for ${tenantCode}: ${err.message}`),
-    );
+    // Trigger provisioning microservice (fire-and-forget — response returned immediately)
+    console.log(`[onboarding] Triggering provisioning service for company ${companyId} (${tenantCode})`);
+    axios
+      .post(`${PROVISIONING_SERVICE_URL}/provision`, { companyId, tenantCode, bpn })
+      .then(() => console.log(`[onboarding] Provisioning triggered successfully for ${tenantCode}`))
+      .catch((err) =>
+        console.error(`[onboarding] Provisioning trigger failed for ${tenantCode}: ${err.message}`),
+      );
+  } else {
+    console.log(`[onboarding] EDC provisioning skipped for company ${companyId} (ENABLE_EDC_PROVISIONING is not set)`);
+  }
 
-  res.status(201).json({ company, credential, orgCredential });
+  res.status(201).json({ company, credential, orgCredential, edcEnabled: ENABLE_EDC_PROVISIONING, userCreated, userError });
 });
 
 export default router;

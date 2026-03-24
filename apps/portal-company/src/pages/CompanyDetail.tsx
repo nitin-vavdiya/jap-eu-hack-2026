@@ -4,6 +4,13 @@ import axios from 'axios'
 import { getApiBase } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
+// VC endpoints live at /vc/:id (no /api prefix)
+const VC_BASE = API_BASE.replace(/\/api$/, '')
+
+interface OrgCredential {
+  id: string
+  verificationStatus?: string
+}
 
 interface Credential {
   id: string
@@ -29,6 +36,7 @@ interface Company {
   adminEmail?: string
   createdAt?: string
   credentials?: Credential[]
+  orgCredentials?: OrgCredential[]
 }
 
 interface EdcProvisioning {
@@ -53,19 +61,32 @@ function CopyButton({ value }: { value: string }) {
     setTimeout(() => setCopied(false), 1500)
   }
   return (
-    <button onClick={copy} className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors ml-2 shrink-0">
+    <button
+      onClick={copy}
+      className="shrink-0 text-[10px] font-medium text-gray-400 hover:text-gray-700 border border-gray-200 hover:border-gray-400 rounded px-1.5 py-0.5 transition-colors"
+    >
       {copied ? 'Copied!' : 'Copy'}
     </button>
   )
 }
 
-function ConfigRow({ label, value }: { label: string; value: string }) {
+function UrlRow({ label, url, icon }: { label: string; url: string; icon?: string }) {
   return (
-    <div className="py-2.5 border-b border-gray-100 last:border-0">
-      <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
-      <div className="flex items-center justify-between gap-2">
-        <p className="font-mono text-xs text-gray-700 break-all">{value}</p>
-        <CopyButton value={value} />
+    <div className="group py-2.5 border-b border-gray-100 last:border-0">
+      <div className="flex items-center gap-1.5 mb-1">
+        {icon && <span className="text-[11px]">{icon}</span>}
+        <p className="text-[10px] text-gray-400 uppercase tracking-wide">{label}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-xs text-blue-600 hover:text-blue-800 hover:underline break-all flex-1 min-w-0"
+        >
+          {url}
+        </a>
+        <CopyButton value={url} />
       </div>
     </div>
   )
@@ -115,7 +136,11 @@ export default function CompanyDetail() {
       .catch(() => {})
   }, [id])
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-6 h-6 border-2 border-slate-500 border-t-transparent rounded-full"></div></div>
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin w-6 h-6 border-2 border-slate-500 border-t-transparent rounded-full" />
+    </div>
+  )
   if (!company) return (
     <div className="p-8 text-center">
       <p className="text-sm text-gray-400">Company not found</p>
@@ -124,6 +149,15 @@ export default function CompanyDetail() {
   )
 
   const orgVC = company.credentials?.find(c => c.type === 'OrgVC')
+  const orgCredential = company.orgCredentials?.[0]
+  const vcStatus = orgCredential?.verificationStatus
+
+  const vcUrls = orgCredential ? [
+    { label: 'Legal Participant VC', url: `${VC_BASE}/vc/${orgCredential.id}`, icon: '🏛️' },
+    { label: 'Terms & Conditions VC', url: `${VC_BASE}/vc/${orgCredential.id}/tandc`, icon: '📄' },
+    { label: 'Legal Registration Number VC', url: `${VC_BASE}/vc/${orgCredential.id}/lrn`, icon: '🔢' },
+  ] : []
+
   const idFields = [
     { label: 'VAT ID', value: company.vatId },
     { label: 'EORI', value: company.eoriNumber },
@@ -132,7 +166,7 @@ export default function CompanyDetail() {
   ].filter(f => f.value)
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-6 py-10">
       <button onClick={() => navigate('/')} className="text-sm text-gray-400 hover:text-gray-600 mb-8 inline-block">&larr; Back to Directory</button>
 
       {/* Header */}
@@ -143,9 +177,13 @@ export default function CompanyDetail() {
             <p className="text-sm text-gray-400 mt-1">{company.city ? `${company.city}, ` : ''}{company.country}</p>
             {company.address && <p className="text-xs text-gray-300 mt-0.5">{company.address}</p>}
           </div>
-          {orgVC?.status === 'active' ? (
+          {vcStatus === 'verified' && (
             <span className="text-[10px] text-emerald-500 bg-emerald-50 px-2 py-1 rounded font-medium">Verified</span>
-          ) : (
+          )}
+          {vcStatus === 'failed' && (
+            <span className="text-[10px] text-red-500 bg-red-50 px-2 py-1 rounded font-medium">Failed</span>
+          )}
+          {(vcStatus === 'pending' || !vcStatus) && (
             <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded">Pending</span>
           )}
         </div>
@@ -157,6 +195,7 @@ export default function CompanyDetail() {
         )}
       </div>
 
+      {/* Registration + Admin */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="border border-gray-100 rounded-lg p-5">
           <p className="text-xs text-gray-400 mb-3">Registration Identifiers</p>
@@ -179,11 +218,11 @@ export default function CompanyDetail() {
           <div className="space-y-2">
             <div>
               <p className="text-[10px] text-gray-400">Name</p>
-              <p className="text-sm text-gray-700">{company.adminName || '\u2014'}</p>
+              <p className="text-sm text-gray-700">{company.adminName || '—'}</p>
             </div>
             <div>
               <p className="text-[10px] text-gray-400">Email</p>
-              <p className="text-sm text-gray-600">{company.adminEmail || '\u2014'}</p>
+              <p className="text-sm text-gray-600">{company.adminEmail || '—'}</p>
             </div>
             {company.createdAt && (
               <div>
@@ -195,75 +234,92 @@ export default function CompanyDetail() {
         </div>
       </div>
 
-      {/* Credentials */}
-      <div className="border border-gray-100 rounded-lg p-5 mb-6">
-        <p className="text-xs text-gray-400 mb-4">
-          Verifiable Credentials <span className="text-gray-300">({company.credentials?.length || 0})</span>
-        </p>
+      {/* Credentials + EDC side by side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 
-        {!company.credentials || company.credentials.length === 0 ? (
-          <p className="text-center py-8 text-xs text-gray-300">No credentials issued</p>
-        ) : (
-          <div className="space-y-2">
-            {company.credentials.map((cred) => (
-              <div
-                key={cred.id}
-                onClick={() => setSelectedCred(cred)}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors"
-              >
-                <div>
-                  <span className="text-xs font-medium text-gray-700">{cred.type}</span>
-                  <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${
-                    cred.status === 'active' ? 'text-emerald-500 bg-emerald-50' : 'text-gray-400 bg-white'
-                  }`}>{cred.status}</span>
-                  {cred.issuerName && <p className="text-[10px] text-gray-400 mt-0.5">{cred.issuerName}</p>}
-                </div>
-                <svg className="w-3.5 h-3.5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* EDC Connector */}
-      {edc && (
-        <div className="border border-gray-100 rounded-lg p-5 mb-6">
+        {/* Gaia-X Verifiable Credentials */}
+        <div className="border border-gray-100 rounded-lg p-5 flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium text-gray-700">EDC Connector</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">Eclipse Dataspace Connector</p>
+              <p className="text-xs font-medium text-gray-700">Gaia-X Verifiable Credentials</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Compliant credential endpoints</p>
             </div>
-            <EdcStatusBadge status={edc.status} />
+            {orgCredential ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Issued
+              </span>
+            ) : (
+              <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-full">Not issued</span>
+            )}
           </div>
 
-          {(edc.status === 'pending' || edc.status === 'provisioning') && (
-            <div className="text-center py-4">
-              <div className="w-6 h-6 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-2" />
-              <p className="text-xs text-gray-400">Setting up dedicated EDC instance…</p>
+          {vcUrls.length > 0 ? (
+            <div className="flex-1 space-y-0">
+              {vcUrls.map(vc => (
+                <UrlRow key={vc.url} label={vc.label} url={vc.url} icon={vc.icon} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p className="text-xs text-gray-300">No credentials issued yet</p>
+              <p className="text-[10px] text-gray-200 mt-1">Credentials appear after Gaia-X verification</p>
+            </div>
+          )}
+        </div>
+
+        {/* EDC Setup URLs */}
+        <div className="border border-gray-100 rounded-lg p-5 flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-xs font-medium text-gray-700">Automatic real-time EDC Setup URLs</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Live-deployed Eclipse Dataspace Connector</p>
+            </div>
+            {edc ? <EdcStatusBadge status={edc.status} /> : (
+              <span className="text-[10px] text-gray-300 bg-gray-50 px-2 py-1 rounded-full">Not configured</span>
+            )}
+          </div>
+
+          {!edc && (
+            <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </div>
+              <p className="text-xs text-gray-300">No real-time EDC instance provisioned</p>
             </div>
           )}
 
-          {edc.status === 'failed' && (
-            <div className="bg-red-50 rounded p-3">
+          {edc && (edc.status === 'pending' || edc.status === 'provisioning') && (
+            <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-xs text-gray-500 font-medium">Deploying real-time EDC instance…</p>
+              <p className="text-[10px] text-gray-300 mt-1">URLs will appear automatically once deployed</p>
+            </div>
+          )}
+
+          {edc?.status === 'failed' && (
+            <div className="flex-1 bg-red-50 rounded-lg p-4">
               <p className="text-xs font-medium text-red-600 mb-1">Provisioning failed</p>
               <p className="text-xs text-red-400">{edc.lastError || 'An unexpected error occurred.'}</p>
             </div>
           )}
 
-          {edc.status === 'ready' && (
-            <div className="space-y-0">
-              {edc.protocolUrl   && <ConfigRow label="DSP Protocol URL"    value={edc.protocolUrl} />}
-              {edc.managementUrl && <ConfigRow label="Management API URL"  value={edc.managementUrl} />}
-              {edc.dataplaneUrl  && <ConfigRow label="Dataplane URL"       value={edc.dataplaneUrl} />}
-              {edc.apiKey        && <ConfigRow label="API Key"             value={edc.apiKey} />}
-              {edc.k8sNamespace  && <ConfigRow label="Kubernetes Namespace" value={edc.k8sNamespace} />}
-              {edc.argoAppName   && <ConfigRow label="ArgoCD Application"  value={edc.argoAppName} />}
-              {edc.dbName        && <ConfigRow label="Database Name"       value={edc.dbName} />}
-              {edc.provisionedAt && <ConfigRow label="Provisioned At"      value={new Date(edc.provisionedAt).toLocaleString()} />}
+          {edc?.status === 'ready' && (
+            <div className="flex-1 space-y-0">
+              {edc.protocolUrl   && <UrlRow label="DSP Protocol URL"   url={edc.protocolUrl} icon="🔗" />}
+              {edc.managementUrl && <UrlRow label="Management API URL" url={edc.managementUrl} icon="⚙️" />}
+              {edc.dataplaneUrl  && <UrlRow label="Dataplane URL"      url={edc.dataplaneUrl} icon="📡" />}
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* OrgVC details */}
       {orgVC?.credentialSubject && (

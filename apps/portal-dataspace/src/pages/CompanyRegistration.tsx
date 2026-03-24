@@ -5,7 +5,7 @@ import { getApiBase } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 
-type StepStatus = 'pending' | 'running' | 'done' | 'failed'
+type StepStatus = 'pending' | 'running' | 'done' | 'failed' | 'skipped'
 
 interface GaiaxError {
   complianceStatus?: string
@@ -20,6 +20,8 @@ interface ProgressState {
   orgCredentialId: string
   companyName: string
   register: StepStatus
+  userAccount: StepStatus
+  userAccountDetail: string
   credential: StepStatus
   gaiax: StepStatus
   gaiaxDetail: string
@@ -44,18 +46,24 @@ function StatusIcon({ status }: { status: StepStatus }) {
       <div className="w-3 h-3 rounded-full bg-white" />
     </div>
   )
+  if (status === 'skipped') return (
+    <div className="w-8 h-8 rounded-full bg-[#F1F3F4] flex items-center justify-center flex-shrink-0">
+      <svg className="w-4 h-4 text-[#9AA0A6]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+    </div>
+  )
   return <div className="w-8 h-8 rounded-full bg-[#E5EAF0] flex-shrink-0 border-2 border-[#D0D5DD]" />
 }
 
 function ProgressView({ progress, onDone }: { progress: ProgressState; onDone: () => void }) {
   const steps = [
-    { key: 'register',   label: 'Organization registered',         detail: progress.companyName,      status: progress.register,    error: null },
-    { key: 'credential', label: 'Verifiable Credential issued',    detail: 'OrgVC created and signed', status: progress.credential, error: null },
-    { key: 'gaiax',      label: 'Gaia-X compliance verification',  detail: progress.gaiaxDetail,      status: progress.gaiax,       error: progress.gaiaxError },
-    { key: 'edc',        label: 'EDC connector provisioning',      detail: progress.edcDetail,        status: progress.edc,         error: null },
+    { key: 'register',     label: 'Organization registered',        detail: progress.companyName,           status: progress.register,     error: null },
+    { key: 'userAccount',  label: 'User account created',           detail: progress.userAccountDetail,     status: progress.userAccount,  error: null },
+    { key: 'credential',   label: 'Verifiable Credential issued',   detail: 'OrgVC created and signed',     status: progress.credential,   error: null },
+    { key: 'gaiax',        label: 'Gaia-X compliance verification', detail: progress.gaiaxDetail,           status: progress.gaiax,        error: progress.gaiaxError },
+    { key: 'edc',          label: 'EDC connector provisioning',     detail: progress.edcDetail,             status: progress.edc,          error: null },
   ]
 
-  const allDone = steps.every(s => s.status === 'done' || s.status === 'failed')
+  const allDone = steps.every(s => s.status === 'done' || s.status === 'failed' || s.status === 'skipped')
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
@@ -70,7 +78,7 @@ function ProgressView({ progress, onDone }: { progress: ProgressState; onDone: (
             <div className="flex items-start gap-4 py-5">
               <StatusIcon status={step.status} />
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${step.status === 'failed' ? 'text-[#EA4335]' : step.status === 'done' ? 'text-[#1F1F1F]' : step.status === 'running' ? 'text-[#4285F4]' : 'text-[#9AA0A6]'}`}>
+                <p className={`text-sm font-medium ${step.status === 'failed' ? 'text-[#EA4335]' : step.status === 'done' ? 'text-[#1F1F1F]' : step.status === 'running' ? 'text-[#4285F4]' : step.status === 'skipped' ? 'text-[#9AA0A6]' : 'text-[#9AA0A6]'}`}>
                   {step.label}
                   {step.status === 'running' && <span className="ml-2 text-xs font-normal text-[#9AA0A6]">in progress…</span>}
                 </p>
@@ -99,11 +107,12 @@ function ProgressView({ progress, onDone }: { progress: ProgressState; onDone: (
               </div>
               <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
                 step.status === 'done'    ? 'bg-[#E6F4EA] text-[#34A853]' :
-                step.status === 'failed' ? 'bg-[#FCE8E6] text-[#EA4335]' :
-                step.status === 'running'? 'bg-[#E8F0FE] text-[#4285F4]' :
+                step.status === 'failed'  ? 'bg-[#FCE8E6] text-[#EA4335]' :
+                step.status === 'running' ? 'bg-[#E8F0FE] text-[#4285F4]' :
+                step.status === 'skipped' ? 'bg-[#F1F3F4] text-[#9AA0A6]' :
                 'bg-[#F1F3F4] text-[#9AA0A6]'
               }`}>
-                {step.status === 'done' ? 'Done' : step.status === 'failed' ? 'Failed' : step.status === 'running' ? 'Running' : 'Waiting'}
+                {step.status === 'done' ? 'Done' : step.status === 'failed' ? 'Failed' : step.status === 'running' ? 'Running' : step.status === 'skipped' ? 'Skipped' : 'Waiting'}
               </span>
             </div>
             {i < steps.length - 1 && <div className="ml-4 w-px h-4 bg-[#E5EAF0]" />}
@@ -127,6 +136,9 @@ interface FormData {
   // Step 1 – Legal Entity
   legalName: string
   adminName: string
+  adminUserEmail: string
+  adminUserPassword: string
+  adminUserConfirmPassword: string
   // Step 2 – Registration IDs
   vatId: string
   eoriNumber: string
@@ -159,6 +171,7 @@ interface FormData {
 
 const initial: FormData = {
   legalName: 'smartSense Consulting Solutions Pvt. Ltd.', adminName: 'John Doe',
+  adminUserEmail: '', adminUserPassword: '', adminUserConfirmPassword: '',
   vatId: '', eoriNumber: '', euid: '', leiCode: '9695007586GCAKPYJ703', taxId: '', localId: '',
   streetAddress: 'Bodakdev, SG Highway', locality: 'Ahmedabad', postalCode: '380054', countryCode: 'DE', countrySubdivisionCode: 'DE-BY',
   sameAsLegal: true,
@@ -214,7 +227,7 @@ export default function CompanyRegistration() {
     }, 5000)
   }
 
-  const startPolling = (companyId: string, orgCredentialId: string) => {
+  const startPolling = (companyId: string, orgCredentialId: string, edcEnabled: boolean) => {
     // Poll Gaia-X first — EDC starts only after Gaia-X completes
     gaiaxTimer.current = setInterval(async () => {
       try {
@@ -238,14 +251,15 @@ export default function CompanyRegistration() {
             : notaryOk
               ? 'Notary verified · Compliance check failed'
               : 'Verification failed'
-          if (complianceOk) {
+          if (complianceOk && edcEnabled) {
             setProgress(p => p ? { ...p, gaiax: gaiaxStepStatus, gaiaxDetail, gaiaxError: err } : p)
             startEdcPolling(companyId)
           } else {
             setProgress(p => p ? {
               ...p,
               gaiax: gaiaxStepStatus, gaiaxDetail, gaiaxError: err,
-              edc: 'failed', edcDetail: 'Skipped — Gaia-X compliance required',
+              edc: !edcEnabled ? 'skipped' : 'failed',
+              edcDetail: !edcEnabled ? 'EDC provisioning is disabled' : 'Skipped — Gaia-X compliance required',
             } : p)
           }
         } else {
@@ -267,6 +281,12 @@ export default function CompanyRegistration() {
     const e: Record<string, string> = {}
     if (!form.legalName.trim()) e.legalName = 'Required'
     if (!form.adminName.trim()) e.adminName = 'Required'
+    if (!form.adminUserEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.adminUserEmail))
+      e.adminUserEmail = 'Valid email required'
+    if (!form.adminUserPassword) e.adminUserPassword = 'Required'
+    else if (form.adminUserPassword.length < 8) e.adminUserPassword = 'Minimum 8 characters'
+    if (form.adminUserPassword !== form.adminUserConfirmPassword)
+      e.adminUserConfirmPassword = 'Passwords do not match'
     if (!form.vatId && !form.eoriNumber && !form.euid && !form.leiCode && !form.taxId && !form.localId)
       e.ids = 'At least one registration identifier required'
     if (!form.streetAddress.trim()) e.streetAddress = 'Required'
@@ -283,6 +303,12 @@ export default function CompanyRegistration() {
     if (s === 0) {
       if (!form.legalName.trim()) e.legalName = 'Required'
       if (!form.adminName.trim()) e.adminName = 'Required'
+      if (!form.adminUserEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.adminUserEmail))
+        e.adminUserEmail = 'Valid email required'
+      if (!form.adminUserPassword) e.adminUserPassword = 'Required'
+      else if (form.adminUserPassword.length < 8) e.adminUserPassword = 'Minimum 8 characters'
+      if (form.adminUserPassword !== form.adminUserConfirmPassword)
+        e.adminUserConfirmPassword = 'Passwords do not match'
     }
     if (s === 1) {
       if (!form.vatId && !form.eoriNumber && !form.euid && !form.leiCode && !form.taxId && !form.localId)
@@ -320,6 +346,8 @@ export default function CompanyRegistration() {
       const r = await axios.post(`${API_BASE}/companies`, {
         legalName: form.legalName,
         adminName: form.adminName,
+        adminUserEmail: form.adminUserEmail,
+        adminUserPassword: form.adminUserPassword,
         vatId: form.vatId || undefined,
         eoriNumber: form.eoriNumber || undefined,
         euid: form.euid || undefined,
@@ -343,21 +371,29 @@ export default function CompanyRegistration() {
         validFrom: new Date(form.validFrom).toISOString(),
         validUntil: new Date(form.validUntil).toISOString(),
       })
-      const { company, orgCredential } = r.data as { company: { id: string; name: string }; orgCredential: { id: string } }
+      const { company, orgCredential, edcEnabled, userCreated, userError } = r.data as {
+        company: { id: string; name: string }; orgCredential: { id: string }
+        edcEnabled: boolean; userCreated: boolean; userError?: string
+      }
+      const userFailed = !userCreated
       const initialProgress: ProgressState = {
         companyId: company.id,
         orgCredentialId: orgCredential.id,
         companyName: company.name,
         register: 'done',
-        credential: 'done',
-        gaiax: 'running',
-        gaiaxDetail: 'Submitting to Gaia-X Digital Clearing House…',
+        userAccount: userCreated ? 'done' : 'failed',
+        userAccountDetail: userCreated ? form.adminUserEmail : (userError || 'Failed to create user in Keycloak'),
+        credential: userFailed ? 'skipped' : 'done',
+        gaiax: userFailed ? 'skipped' : 'running',
+        gaiaxDetail: userFailed ? 'Skipped — user account creation failed' : 'Submitting to Gaia-X Digital Clearing House…',
         gaiaxError: null,
-        edc: 'pending',
-        edcDetail: 'Waiting for Gaia-X verification…',
+        edc: userFailed ? 'skipped' : edcEnabled ? 'pending' : 'skipped',
+        edcDetail: userFailed ? 'Skipped — user account creation failed' : edcEnabled ? 'Waiting for Gaia-X verification…' : 'EDC provisioning is disabled',
       }
       setProgress(initialProgress)
-      startPolling(company.id, orgCredential.id)
+      if (!userFailed) {
+        startPolling(company.id, orgCredential.id, edcEnabled)
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: string } } }
       setSubmitError(e.response?.data?.error || 'Registration failed')
@@ -400,6 +436,56 @@ export default function CompanyRegistration() {
               <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Admin Name *</label>
               <input value={form.adminName} onChange={e => set('adminName', e.target.value)} placeholder="John Smith" className={ic('adminName')} />
               {errors.adminName && <p className="text-[11px] text-[#EA4335] mt-1">{errors.adminName}</p>}
+            </div>
+
+            <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0] !mt-8">Admin Account</h2>
+            <p className="text-xs text-[#5F6368] -mt-2">These credentials will be used to log in to the dataspace portal.</p>
+            <div>
+              <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Email *</label>
+              <input
+                type="email"
+                value={form.adminUserEmail}
+                onChange={e => set('adminUserEmail', e.target.value)}
+                placeholder="admin@yourcompany.com"
+                className={ic('adminUserEmail')}
+              />
+              {errors.adminUserEmail && <p className="text-[11px] text-[#EA4335] mt-1">{errors.adminUserEmail}</p>}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Password *</label>
+                <input
+                  type="password"
+                  value={form.adminUserPassword}
+                  onChange={e => {
+                    set('adminUserPassword', e.target.value)
+                    if (form.adminUserConfirmPassword) {
+                      if (e.target.value !== form.adminUserConfirmPassword)
+                        setErrors(prev => ({ ...prev, adminUserConfirmPassword: 'Passwords do not match' }))
+                      else
+                        setErrors(prev => { const n = { ...prev }; delete n.adminUserConfirmPassword; return n })
+                    }
+                  }}
+                  placeholder="Min. 8 characters"
+                  className={ic('adminUserPassword')}
+                />
+                {errors.adminUserPassword && <p className="text-[11px] text-[#EA4335] mt-1">{errors.adminUserPassword}</p>}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Confirm Password *</label>
+                <input
+                  type="password"
+                  value={form.adminUserConfirmPassword}
+                  onChange={e => {
+                    set('adminUserConfirmPassword', e.target.value)
+                    if (form.adminUserPassword !== e.target.value)
+                      setErrors(prev => ({ ...prev, adminUserConfirmPassword: 'Passwords do not match' }))
+                  }}
+                  placeholder="Repeat password"
+                  className={ic('adminUserConfirmPassword')}
+                />
+                {errors.adminUserConfirmPassword && <p className="text-[11px] text-[#EA4335] mt-1">{errors.adminUserConfirmPassword}</p>}
+              </div>
             </div>
           </div>
         )}

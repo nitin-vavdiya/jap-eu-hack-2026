@@ -19,6 +19,7 @@ interface Company {
   adminEmail?: string
   createdAt?: string
   credentials?: Array<{ type: string; status: string }>
+  orgCredentials?: Array<{ id: string; verificationStatus?: string }>
   edcProvisioning?: { status: 'pending' | 'provisioning' | 'ready' | 'failed' }
 }
 
@@ -76,7 +77,7 @@ export default function CompanyList() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(company => {
-            const hasActiveVC = company.credentials?.some(c => c.type === 'OrgVC' && c.status === 'active')
+            const vcStatus = company.orgCredentials?.[0]?.verificationStatus
             const edcStatus = company.edcProvisioning?.status
             const edcBadge: Record<string, { label: string; cls: string }> = {
               pending:      { label: 'EDC Pending',      cls: 'text-gray-400 bg-gray-50' },
@@ -92,9 +93,13 @@ export default function CompanyList() {
               >
                 <div className="flex items-start justify-between mb-3">
                   <p className="text-[10px] text-gray-400 uppercase tracking-wide">{company.country}</p>
-                  {hasActiveVC ? (
+                  {vcStatus === 'verified' && (
                     <span className="text-[10px] text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">Verified</span>
-                  ) : (
+                  )}
+                  {vcStatus === 'failed' && (
+                    <span className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded font-medium">Failed</span>
+                  )}
+                  {(vcStatus === 'pending' || !vcStatus) && (
                     <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">Pending</span>
                   )}
                 </div>
