@@ -46,4 +46,12 @@ docker buildx build \
   --push \
   keycloak/
 
+echo "==> Building provisioning image (version: ${VERSION})..."
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t "${REGISTRY}/${REPO}/provisioning:${VERSION}" \
+  -f provisioning/Dockerfile \
+  --push \
+  provisioning/
+
 echo "==> All images pushed successfully."
