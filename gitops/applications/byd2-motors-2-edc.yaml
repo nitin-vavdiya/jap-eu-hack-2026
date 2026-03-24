@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: edc-byd2-motors-2
+  namespace: argocd
+  labels:
+    tenant: byd2-motors-2
+    managed-by: edc-provisioning
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/smartSenseSolutions/jap-eu-hack-2026
+    targetRevision: HEAD
+    path: edc/tx-edc-eleven
+    helm:
+      releaseName: edc-byd2-motors-2
+      valueFiles:
+        - values.yaml
+        - values-byd2-motors-2.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: edc-byd2-motors-2
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
