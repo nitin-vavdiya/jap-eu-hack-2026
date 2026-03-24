@@ -1,8 +1,23 @@
 # EDC Provisioning Service
 
-Internal microservice that provisions a dedicated Eclipse Dataspace Connector (EDC) instance for each onboarded company.
+Internal microservice that provisions a dedicated Eclipse Dataspace Connector (EDC) instance for each onboarded company, including its own isolated PostgreSQL database.
 
 > **Network access**: This service has **no public ingress**. It is only reachable from within the Kubernetes cluster (or via local port-forward for development). Only the main backend service should call it.
+
+---
+
+## Architecture
+
+Each company gets a fully isolated stack deployed in its own Kubernetes namespace (`edc-{tenantCode}`):
+
+```
+edc-{tenantCode} namespace
+├── EDC Control Plane      (tractusx/edc-controlplane-postgresql-hashicorp-vault)
+├── EDC Data Plane         (tractusx/edc-dataplane-hashicorp-vault)
+└── PostgreSQL             (Bitnami subchart — dedicated per tenant)
+```
+
+All resources are managed by a single **Argo CD Application** per company (`edc-{tenantCode}`), deployed via Helm from `edc/tx-edc-eleven`. The Bitnami PostgreSQL subchart (`install.postgresql: true`) is deployed alongside EDC in the same namespace and release — no shared external database.
 
 ---
 
@@ -10,13 +25,29 @@ Internal microservice that provisions a dedicated Eclipse Dataspace Connector (E
 
 When a company is onboarded, the backend triggers `POST /provision`. The service then:
 
-1. Creates a dedicated Postgres **database and user** on the shared cluster PostgreSQL.
-2. Writes all required **secrets to HashiCorp Vault** (KV v2) at a tenant-scoped path.
-3. Renders a **per-tenant Helm values file** (`edc/tx-edc-eleven/values-{tenantCode}.yaml`) from the Handlebars template.
-4. Commits the values file + an **Argo CD Application manifest** (`gitops/applications/{tenantCode}-edc.yaml`) to the git repository.
-5. Calls back the **backend API** to update the `edc_provisioning` record with final URLs and status.
+1. Writes **secrets to HashiCorp Vault** (KV v2) — the PostgreSQL password and EDC Vault token — at a tenant-scoped path.
+2. Renders a **per-tenant Helm values file** (`edc/tx-edc-eleven/values-{tenantCode}.yaml`) from the Handlebars template.
+3. Commits the values file + an **Argo CD Application manifest** (`gitops/applications/{tenantCode}-edc.yaml`) to the git repository and pushes.
+4. Calls back the **backend API** to update the `edc_provisioning` record with final URLs and status.
+
+Argo CD picks up the new Application manifest (auto-sync, ~3 min poll or immediate trigger) and deploys the full stack — EDC + PostgreSQL — into the company namespace.
 
 All steps are **idempotent** — re-triggering provisioning will not create duplicate resources.
+
+---
+
+## Per-tenant resources (Kubernetes)
+
+| Resource | Name pattern | Namespace |
+|---|---|---|
+| Namespace | `edc-{tenantCode}` | — |
+| Argo CD Application | `edc-{tenantCode}` | `argocd` |
+| Helm release | `edc-{tenantCode}` | `edc-{tenantCode}` |
+| PostgreSQL StatefulSet | `edc-{tenantCode}-postgresql` | `edc-{tenantCode}` |
+| PostgreSQL Service | `edc-{tenantCode}-postgresql` | `edc-{tenantCode}` |
+| PostgreSQL database | `edc_{tenantCode}` (hyphens → underscores) | — |
+| PostgreSQL user | `edc_{tenantCode}` | — |
+| Vault secret path | `k8s-stack/data/tx_edc_connector_{tenantCode}` | — |
 
 ---
 
@@ -27,8 +58,6 @@ Copy `.env.example` to `.env` and fill in the values:
 ```
 PORT=3001
 BACKEND_URL=http://backend-service.default.svc.cluster.local:3000
-
-POSTGRES_ADMIN_URL=postgresql://provisioning_user:pass@postgres.postgres.svc.cluster.local:5432/postgres
 
 VAULT_ADDR=http://vault.vault.svc.cluster.local:8200
 VAULT_TOKEN=<vault-provisioning-token>
@@ -43,6 +72,8 @@ GIT_REPO_URL=https://github.com/smartSenseSolutions/jap-eu-hack-2026
 ARGOCD_SERVER_URL=http://argocd-server.argocd.svc.cluster.local   # optional
 ARGOCD_AUTH_TOKEN=<argocd-api-token>                                # optional
 ```
+
+> `POSTGRES_ADMIN_URL` is no longer required — PostgreSQL is provisioned by Helm as a subchart, not by this service.
 
 ---
 
@@ -77,25 +108,14 @@ vault policy write edc-provisioning provisioning-policy.hcl
 vault token create -policy=edc-provisioning -ttl=0 -display-name=edc-provisioning
 ```
 
----
+**Secrets written per tenant** (`k8s-stack/data/tx_edc_connector_{tenantCode}`):
 
-### PostgreSQL
+| Key | Value |
+|---|---|
+| `dbpass` | Random 24-byte base64url password for the tenant's PostgreSQL user |
+| `vault-token` | Vault token used by the EDC connector itself |
 
-The service connects using `POSTGRES_ADMIN_URL` to create databases and users.
-
-The admin user must have one of:
-- **Superuser** privileges, OR
-- The `CREATEDB` and `CREATEROLE` privileges:
-
-```sql
--- Run as superuser
-CREATE USER provisioning_user WITH PASSWORD 'strong-password' CREATEDB CREATEROLE;
-```
-
-**In-cluster service name:** Replace `postgres.postgres.svc.cluster.local` with the actual service name from:
-```bash
-kubectl get svc -n postgres   # or whichever namespace Postgres is in
-```
+The Helm chart references these via Vault AVP syntax (`<path:...#key>`). DB host, name, and user are deterministic from `tenantCode` and do not need to be stored in Vault.
 
 ---
 
@@ -112,13 +132,6 @@ The service needs to commit and push to the repository to add:
 3. Grant **Contents → Read and Write**
 4. Set token expiry according to your rotation policy
 5. Store the token in `GIT_AUTH_TOKEN`
-
-**Alternative: Deploy key with write access**
-```bash
-ssh-keygen -t ed25519 -C "edc-provisioning-bot" -f ./deploy-key
-# Add the public key to the repo's deploy keys with Write access
-# Mount the private key into the container and configure git SSH
-```
 
 ---
 
@@ -190,7 +203,6 @@ cd provisioning
 npm install
 
 # Port-forward cluster services locally
-kubectl port-forward svc/postgres -n postgres 5432:5432 &
 kubectl port-forward svc/vault -n vault 8200:8200 &
 
 # Set env vars
@@ -227,18 +239,23 @@ spec:
 
 ---
 
-## Provisioning flow (summary)
+## Provisioning flow
 
 ```
 POST /provision
   │
   ├─ Step 0: callback → status: "provisioning"
-  ├─ Step 1: CREATE DATABASE edc_{code}; CREATE USER edc_{code}  [idempotent]
-  ├─ Step 2: Vault KV v2 write → k8s-stack/data/tx_edc_connector_{code}  [idempotent]
-  ├─ Step 3: Render values-template.yaml.hbs → values-{code}.yaml  [idempotent]
-  ├─ Step 4: git add + commit + push (skip if no diff)  [idempotent]
+  ├─ Step 1: Vault KV v2 write → k8s-stack/data/tx_edc_connector_{code}
+  │           Keys: dbpass (random), vault-token
+  ├─ Step 2: Render values-template.yaml → values-{code}.yaml
+  │           PostgreSQL: install.postgresql=true, in-cluster subchart,
+  │           jdbcUrl: edc-{code}-postgresql:5432/edc_{code}
+  ├─ Step 3: git add + commit + push (skip if no diff)
+  │           Files: values-{code}.yaml + gitops/applications/{code}-edc.yaml
   │           └─ optional: Argo CD API sync trigger
-  └─ Step 5: callback → status: "ready" | "failed"
+  │
+  └─ Step 4: callback → status: "ready" | "failed"
+              ArgoCD then deploys: EDC + PostgreSQL into namespace edc-{code}
 ```
 
 On failure at any step, the backend record is updated with `status: "failed"` and `lastError`. Re-sending `POST /provision` with the same payload retries all steps safely.

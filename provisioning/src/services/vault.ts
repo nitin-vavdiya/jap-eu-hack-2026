@@ -1,9 +1,6 @@
 import nodeVault from 'node-vault';
 
 export interface TenantSecrets {
-  dbhost: string;
-  dbname: string;
-  dbuser: string;
   dbpass: string;
   'vault-token': string;
 }
@@ -11,6 +8,13 @@ export interface TenantSecrets {
 /**
  * Idempotently writes tenant EDC secrets to HashiCorp Vault (KV v2).
  * Path: k8s-stack/data/tx_edc_connector_{tenantCode}
+ *
+ * Secrets written:
+ *   - dbpass      — PostgreSQL password used by the in-cluster Bitnami subchart and EDC
+ *   - vault-token — Vault token for the EDC connector's own Vault access
+ *
+ * DB host, name, and user are deterministic from tenantCode and managed by Helm;
+ * they do not need to be stored in Vault.
  *
  * The Vault token used must have the following policy:
  *   path "k8s-stack/data/tx_edc_connector_*" { capabilities = ["create", "update", "read"] }

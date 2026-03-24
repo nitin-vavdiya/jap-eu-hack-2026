@@ -19,6 +19,7 @@ spec:
     targetRevision: HEAD
     path: edc/tx-edc-eleven
     helm:
+      releaseName: edc-{{tenantCode}}
       valueFiles:
         - values.yaml
         - values-{{tenantCode}}.yaml

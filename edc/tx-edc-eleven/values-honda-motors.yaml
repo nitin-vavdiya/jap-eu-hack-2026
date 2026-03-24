@@ -1,5 +1,5 @@
 install:
-  postgresql: false
+  postgresql: true
   vault: false
 fullnameOverride: "tx-ecd-connector-honda-motors"
 nameOverride: "tx-ecd-connector-honda-motors"
@@ -175,17 +175,17 @@ dataplane:
   replicaCount: 1
 
 postgresql:
-  jdbcUrl: "jdbc:postgresql://<path:k8s-stack/data/tx_edc_connector_honda-motors#dbhost>:5432/<path:k8s-stack/data/tx_edc_connector_honda-motors#dbname>"
+  # In-cluster PostgreSQL deployed as a subchart in namespace edc-honda-motors.
+  # Service name: edc-honda-motors-postgresql
+  jdbcUrl: "jdbc:postgresql://edc-honda-motors-postgresql:5432/edc_honda_motors"
   primary:
     persistence:
-      enabled: false
-  readReplicas:
-    persistence:
-      enabled: false
+      enabled: true
+      size: 2Gi
   auth:
-    database: "<path:k8s-stack/data/tx_edc_connector_honda-motors#dbname>"
-    username: "<path:k8s-stack/data/tx_edc_connector_honda-motors#dbuser>"
-    password: "<path:k8s-stack/data/tx_edc_connector_honda-motors#dbpass>"
+    database: "edc_honda_motors"
+    username: "edc_honda_motors"
+    password: "<path:k8s-stack/data/tx_edc_connector_honda_motors#dbpass>"
 
 vault:
   injector:
@@ -196,7 +196,7 @@ vault:
     postStart:
   hashicorp:
     url: "https://vault.the-sense.io"
-    token: "<path:k8s-stack/data/tx_edc_connector_honda-motors#vault-token>"
+    token: "<path:k8s-stack/data/tx_edc_connector_honda_motors#vault-token>"
     timeout: 30
     healthCheck:
       enabled: false

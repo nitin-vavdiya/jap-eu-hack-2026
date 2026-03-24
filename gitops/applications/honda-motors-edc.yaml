@@ -13,6 +13,7 @@ spec:
     targetRevision: HEAD
     path: edc/tx-edc-eleven
     helm:
+      releaseName: edc-honda-motors
       valueFiles:
         - values.yaml
         - values-honda-motors.yaml

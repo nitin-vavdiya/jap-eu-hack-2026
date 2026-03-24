@@ -4,7 +4,7 @@
      Output:     edc/tx-edc-eleven/values-{{tenantCode}}.yaml
 --}}
 install:
-  postgresql: false
+  postgresql: true
   vault: false
 fullnameOverride: "tx-ecd-connector-{{tenantCode}}"
 nameOverride: "tx-ecd-connector-{{tenantCode}}"
@@ -180,16 +180,16 @@ dataplane:
   replicaCount: 1
 
 postgresql:
-  jdbcUrl: "jdbc:postgresql://<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbhost>:5432/<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbname>"
+  # In-cluster PostgreSQL deployed as a subchart in the same namespace.
+  # Service name: edc-{{tenantCode}}-postgresql (matches Argo CD release name)
+  jdbcUrl: "jdbc:postgresql://edc-{{tenantCode}}-postgresql:5432/edc_{{tenantCode}}"
   primary:
     persistence:
-      enabled: false
-  readReplicas:
-    persistence:
-      enabled: false
+      enabled: true
+      size: 2Gi
   auth:
-    database: "<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbname>"
-    username: "<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbuser>"
+    database: "edc_{{tenantCode}}"
+    username: "edc_{{tenantCode}}"
     password: "<path:k8s-stack/data/tx_edc_connector_{{tenantCode}}#dbpass>"
 
 vault:
