@@ -92,7 +92,6 @@ async function main() {
       adminEmail: 'admin@tatamotors.com',
       did: 'did:eu-dataspace:company-tata-001',
       registeredAt: new Date('2024-01-15T09:00:00.000Z'),
-      credentialId: 'cred-org-tata-001',
     },
     {
       id: 'company-digit-001',
@@ -105,7 +104,6 @@ async function main() {
       adminEmail: 'admin@godigit.com',
       did: 'did:eu-dataspace:company-digit-001',
       registeredAt: new Date('2024-02-01T09:00:00.000Z'),
-      credentialId: 'cred-org-digit-001',
     },
   ];
 
@@ -126,6 +124,7 @@ async function main() {
       issuerId: 'eu-dataspace',
       issuerName: 'EU APAC Dataspace',
       subjectId: 'company-tata-001',
+      companyId: 'company-tata-001',
       issuedAt: new Date('2024-01-15T09:00:00.000Z'),
       status: 'active',
       credentialSubject: {
@@ -150,6 +149,7 @@ async function main() {
       issuerId: 'eu-dataspace',
       issuerName: 'EU APAC Dataspace',
       subjectId: 'company-digit-001',
+      companyId: 'company-digit-001',
       issuedAt: new Date('2024-02-01T09:00:00.000Z'),
       status: 'active',
       credentialSubject: {

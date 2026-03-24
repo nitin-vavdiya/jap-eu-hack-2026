@@ -28,13 +28,13 @@ router.get('/:vin', async (req, res) => {
       const orgCredential = await prisma.orgCredential.findFirst({
         where: { companyId: company.id },
       });
-      const credential = company.credentialId
-        ? await prisma.credential.findUnique({ where: { id: company.credentialId } })
-        : null;
+      const credential = await prisma.credential.findFirst({
+        where: { companyId: company.id },
+      });
       if (orgCredential) {
         dpp.manufacturerCredential = {
           ...mfgCred,  // preserve any fields already set by the frontend
-          credentialId: company.credentialId || orgCredential.id,
+          credentialId: credential?.id || orgCredential.id,
           legalParticipantId: orgCredential.id,
           issuer: credential?.issuerName || 'EU APAC Dataspace',
           issuerDid: company.did || undefined,
@@ -87,13 +87,13 @@ router.post('/', requireRole('admin'), async (req, res) => {
       const orgCredential = await prisma.orgCredential.findFirst({
         where: { companyId: company.id },
       });
-      const credential = company.credentialId
-        ? await prisma.credential.findUnique({ where: { id: company.credentialId } })
-        : null;
+      const credential = await prisma.credential.findFirst({
+        where: { companyId: company.id },
+      });
       if (orgCredential) {
         dpp.manufacturerCredential = {
           ...existingMfgCred,
-          credentialId: company.credentialId || orgCredential.id,
+          credentialId: credential?.id || orgCredential.id,
           legalParticipantId: orgCredential.id,
           issuer: credential?.issuerName || 'EU APAC Dataspace',
           issuerDid: company.did || undefined,

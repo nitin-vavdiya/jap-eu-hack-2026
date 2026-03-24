@@ -85,7 +85,6 @@ export const seedCompanies = [
     adminEmail: 'admin@tatamotors.com',
     did: 'did:eu-dataspace:company-tata-001',
     registeredAt: '2024-01-15T09:00:00.000Z',
-    credentialId: 'cred-org-tata-001',
   },
   {
     id: 'company-digit-001',
@@ -98,7 +97,6 @@ export const seedCompanies = [
     adminEmail: 'admin@godigit.com',
     did: 'did:eu-dataspace:company-digit-001',
     registeredAt: '2024-02-01T09:00:00.000Z',
-    credentialId: 'cred-org-digit-001',
   },
 ];
 

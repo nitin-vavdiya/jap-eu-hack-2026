@@ -5,7 +5,7 @@ import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
 const API = getApiBase()
 
 interface OrgCred {
-  id: string; legalName: string; verificationStatus: string
+  id: string; companyId: string; legalName: string; verificationStatus: string
   legalRegistrationNumber: Record<string, string | undefined>
   legalAddress: { streetAddress: string; locality: string; postalCode: string; countryCode: string; countrySubdivisionCode: string }
   headquartersAddress: { streetAddress: string; locality: string; postalCode: string; countryCode: string; countrySubdivisionCode: string }
@@ -15,6 +15,33 @@ interface OrgCred {
   notaryResult?: { status: string; registrationId?: string; endpointSetUsed: string; proof?: Record<string, unknown> }
   verificationAttempts: { id: string; timestamp: string; endpointSetUsed: string; step: string; status: string; durationMs: number; error?: string }[]
   createdAt: string; updatedAt: string
+}
+
+interface EdcProv {
+  status: string; attempts: number; lastError?: string
+  managementUrl?: string; protocolUrl?: string; dataplaneUrl?: string
+  helmRelease?: string; k8sNamespace?: string; provisionedAt?: string
+}
+
+type JourneyStepStatus = 'done' | 'failed' | 'running' | 'pending'
+
+function JourneyIcon({ status }: { status: JourneyStepStatus }) {
+  if (status === 'done') return (
+    <div className="w-7 h-7 rounded-full bg-[#34A853] flex items-center justify-center flex-shrink-0">
+      <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+    </div>
+  )
+  if (status === 'failed') return (
+    <div className="w-7 h-7 rounded-full bg-[#EA4335] flex items-center justify-center flex-shrink-0">
+      <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+    </div>
+  )
+  if (status === 'running') return (
+    <div className="w-7 h-7 rounded-full bg-[#4285F4] flex items-center justify-center flex-shrink-0 animate-pulse">
+      <div className="w-2.5 h-2.5 rounded-full bg-white" />
+    </div>
+  )
+  return <div className="w-7 h-7 rounded-full bg-[#E5EAF0] flex-shrink-0 border-2 border-[#D0D5DD]" />
 }
 
 const sts: Record<string, { label: string; bg: string; text: string }> = {
@@ -41,14 +68,23 @@ export default function OrgCredentialDetail() {
   const [cred, setCred] = useState<OrgCred | null>(null)
   const [loading, setLoading] = useState(true)
   const [verifying, setVerifying] = useState(false)
-  const [tab, setTab] = useState<'overview' | 'proof' | 'raw' | 'audit'>('overview')
+  const [tab, setTab] = useState<'overview' | 'proof' | 'raw' | 'audit' | 'journey'>('overview')
   const [steps, setSteps] = useState<{ name: string; status: string }[]>([])
+  const [edcProv, setEdcProv] = useState<EdcProv | null>(null)
 
   const fetch = useCallback(() => {
     api.get(`${API}/org-credentials/${id}`).then(r => { setCred(r.data); setLoading(false) }).catch(() => setLoading(false))
   }, [id])
 
   useEffect(() => { fetch() }, [fetch])
+
+  useEffect(() => {
+    if (tab === 'journey' && cred?.companyId) {
+      api.get(`${API}/companies/${cred.companyId}/edc-status`)
+        .then(r => setEdcProv(r.data))
+        .catch(() => setEdcProv(null))
+    }
+  }, [tab, cred?.companyId])
 
   const handleVerify = async () => {
     setVerifying(true)
@@ -108,8 +144,10 @@ export default function OrgCredentialDetail() {
       </div>
 
       <div className="flex gap-1 mb-6 bg-white border border-[#E5EAF0] rounded-xl p-1">
-        {(['overview', 'proof', 'raw', 'audit'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors capitalize ${tab === t ? 'bg-[#4285F4] text-white' : 'text-[#5F6368] hover:bg-[#F1F3F6]'}`}>{t === 'raw' ? 'Raw JSON' : t === 'audit' ? 'Audit Log' : t === 'proof' ? 'Proof & Compliance' : t}</button>
+        {(['overview', 'proof', 'raw', 'audit', 'journey'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)} className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors capitalize ${tab === t ? 'bg-[#4285F4] text-white' : 'text-[#5F6368] hover:bg-[#F1F3F6]'}`}>
+            {t === 'raw' ? 'Raw JSON' : t === 'audit' ? 'Audit Log' : t === 'proof' ? 'Proof & Compliance' : t === 'journey' ? 'Onboarding Journey' : t}
+          </button>
         ))}
       </div>
 
@@ -227,6 +265,109 @@ export default function OrgCredentialDetail() {
             <pre className="bg-[#F8FAFD] border border-[#E5EAF0] rounded-lg p-4 text-xs text-[#5F6368] overflow-auto max-h-[500px] font-mono leading-relaxed">{JSON.stringify(cred.vcPayload || {}, null, 2)}</pre>
           </div>
         )}
+
+        {tab === 'journey' && (() => {
+          const complianceOk = cred.complianceResult?.status === 'compliant'
+          const notaryOk = cred.notaryResult?.status === 'success'
+          const gaiaxDone = cred.verificationStatus === 'verified' || cred.verificationStatus === 'compliant'
+          const gaiaxFailed = cred.verificationStatus === 'failed'
+          const gaiaxRunning = cred.verificationStatus === 'verifying'
+
+          const gaiaxStatus: JourneyStepStatus = complianceOk ? 'done' : gaiaxFailed ? 'failed' : gaiaxRunning ? 'running' : gaiaxDone && notaryOk ? 'failed' : 'pending'
+          const gaiaxDetail = complianceOk
+            ? 'Compliant with Gaia-X Loire trust framework'
+            : notaryOk && !complianceOk
+              ? 'Notary verified · Compliance check failed'
+              : gaiaxFailed ? 'Verification failed'
+              : gaiaxRunning ? 'Verifying…' : 'Not started'
+
+          const edcBlocked = gaiaxStatus === 'failed'
+          const edcStatus: JourneyStepStatus = edcBlocked
+            ? 'failed'
+            : !edcProv ? 'pending'
+            : edcProv.status === 'ready' ? 'done'
+            : edcProv.status === 'failed' ? 'failed'
+            : edcProv.status === 'pending' || edcProv.status === 'provisioning' ? 'running'
+            : 'pending'
+          const edcDetail = edcBlocked
+            ? 'Skipped — Gaia-X compliance required'
+            : !edcProv ? 'No provisioning record'
+            : edcProv.status === 'ready' ? 'EDC connector is live and ready'
+            : edcProv.status === 'failed' ? (edcProv.lastError || 'Provisioning failed')
+            : `Status: ${edcProv.status}…`
+
+          const journeySteps = [
+            { label: 'Organization registered',        detail: cred.legalName,   status: 'done' as JourneyStepStatus, error: null },
+            { label: 'Verifiable Credential issued',   detail: 'OrgVC signed',   status: 'done' as JourneyStepStatus, error: null },
+            { label: 'Gaia-X compliance verification', detail: gaiaxDetail,       status: gaiaxStatus,                  error: (!complianceOk && (gaiaxDone || gaiaxFailed)) ? { compliance: cred.complianceResult, notary: cred.notaryResult } : null },
+            { label: 'EDC connector provisioning',     detail: edcDetail,         status: edcStatus,                    error: null },
+          ]
+
+          return (
+            <div className="space-y-0">
+              {journeySteps.map((step, i) => (
+                <div key={i}>
+                  <div className="flex items-start gap-4 py-4">
+                    <JourneyIcon status={step.status} />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${step.status === 'failed' ? 'text-[#EA4335]' : step.status === 'done' ? 'text-[#1F1F1F]' : step.status === 'running' ? 'text-[#4285F4]' : 'text-[#9AA0A6]'}`}>
+                        {step.label}
+                      </p>
+                      <p className="text-xs text-[#9AA0A6] mt-0.5">{step.detail}</p>
+                      {step.error && (
+                        <div className="mt-2 border-l-2 border-[#EA4335] pl-3 space-y-1">
+                          {step.error.compliance && (
+                            <p className="text-xs text-[#EA4335]">
+                              Compliance: <span className="font-medium">{step.error.compliance.status}</span>
+                              {step.error.compliance.endpointSetUsed && <span className="text-[#9AA0A6] ml-1">· {step.error.compliance.endpointSetUsed}</span>}
+                            </p>
+                          )}
+                          {step.error.notary && (
+                            <p className="text-xs text-[#5F6368]">
+                              Notary: <span className={`font-medium ${step.error.notary.status === 'success' ? 'text-[#34A853]' : 'text-[#EA4335]'}`}>{step.error.notary.status}</span>
+                              {step.error.notary.registrationId && <span className="text-[#9AA0A6] ml-1">· ID: {step.error.notary.registrationId}</span>}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      {step.status === 'done' && i === 3 && edcProv?.provisionedAt && (
+                        <p className="text-[10px] text-[#9AA0A6] mt-1">Provisioned {new Date(edcProv.provisionedAt).toLocaleString()}</p>
+                      )}
+                    </div>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
+                      step.status === 'done'    ? 'bg-[#E6F4EA] text-[#34A853]' :
+                      step.status === 'failed' ? 'bg-[#FCE8E6] text-[#EA4335]' :
+                      step.status === 'running'? 'bg-[#E8F0FE] text-[#4285F4]' :
+                      'bg-[#F1F3F4] text-[#9AA0A6]'
+                    }`}>
+                      {step.status === 'done' ? 'Done' : step.status === 'failed' ? 'Failed' : step.status === 'running' ? 'Running' : 'Waiting'}
+                    </span>
+                  </div>
+                  {i < journeySteps.length - 1 && <div className="ml-3.5 w-px h-3 bg-[#E5EAF0]" />}
+                </div>
+              ))}
+              {edcProv && edcProv.status === 'ready' && (
+                <div className="mt-6 pt-4 border-t border-[#E5EAF0]">
+                  <p className="text-[10px] text-[#9AA0A6] uppercase tracking-wider font-medium mb-3">EDC Connector Details</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[
+                      { l: 'Management URL', v: edcProv.managementUrl },
+                      { l: 'Protocol URL',   v: edcProv.protocolUrl },
+                      { l: 'Dataplane URL',  v: edcProv.dataplaneUrl },
+                      { l: 'Helm Release',   v: edcProv.helmRelease },
+                      { l: 'K8s Namespace',  v: edcProv.k8sNamespace },
+                    ].filter(x => x.v).map((x, i) => (
+                      <div key={i} className="bg-[#F8FAFD] border border-[#E5EAF0] rounded-lg p-3">
+                        <p className="text-[10px] text-[#9AA0A6] uppercase">{x.l}</p>
+                        <p className="text-xs text-[#1F1F1F] mt-0.5 font-mono break-all">{x.v}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {tab === 'audit' && (
           <div>

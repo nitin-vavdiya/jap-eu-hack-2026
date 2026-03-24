@@ -1,8 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
+import axios from 'axios'
 
 const API = getApiBase()
+
+interface Company {
+  id: string
+  name: string
+  vatId?: string
+  eoriNumber?: string
+  cin?: string
+  gstNumber?: string
+  leiCode?: string
+  country?: string
+  city?: string
+  address?: string
+  adminEmail?: string
+  did?: string
+}
 
 interface FormData {
   legalName: string; vatId: string; eoriNumber: string; euid: string; leiCode: string; taxId: string; localId: string
@@ -11,41 +27,77 @@ interface FormData {
   website: string; contactEmail: string; did: string; validFrom: string; validUntil: string; sameAsLegal: boolean
 }
 
-const initial: FormData = {
-  legalName: 'smartSense Consulting Solutions Pvt. Ltd.', vatId: '', eoriNumber: '', euid: '', leiCode: '9695007586GCAKPYJ703', taxId: '', localId: '',
-  streetAddress: 'Bodakdev, SG Highway', locality: 'Ahmedabad', postalCode: '380054', countryCode: 'DE', countrySubdivisionCode: 'DE-BY',
+const blankForm: FormData = {
+  legalName: '', vatId: '', eoriNumber: '', euid: '', leiCode: '', taxId: '', localId: '',
+  streetAddress: '', locality: '', postalCode: '', countryCode: '', countrySubdivisionCode: '',
   hqStreetAddress: '', hqLocality: '', hqPostalCode: '', hqCountryCode: '', hqCountrySubdivisionCode: '',
-  website: 'https://www.smartsensesolutions.com', contactEmail: 'info@smartsensesolutions.com', did: '',
+  website: '', contactEmail: '', did: '',
   validFrom: new Date().toISOString().split('T')[0],
   validUntil: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
   sameAsLegal: true,
 }
 
 const sections = [
-  { key: 'entity', label: 'Legal Entity' }, { key: 'ids', label: 'Registration IDs' },
-  { key: 'addr', label: 'Addresses' }, { key: 'contact', label: 'Domain & Contact' },
-  { key: 'compliance', label: 'Compliance' }, { key: 'validity', label: 'Validity' },
+  { key: 'org',      label: 'Select Org' },
+  { key: 'entity',   label: 'Legal Entity' },
+  { key: 'ids',      label: 'Registration IDs' },
+  { key: 'addr',     label: 'Addresses' },
+  { key: 'contact',  label: 'Domain & Contact' },
+  { key: 'compliance', label: 'Compliance' },
+  { key: 'validity', label: 'Validity' },
 ]
 
 export default function CreateOrgCredential() {
   const navigate = useNavigate()
   const { accessToken } = useAuthUser()
   const api = createAuthAxios(() => accessToken)
-  const [form, setForm] = useState<FormData>(initial)
+
+  const [companies, setCompanies]       = useState<Company[]>([])
+  const [companiesLoading, setCompaniesLoading] = useState(true)
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
+  const [form, setForm]   = useState<FormData>(blankForm)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [section, setSection] = useState(0)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
+
+  useEffect(() => {
+    axios.get(`${API}/companies`)
+      .then(r => setCompanies(r.data))
+      .catch(() => {})
+      .finally(() => setCompaniesLoading(false))
+  }, [])
+
+  const selectCompany = (company: Company) => {
+    setSelectedCompanyId(company.id)
+    setErrors(e => { const n = { ...e }; delete n.company; return n })
+    setForm(f => ({
+      ...f,
+      legalName:   company.name        || f.legalName,
+      vatId:       company.vatId       || f.vatId,
+      eoriNumber:  company.eoriNumber  || f.eoriNumber,
+      leiCode:     company.leiCode     || f.leiCode,
+      taxId:       company.gstNumber   || f.taxId,
+      localId:     company.cin         || f.localId,
+      streetAddress: company.address   || f.streetAddress,
+      locality:    company.city        || f.locality,
+      countryCode: company.country     || f.countryCode,
+      contactEmail: company.adminEmail || f.contactEmail,
+      did:         company.did         || f.did,
+    }))
+  }
 
   const set = (key: keyof FormData, value: string | boolean) => {
     setForm(f => ({ ...f, [key]: value }))
     setErrors(e => { const n = { ...e }; delete n[key]; return n })
   }
 
-  const ic = (key: string) => `w-full border ${errors[key] ? 'border-[#EA4335]' : 'border-[#E5EAF0]'} bg-white rounded-lg px-3.5 py-2.5 text-sm text-[#1F1F1F] placeholder-[#9AA0A6] focus:outline-none focus:border-[#4285F4] focus:ring-2 focus:ring-[#4285F4]/20 transition-all`
+  const ic = (key: string) =>
+    `w-full border ${errors[key] ? 'border-[#EA4335]' : 'border-[#E5EAF0]'} bg-white rounded-lg px-3.5 py-2.5 text-sm text-[#1F1F1F] placeholder-[#9AA0A6] focus:outline-none focus:border-[#4285F4] focus:ring-2 focus:ring-[#4285F4]/20 transition-all`
 
   const validate = () => {
     const e: Record<string, string> = {}
+    if (!selectedCompanyId) e.company = 'Please select an organization'
     if (!form.legalName.trim()) e.legalName = 'Required'
     if (!form.vatId && !form.eoriNumber && !form.euid && !form.leiCode && !form.taxId && !form.localId) e.ids = 'At least one identifier required'
     if (!form.streetAddress.trim()) e.streetAddress = 'Required'
@@ -58,18 +110,34 @@ export default function CreateOrgCredential() {
 
   const handleSubmit = async () => {
     const errs = validate()
-    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
+      if (errs.company) { setSection(0); return }
+      if (errs.legalName) { setSection(1); return }
+      if (errs.ids) { setSection(2); return }
+      if (errs.streetAddress || errs.locality || errs.postalCode || errs.countryCode) { setSection(3); return }
+      if (errs.contactEmail) { setSection(4); return }
+      return
+    }
     setLoading(true); setSubmitError('')
     try {
       const res = await api.post(`${API}/org-credentials`, {
+        companyId: selectedCompanyId,
         legalName: form.legalName,
-        legalRegistrationNumber: { vatId: form.vatId || undefined, eoriNumber: form.eoriNumber || undefined, euid: form.euid || undefined, leiCode: form.leiCode || undefined, taxId: form.taxId || undefined, localId: form.localId || undefined },
+        legalRegistrationNumber: {
+          vatId: form.vatId || undefined, eoriNumber: form.eoriNumber || undefined,
+          euid: form.euid || undefined, leiCode: form.leiCode || undefined,
+          taxId: form.taxId || undefined, localId: form.localId || undefined,
+        },
         legalAddress: { streetAddress: form.streetAddress, locality: form.locality, postalCode: form.postalCode, countryCode: form.countryCode, countrySubdivisionCode: form.countrySubdivisionCode || `${form.countryCode}-00` },
         headquartersAddress: form.sameAsLegal
           ? { streetAddress: form.streetAddress, locality: form.locality, postalCode: form.postalCode, countryCode: form.countryCode, countrySubdivisionCode: form.countrySubdivisionCode || `${form.countryCode}-00` }
           : { streetAddress: form.hqStreetAddress, locality: form.hqLocality, postalCode: form.hqPostalCode, countryCode: form.hqCountryCode, countrySubdivisionCode: form.hqCountrySubdivisionCode || `${form.hqCountryCode}-00` },
-        website: form.website || undefined, contactEmail: form.contactEmail, did: form.did || undefined,
-        validFrom: new Date(form.validFrom).toISOString(), validUntil: new Date(form.validUntil).toISOString(),
+        website: form.website || undefined,
+        contactEmail: form.contactEmail,
+        did: form.did || undefined,
+        validFrom: new Date(form.validFrom).toISOString(),
+        validUntil: new Date(form.validUntil).toISOString(),
       })
       navigate(`/credential/${res.data.id}`)
     } catch (err: unknown) {
@@ -79,6 +147,8 @@ export default function CreateOrgCredential() {
     setLoading(false)
   }
 
+  const selectedCompany = companies.find(c => c.id === selectedCompanyId)
+
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
       <button onClick={() => navigate('/')} className="text-xs text-[#4285F4] hover:text-[#3367D6] mb-4">&larr; Back to credentials</button>
@@ -86,15 +156,70 @@ export default function CreateOrgCredential() {
       <p className="text-sm text-[#5F6368] mb-8">Provide your organization details for Gaia-X Loire trust framework verification</p>
 
       <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-        {sections.map((s, i) => (
-          <button key={s.key} onClick={() => setSection(i)} className={`px-4 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${section === i ? 'bg-[#4285F4] text-white shadow-sm' : 'bg-white border border-[#E5EAF0] text-[#5F6368] hover:border-[#4285F4]'}`}>
-            {s.label}
-          </button>
-        ))}
+        {sections.map((s, i) => {
+          const locked = i > 0 && !selectedCompanyId
+          return (
+            <button key={s.key}
+              onClick={() => {
+                if (locked) { setErrors(e => ({ ...e, company: 'Please select an organization' })); setSection(0); return }
+                setSection(i)
+              }}
+              className={`px-4 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${section === i ? 'bg-[#4285F4] text-white shadow-sm' : locked ? 'bg-white border border-[#E5EAF0] text-[#D0D5DD] cursor-not-allowed' : 'bg-white border border-[#E5EAF0] text-[#5F6368] hover:border-[#4285F4]'}`}>
+              {s.label}
+            </button>
+          )
+        })}
       </div>
 
       <div className="bg-white border border-[#E5EAF0] rounded-xl p-8">
+
+        {/* Step 0 – Select Organization */}
         {section === 0 && (
+          <div className="space-y-5">
+            <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Select Organization</h2>
+            <p className="text-xs text-[#5F6368]">Choose the organization this credential will be created under. Fields will be pre-filled from the organization's registration data.</p>
+            {errors.company && <p className="text-[11px] text-[#EA4335] bg-[#FCE8E6] px-3 py-2 rounded-lg">{errors.company}</p>}
+
+            {companiesLoading ? (
+              <p className="text-sm text-[#9AA0A6]">Loading organizations...</p>
+            ) : companies.length === 0 ? (
+              <p className="text-sm text-[#9AA0A6]">No organizations found. <button onClick={() => navigate('/register')} className="text-[#4285F4] underline">Register one first.</button></p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {companies.map(c => (
+                  <button key={c.id} onClick={() => selectCompany(c)}
+                    className={`text-left p-4 rounded-lg border-2 transition-all ${selectedCompanyId === c.id ? 'border-[#4285F4] bg-[#E8F0FE]' : 'border-[#E5EAF0] hover:border-[#4285F4]/50 bg-white'}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-[#1F1F1F]">{c.name}</p>
+                        <p className="text-[11px] text-[#9AA0A6] mt-0.5">{c.id}</p>
+                        {(c.vatId || c.leiCode || c.cin) && (
+                          <p className="text-[11px] text-[#5F6368] mt-1">
+                            {[c.vatId && `VAT: ${c.vatId}`, c.leiCode && `LEI: ${c.leiCode}`, c.cin && `CIN: ${c.cin}`].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                      {selectedCompanyId === c.id && (
+                        <div className="w-5 h-5 rounded-full bg-[#4285F4] flex items-center justify-center flex-shrink-0">
+                          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {selectedCompany && (
+              <div className="bg-[#E8F0FE] border border-[#4285F4]/20 rounded-lg px-4 py-3 text-xs text-[#4285F4]">
+                Selected: <span className="font-medium">{selectedCompany.name}</span> — fields on the next steps have been pre-filled from registration data.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 1 – Legal Entity */}
+        {section === 1 && (
           <div className="space-y-5">
             <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Legal Entity Information</h2>
             <div>
@@ -105,13 +230,21 @@ export default function CreateOrgCredential() {
           </div>
         )}
 
-        {section === 1 && (
+        {/* Step 2 – Registration IDs */}
+        {section === 2 && (
           <div className="space-y-5">
             <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Registration Identifiers</h2>
             <p className="text-xs text-[#5F6368]">At least one legal registration number required for Gaia-X verification.</p>
             {errors.ids && <p className="text-[11px] text-[#EA4335] bg-[#FCE8E6] px-3 py-2 rounded-lg">{errors.ids}</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {([['vatId','VAT ID','EU123456789'],['eoriNumber','EORI','GB987654321000'],['euid','EUID','DE.HRB.12345'],['leiCode','LEI Code','5299001IOLKPT7LVN868'],['taxId','Tax ID','IN27AAACT2727Q1Z'],['localId','Local ID (CIN)','L28920MH1945PLC004415']] as const).map(([k,l,p]) => (
+              {([
+                ['vatId',      'VAT ID',         'EU123456789'],
+                ['eoriNumber', 'EORI',            'GB987654321000'],
+                ['euid',       'EUID',            'DE.HRB.12345'],
+                ['leiCode',    'LEI Code',        '5299001IOLKPT7LVN868'],
+                ['taxId',      'Tax ID',          'IN27AAACT2727Q1Z'],
+                ['localId',    'Local ID (CIN)',  'L28920MH1945PLC004415'],
+              ] as const).map(([k, l, p]) => (
                 <div key={k}>
                   <label className="block text-xs font-medium text-[#5F6368] mb-1">{l}</label>
                   <input value={form[k]} onChange={e => set(k, e.target.value)} placeholder={p} className={ic(k)} />
@@ -121,7 +254,8 @@ export default function CreateOrgCredential() {
           </div>
         )}
 
-        {section === 2 && (
+        {/* Step 3 – Addresses */}
+        {section === 3 && (
           <div className="space-y-5">
             <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Legal Address *</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -166,20 +300,33 @@ export default function CreateOrgCredential() {
           </div>
         )}
 
-        {section === 3 && (
+        {/* Step 4 – Domain & Contact */}
+        {section === 4 && (
           <div className="space-y-5">
             <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Domain & Contact</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="block text-xs font-medium text-[#5F6368] mb-1.5">Website</label><input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://www.tatamotors.com" className={ic('website')} /></div>
-              <div><label className="block text-xs font-medium text-[#5F6368] mb-1.5">Contact Email *</label><input value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} type="email" placeholder="admin@tatamotors.com" className={ic('contactEmail')} />{errors.contactEmail && <p className="text-[11px] text-[#EA4335] mt-1">{errors.contactEmail}</p>}</div>
+              <div>
+                <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Website</label>
+                <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://www.tatamotors.com" className={ic('website')} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Contact Email *</label>
+                <input value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} type="email" placeholder="admin@tatamotors.com" className={ic('contactEmail')} />
+                {errors.contactEmail && <p className="text-[11px] text-[#EA4335] mt-1">{errors.contactEmail}</p>}
+              </div>
             </div>
           </div>
         )}
 
-        {section === 4 && (
+        {/* Step 5 – Compliance */}
+        {section === 5 && (
           <div className="space-y-5">
             <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Compliance Metadata</h2>
-            <div><label className="block text-xs font-medium text-[#5F6368] mb-1.5">Organization DID</label><input value={form.did} onChange={e => set('did', e.target.value)} placeholder="did:web:participant.gxdch.io:your-org" className={ic('did')} /><p className="text-[10px] text-[#9AA0A6] mt-0.5">Leave empty to auto-generate</p></div>
+            <div>
+              <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Organization DID</label>
+              <input value={form.did} onChange={e => set('did', e.target.value)} placeholder="did:web:participant.gxdch.io:your-org" className={ic('did')} />
+              <p className="text-[10px] text-[#9AA0A6] mt-0.5">Leave empty to auto-generate</p>
+            </div>
             <div className="bg-[#E8F0FE] border border-[#4285F4]/20 rounded-lg p-4">
               <p className="text-xs text-[#4285F4] font-medium mb-1">Gaia-X Loire Trust Framework</p>
               <p className="text-[11px] text-[#5F6368]">This credential will be structured as a Gaia-X LegalParticipant VC. After creation, verify it against Gaia-X Digital Clearing Houses.</p>
@@ -187,22 +334,44 @@ export default function CreateOrgCredential() {
           </div>
         )}
 
-        {section === 5 && (
+        {/* Step 6 – Validity */}
+        {section === 6 && (
           <div className="space-y-5">
             <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Validity Period</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="block text-xs font-medium text-[#5F6368] mb-1.5">Valid From *</label><input type="date" value={form.validFrom} onChange={e => set('validFrom', e.target.value)} className={ic('validFrom')} /></div>
-              <div><label className="block text-xs font-medium text-[#5F6368] mb-1.5">Valid Until *</label><input type="date" value={form.validUntil} onChange={e => set('validUntil', e.target.value)} className={ic('validUntil')} /></div>
+              <div>
+                <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Valid From *</label>
+                <input type="date" value={form.validFrom} onChange={e => set('validFrom', e.target.value)} className={ic('validFrom')} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Valid Until *</label>
+                <input type="date" value={form.validUntil} onChange={e => set('validUntil', e.target.value)} className={ic('validUntil')} />
+              </div>
             </div>
           </div>
         )}
 
+        {/* Navigation */}
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#E5EAF0]">
-          <button onClick={() => setSection(Math.max(0, section - 1))} disabled={section === 0} className="text-sm text-[#5F6368] hover:text-[#1F1F1F] disabled:opacity-30 disabled:cursor-not-allowed">&larr; Previous</button>
-          <div className="flex gap-1.5">{sections.map((_, i) => <div key={i} className={`w-2 h-2 rounded-full ${i === section ? 'bg-[#4285F4]' : 'bg-[#E5EAF0]'}`} />)}</div>
+          <button onClick={() => setSection(Math.max(0, section - 1))} disabled={section === 0}
+            className="text-sm text-[#5F6368] hover:text-[#1F1F1F] disabled:opacity-30 disabled:cursor-not-allowed">
+            &larr; Previous
+          </button>
+          <div className="flex gap-1.5">
+            {sections.map((_, i) => <div key={i} className={`w-2 h-2 rounded-full ${i === section ? 'bg-[#4285F4]' : 'bg-[#E5EAF0]'}`} />)}
+          </div>
           {section < sections.length - 1
-            ? <button onClick={() => setSection(section + 1)} className="text-sm text-[#4285F4] hover:text-[#3367D6] font-medium">Next &rarr;</button>
-            : <button onClick={handleSubmit} disabled={loading} className="bg-[#4285F4] hover:bg-[#3367D6] disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm">{loading ? 'Creating...' : 'Create Credential'}</button>
+            ? <button onClick={() => {
+                if (section === 0 && !selectedCompanyId) {
+                  setErrors(e => ({ ...e, company: 'Please select an organization' }))
+                  return
+                }
+                setSection(section + 1)
+              }} className="text-sm text-[#4285F4] hover:text-[#3367D6] font-medium">Next &rarr;</button>
+            : <button onClick={handleSubmit} disabled={loading}
+                className="bg-[#4285F4] hover:bg-[#3367D6] disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm">
+                {loading ? 'Creating...' : 'Create Credential'}
+              </button>
           }
         </div>
         {submitError && <div className="mt-4 bg-[#FCE8E6] border border-[#EA4335]/20 text-[#EA4335] px-4 py-3 rounded-lg text-xs">{submitError}</div>}

@@ -6,6 +6,11 @@ import { requireRole } from '../middleware/auth';
 import { issueCredentialSimple } from '../services/waltid';
 import { generateBpn } from '../utils/bpn';
 import { toTenantCode } from '../utils/tenantCode';
+import { buildLegalParticipantVC } from '../services/gaiax/vc-builder';
+import { getVPSigner } from '../services/gaiax/vp-signer';
+import { OrgCredentialRecord } from '../services/gaiax/types';
+import { GaiaXClient } from '../services/gaiax/client';
+import { GaiaXOrchestrator } from '../services/gaiax/orchestrator';
 
 const router = Router();
 
@@ -31,7 +36,7 @@ async function allocateTenantCode(baseName: string): Promise<string> {
 
 router.get('/', async (req, res) => {
   const companies = await prisma.company.findMany({
-    include: { edcProvisioning: true },
+    include: { edcProvisioning: true, orgCredentials: true },
   });
   res.json(companies);
 });
@@ -39,7 +44,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const company = await prisma.company.findUnique({
     where: { id: req.params.id },
-    include: { edcProvisioning: true },
+    include: { edcProvisioning: true, orgCredentials: true },
   });
   if (!company) return res.status(404).json({ error: 'Company not found' });
   res.json(company);
@@ -123,11 +128,43 @@ router.patch('/:id/edc-provisioning', async (req, res) => {
 });
 
 router.post('/', requireRole('company_admin'), async (req, res) => {
-  const { name, vatId, eoriNumber, cin, gstNumber, country, city, address, adminName, adminEmail } = req.body;
+  // Support both old flat field names and new wizard field names
+  const {
+    // Legal entity — new: legalName, old: name
+    legalName, name: nameOld, adminName,
+    // Registration IDs — new: taxId/localId/euid, old: gstNumber/cin
+    vatId, eoriNumber, euid, leiCode,
+    taxId, gstNumber,        // taxId = gstNumber alias
+    localId, cin,            // localId = cin alias
+    // Address — new: streetAddress/locality/postalCode/countryCode, old: address/city/country
+    streetAddress, address: addressOld,
+    locality, city: cityOld,
+    postalCode, countryCode, countrySubdivisionCode,
+    country: countryOld,
+    // HQ address
+    sameAsLegal,
+    hqStreetAddress, hqLocality, hqPostalCode, hqCountryCode, hqCountrySubdivisionCode,
+    // Contact — new: contactEmail, old: adminEmail
+    contactEmail, adminEmail: adminEmailOld,
+    // Extra
+    website,
+    did: inputDid,
+    validFrom: inputValidFrom,
+    validUntil: inputValidUntil,
+  } = req.body;
+
+  // Normalise to internal names
+  const name        = legalName || nameOld;
+  const resolvedCin = localId   || cin;
+  const resolvedGst = taxId     || gstNumber;
+  const resolvedAddress    = streetAddress || addressOld;
+  const resolvedCity       = locality      || cityOld;
+  const resolvedCountry    = countryCode   || countryOld;
+  const resolvedAdminEmail = contactEmail  || adminEmailOld;
 
   if (!name) return res.status(400).json({ error: 'Company name is required' });
-  if (!vatId && !eoriNumber && !cin && !gstNumber) {
-    return res.status(400).json({ error: 'At least one of VAT ID, EORI, CIN, GST is required' });
+  if (!vatId && !eoriNumber && !resolvedCin && !resolvedGst && !leiCode && !euid) {
+    return res.status(400).json({ error: 'At least one of VAT ID, EORI, EUID, CIN, GST/Tax ID, LEI Code is required' });
   }
 
   const companyId = uuidv4();
@@ -144,18 +181,34 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
   const credentialSubject = {
     companyName: name,
     companyDid: `did:eu-dataspace:${companyId}`,
-    registrationNumber: vatId || eoriNumber || cin || gstNumber,
-    vatId,
-    eoriNumber,
-    cin,
-    gstNumber,
-    country,
-    city,
-    address,
-    adminName,
-    adminEmail,
+    registrationNumber: vatId || eoriNumber || resolvedCin || resolvedGst || leiCode || euid,
+    vatId, eoriNumber, euid, leiCode,
+    cin: resolvedCin, gstNumber: resolvedGst,
+    country: resolvedCountry, city: resolvedCity, address: resolvedAddress,
+    postalCode, countrySubdivisionCode, website,
+    adminName, adminEmail: resolvedAdminEmail,
     incorporationDate: new Date().toISOString(),
   };
+
+  const company = await prisma.company.create({
+    data: {
+      id: companyId,
+      name,
+      vatId,
+      eoriNumber,
+      cin: resolvedCin,
+      gstNumber: resolvedGst,
+      leiCode,
+      country: resolvedCountry,
+      city: resolvedCity,
+      address: resolvedAddress,
+      adminName,
+      adminEmail: resolvedAdminEmail,
+      did: inputDid || `did:eu-dataspace:${companyId}`,
+      bpn,
+      tenantCode,
+    },
+  });
 
   const credential = await prisma.credential.create({
     data: {
@@ -164,6 +217,7 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
       issuerId: 'eu-dataspace',
       issuerName: 'EU APAC Dataspace',
       subjectId: companyId,
+      companyId,
       status: 'active',
       credentialSubject,
     },
@@ -177,25 +231,93 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
     credentialSubject,
   }).catch(() => {});
 
-  const company = await prisma.company.create({
+  // Build resolved address objects for OrgCredential
+  const legalAddr = {
+    streetAddress: resolvedAddress || '',
+    locality: resolvedCity || '',
+    postalCode: postalCode || '',
+    countryCode: resolvedCountry || '',
+    countrySubdivisionCode: countrySubdivisionCode || '',
+  };
+  const hqAddr = sameAsLegal === false
+    ? { streetAddress: hqStreetAddress || '', locality: hqLocality || '', postalCode: hqPostalCode || '', countryCode: hqCountryCode || '', countrySubdivisionCode: hqCountrySubdivisionCode || '' }
+    : legalAddr;
+
+  const now = new Date();
+  const orgCredId = uuidv4();
+  const orgCredRecord: OrgCredentialRecord = {
+    id: orgCredId,
+    companyId,
+    legalName: name,
+    legalRegistrationNumber: { vatId, eoriNumber, euid, leiCode, taxId: resolvedGst, localId: resolvedCin },
+    legalAddress: legalAddr,
+    headquartersAddress: hqAddr,
+    website: website || undefined,
+    contactEmail: resolvedAdminEmail || '',
+    did: inputDid || `did:eu-dataspace:${companyId}`,
+    validFrom: inputValidFrom || now.toISOString(),
+    validUntil: inputValidUntil || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    verificationStatus: 'draft',
+    verificationAttempts: [],
+    issuedVCs: [],
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+  };
+  const signer = getVPSigner();
+  orgCredRecord.vcPayload = buildLegalParticipantVC(orgCredRecord);
+  orgCredRecord.vcJwt = signer.signVC(orgCredRecord.vcPayload as unknown as Record<string, unknown>);
+
+  const orgCredential = await prisma.orgCredential.create({
     data: {
-      id: companyId,
-      name,
-      vatId,
-      eoriNumber,
-      cin,
-      gstNumber,
-      country,
-      city,
-      address,
-      adminName,
-      adminEmail,
-      did: `did:eu-dataspace:${companyId}`,
-      credentialId,
-      bpn,
-      tenantCode,
+      id: orgCredRecord.id,
+      companyId,
+      legalName: orgCredRecord.legalName,
+      legalRegistrationNumber: orgCredRecord.legalRegistrationNumber as any,
+      legalAddress: orgCredRecord.legalAddress as any,
+      headquartersAddress: orgCredRecord.headquartersAddress as any,
+      website: orgCredRecord.website,
+      contactEmail: orgCredRecord.contactEmail,
+      did: orgCredRecord.did,
+      validFrom: new Date(orgCredRecord.validFrom),
+      validUntil: new Date(orgCredRecord.validUntil),
+      verificationStatus: orgCredRecord.verificationStatus,
+      verificationAttempts: orgCredRecord.verificationAttempts as any,
+      vcPayload: orgCredRecord.vcPayload as any,
+      vcJwt: orgCredRecord.vcJwt,
+      issuedVCs: orgCredRecord.issuedVCs as any,
     },
   });
+  console.log(`[onboarding] Auto-created OrgCredential ${orgCredId} for company "${name}"`);
+
+  // Auto-trigger Gaia-X verification (fire-and-forget — does not block registration response)
+  const orchestrator = new GaiaXOrchestrator(new GaiaXClient());
+  prisma.orgCredential.update({ where: { id: orgCredId }, data: { verificationStatus: 'verifying' } })
+    .then(() => orchestrator.verify(orgCredRecord))
+    .then(async (result) => {
+      const notaryOk = result.notaryResult.status === 'success';
+      const complianceOk = result.complianceResult.status === 'compliant';
+      const isVerified = complianceOk || notaryOk;
+      await prisma.orgCredential.update({
+        where: { id: orgCredId },
+        data: {
+          verificationStatus: isVerified ? 'verified' : 'failed',
+          vcPayload: result.vc as any,
+          vcJwt: getVPSigner().signVC(result.vc as unknown as Record<string, unknown>),
+          complianceResult: result.complianceResult as any,
+          notaryResult: result.notaryResult as any,
+          issuedVCs: result.issuedVCs as any,
+          verificationAttempts: result.attempts as any,
+        },
+      });
+      console.log(`[onboarding] Gaia-X verification complete for OrgCredential ${orgCredId}: ${isVerified ? 'verified' : 'failed'}`);
+    })
+    .catch((err: Error) => {
+      prisma.orgCredential.update({
+        where: { id: orgCredId },
+        data: { verificationStatus: 'failed' },
+      }).catch(() => {});
+      console.error(`[onboarding] Gaia-X verification failed for OrgCredential ${orgCredId}:`, err.message);
+    });
 
   // Create initial EDC provisioning record (status: pending)
   await prisma.edcProvisioning.create({
@@ -212,7 +334,7 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
       console.error(`[onboarding] Provisioning trigger failed for ${tenantCode}: ${err.message}`),
     );
 
-  res.status(201).json({ company, credential });
+  res.status(201).json({ company, credential, orgCredential });
 });
 
 export default router;

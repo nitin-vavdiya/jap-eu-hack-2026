@@ -14,13 +14,13 @@ model Company {
   eoriNumber   String?
   cin          String?
   gstNumber    String?
+  leiCode      String?
   country      String?
   city         String?
   address      String?
   adminName    String?
   adminEmail   String?
   did          String?
-  credentialId String?
   bpn          String?  @unique
   tenantCode   String?  @unique
   registeredAt DateTime @default(now())
@@ -28,6 +28,8 @@ model Company {
   updatedAt    DateTime @updatedAt
 
   edcProvisioning EdcProvisioning?
+  orgCredentials  OrgCredential[]
+  credentials     Credential[]
 
   @@map("companies")
 }
@@ -66,6 +68,8 @@ model Credential {
   issuerId          String
   issuerName        String?
   subjectId         String?
+  companyId         String?
+  company           Company?  @relation(fields: [companyId], references: [id])
   issuedAt          DateTime @default(now())
   expiresAt         DateTime?
   status            String   @default("active")
@@ -190,6 +194,7 @@ model InsurancePolicy {
 model OrgCredential {
   id                      String   @id @default(uuid())
   companyId               String
+  company                 Company  @relation(fields: [companyId], references: [id])
   legalName               String
   legalRegistrationNumber Json
   legalAddress            Json
