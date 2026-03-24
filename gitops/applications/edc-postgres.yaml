@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: edc-postgres
+  namespace: argocd
+  labels:
+    managed-by: gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/smartSenseSolutions/jap-eu-hack-2026
+    targetRevision: HEAD
+    path: postgres
+    plugin:
+      env:
+        - name: VAULT_SECRET
+          value: vault-secret
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: edc-postgres
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
