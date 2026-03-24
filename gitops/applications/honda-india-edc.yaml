@@ -12,11 +12,13 @@ spec:
     repoURL: https://github.com/smartSenseSolutions/jap-eu-hack-2026
     targetRevision: HEAD
     path: edc/tx-edc-eleven
-    helm:
-      releaseName: edc-honda-india
-      valueFiles:
-        - values.yaml
-        - values-honda-india.yaml
+    plugin:
+      name: argocd-vault-plugin-helm
+      env:
+        - name: VAULT_SECRET
+          value: vault-secret
+        - name: HELM_VALUES_FILE
+          value: "values.yaml -f values-honda-india.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: edc-honda-india

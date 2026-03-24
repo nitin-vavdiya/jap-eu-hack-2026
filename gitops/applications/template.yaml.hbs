@@ -18,11 +18,13 @@ spec:
     repoURL: {{gitRepoUrl}}
     targetRevision: HEAD
     path: edc/tx-edc-eleven
-    helm:
-      releaseName: edc-{{tenantCode}}
-      valueFiles:
-        - values.yaml
-        - values-{{tenantCode}}.yaml
+    plugin:
+      name: argocd-vault-plugin-helm
+      env:
+        - name: VAULT_SECRET
+          value: vault-secret
+        - name: HELM_VALUES_FILE
+          value: "values.yaml -f values-{{tenantCode}}.yaml"
   destination:
     server: https://kubernetes.default.svc
     namespace: edc-{{tenantCode}}
