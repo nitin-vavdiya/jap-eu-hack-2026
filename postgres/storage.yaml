@@ -5,7 +5,7 @@ metadata:
   namespace: edc-postgres
 spec:
   storageClassName: local-storage
-  volumeName: postgres-storage
+  volumeName: edc-postgres-storage
   accessModes:
     - ReadWriteOnce
   resources:
@@ -19,7 +19,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: postgres-storage
+  name: edc-postgres-storage
 spec:
   storageClassName: local-storage
   capacity:
