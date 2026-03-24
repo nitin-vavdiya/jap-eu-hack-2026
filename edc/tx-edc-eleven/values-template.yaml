@@ -187,6 +187,7 @@ postgresql:
     persistence:
       enabled: true
       size: 2Gi
+      storageClass: "local-path"
   auth:
     database: "edc_{{tenantCode}}"
     username: "edc_{{tenantCode}}"

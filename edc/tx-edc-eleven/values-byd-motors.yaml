@@ -182,6 +182,7 @@ postgresql:
     persistence:
       enabled: true
       size: 2Gi
+      storageClass: "local-path"
   auth:
     database: "edc_byd-motors"
     username: "edc_byd-motors"
