@@ -48,5 +48,23 @@ export async function createKeycloakUser(
   if (!uuid) throw new Error('Keycloak did not return a user ID in the Location header');
 
   console.log(`[keycloak] Created user ${email} → ${uuid}`);
+
+  // Step 3 — fetch role representation to get role id
+  console.log(`[keycloak] curl equivalent — get role:\n  curl -s -X GET '${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/roles/admin' \\\n    -H 'Authorization: Bearer <TOKEN>'`);
+  const roleRes = await axios.get(
+    `${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/roles/admin`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  const role = { id: roleRes.data.id as string, name: roleRes.data.name as string };
+
+  // Step 4 — assign realm role to the new user
+  console.log(`[keycloak] curl equivalent — assign role:\n  curl -s -X POST '${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/users/${uuid}/role-mappings/realm' \\\n    -H 'Authorization: Bearer <TOKEN>' \\\n    -H 'Content-Type: application/json' \\\n    -d '[{"id":"${role.id}","name":"${role.name}"}]'`);
+  await axios.post(
+    `${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/users/${uuid}/role-mappings/realm`,
+    [role],
+    { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } },
+  );
+
+  console.log(`[keycloak] Assigned realm role "admin" to user ${email} (${uuid})`);
   return uuid;
 }
