@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: edc-smartsense-consulting-solution-2
+  namespace: argocd
+  labels:
+    tenant: smartsense-consulting-solution-2
+    managed-by: edc-provisioning
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/smartSenseSolutions/jap-eu-hack-2026
+    targetRevision: HEAD
+    path: edc/tx-edc-eleven
+    helm:
+      releaseName: edc-smartsense-consulting-solution-2
+      valueFiles:
+        - values.yaml
+        - values-smartsense-consulting-solution-2.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: edc-smartsense-consulting-solution-2
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
