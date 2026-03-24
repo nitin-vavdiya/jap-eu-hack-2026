@@ -24,7 +24,7 @@ backend:
   ingress:
     host: "jeh-api.tx.the-sense.io"
   env:
-    DATABASE_URL: "postgresql://<path:k8s-stack/data/jap-eu-hack#dbuser>:<path:k8s-stack/data/jap-eu-hack#dbpass>@<path:k8s-stack/data/jap-eu-hack#dbhost>:5432/<path:k8s-stack/data/jap-eu-hack#dbname>"
+    DATABASE_URL: "postgresql://<path:k8s-stack/data/jap-eu-hack#dbuser>:<path:k8s-stack/data/jap-eu-hack#dbpass>@<path:k8s-stack/data/jap-eu-hack#dbhost>:5432/<path:k8s-stack/data/jap-eu-hack#backend_dbname>"
     ENABLE_EDC: "true"
     AUTH_ENABLED: "false"
     KEYCLOAK_URL: "https://auth.tx.the-sense.io"
