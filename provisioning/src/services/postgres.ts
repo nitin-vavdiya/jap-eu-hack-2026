@@ -7,7 +7,7 @@ import { Client } from 'pg';
  * Idempotent — safe to call multiple times for the same tenant.
  */
 export async function createTenantDatabase(tenantCode: string, dbPass: string): Promise<void> {
-  const adminUrl = process.env.POSTGRES_ADMIN_URL;
+  const adminUrl = process.env.POSTGRES_ADMIN_URL; // postgres.postgres-edc.svc.cluster.local
   if (!adminUrl) throw new Error('POSTGRES_ADMIN_URL is not set');
 
   const dbName   = `edc_${tenantCode}`;

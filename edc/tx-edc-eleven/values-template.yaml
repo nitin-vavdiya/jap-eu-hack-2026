@@ -182,7 +182,7 @@ dataplane:
 postgresql:
   # Shared PostgreSQL server running in edc-postgres namespace.
   # Database and user are created at runtime by the provisioning service.
-  jdbcUrl: "jdbc:postgresql://postgres.edc-postgres.svc.cluster.local:5432/edc_{{tenantCode}}"
+  jdbcUrl: "jdbc:postgresql://postgres.postgres-edc.svc.cluster.local:5432/edc_{{tenantCode}}"
   auth:
     database: "edc_{{tenantCode}}"
     username: "edc_{{tenantCode}}"
