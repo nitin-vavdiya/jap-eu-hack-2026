@@ -46,6 +46,10 @@ export async function commitArgoApp(tenantCode: string, bpn: string): Promise<vo
   await git.addConfig('user.name', gitUserName);
   await git.addConfig('user.email', gitUserEmail);
 
+  // Pull latest changes before staging to avoid push rejection
+  console.log(`[argo] Pulling latest changes from remote`);
+  await git.pull(authenticatedRemote, 'HEAD', ['--rebase']);
+
   // Stage both the Helm values file and the Argo Application manifest
   const filesToStage = [
     path.relative(repoPath, valuesOutputPath),
