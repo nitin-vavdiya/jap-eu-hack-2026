@@ -23,7 +23,8 @@ export async function generateValuesFile(tenantCode: string, bpn: string): Promi
   const cleanedSource = templateSource.replace(/\{\{!--[\s\S]*?--\}\}/g, '').trimStart();
 
   const template = Handlebars.compile(cleanedSource, { noEscape: true });
-  const rendered = template({ tenantCode, bpn });
+  const tenantCodeUnderscore = tenantCode.replace(/-/g, '_');
+  const rendered = template({ tenantCode, tenantCodeUnderscore, bpn });
 
   console.log(`[helm] Writing values file to ${outputPath}`);
   fs.writeFileSync(outputPath, rendered, 'utf-8');

@@ -181,7 +181,7 @@ postgresql:
   auth:
     database: "edc_honda-india"
     username: "edc_honda-india"
-    password: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_honda-india#dbpass>"
+    password: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_honda_india#dbpass>"
 
 vault:
   injector:
@@ -192,7 +192,7 @@ vault:
     postStart:
   hashicorp:
     url: "https://vault.the-sense.io"
-    token: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_honda-india#vault-token>"
+    token: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_honda_india#vault-token>"
     timeout: 30
     healthCheck:
       enabled: false

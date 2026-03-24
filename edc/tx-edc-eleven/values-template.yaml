@@ -186,7 +186,7 @@ postgresql:
   auth:
     database: "edc_{{tenantCode}}"
     username: "edc_{{tenantCode}}"
-    password: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_{{tenantCode}}#dbpass>"
+    password: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_{{tenantCodeUnderscore}}#dbpass>"
 
 vault:
   injector:
@@ -197,7 +197,7 @@ vault:
     postStart:
   hashicorp:
     url: "https://vault.the-sense.io"
-    token: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_{{tenantCode}}#vault-token>"
+    token: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_{{tenantCodeUnderscore}}#vault-token>"
     timeout: 30
     healthCheck:
       enabled: false
