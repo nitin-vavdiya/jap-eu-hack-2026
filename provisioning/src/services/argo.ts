@@ -59,19 +59,23 @@ export async function commitArgoApp(tenantCode: string, bpn: string): Promise<vo
   console.log(`[argo] Staging files: ${filesToStage.join(', ')}`);
   await git.add(filesToStage);
 
-  // Check if there is anything to commit (idempotent — skip if files unchanged)
+  // Commit only if there are staged changes (retry-safe: files may already be committed)
   const status = await git.status();
-  if (status.staged.length === 0) {
-    console.log(`[argo] No changes to commit for tenant "${tenantCode}" — already up to date`);
-  } else {
+  if (status.staged.length > 0) {
     const commitMessage = `chore: onboard EDC tenant ${tenantCode} (${bpn})`;
     console.log(`[argo] Committing: "${commitMessage}"`);
     await git.commit(commitMessage);
-
-    console.log(`[argo] Pushing to remote`);
-    await git.push(authenticatedRemote, 'HEAD');
-    console.log(`[argo] Push complete — Argo CD will auto-sync within ~3 minutes`);
+  } else {
+    console.log(`[argo] Files already committed for tenant "${tenantCode}" — skipping commit, will push existing commit`);
   }
+
+  // Always pull --rebase before push to handle concurrent pushes by other developers
+  console.log(`[argo] Pulling latest remote changes (rebase)`);
+  await git.pull(authenticatedRemote, 'HEAD', { '--rebase': 'true' });
+
+  console.log(`[argo] Pushing to remote`);
+  await git.push(authenticatedRemote, 'HEAD');
+  console.log(`[argo] Push complete — Argo CD will auto-sync within ~3 minutes`);
 
   // Optional: trigger immediate Argo CD sync
   await triggerArgoSync(tenantCode);
