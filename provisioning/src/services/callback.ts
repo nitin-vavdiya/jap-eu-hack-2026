@@ -1,8 +1,14 @@
 import axios from 'axios';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
-const MAX_RETRIES = 12;       // ~10 minutes total with exponential backoff
-const BASE_DELAY_MS = 5000;   // 5s, 10s, 20s, 40s … capped at 60s
+
+// Retry config for terminal status callbacks (ready / failed).
+// Override via environment variables.
+const RETRY_CONFIG = {
+  maxRetries:  parseInt(process.env.CALLBACK_MAX_RETRIES  || '10', 10),
+  delayMs:     parseInt(process.env.CALLBACK_RETRY_DELAY_MS || '3000', 10),
+  timeoutMs:   parseInt(process.env.CALLBACK_TIMEOUT_MS   || '10000', 10),
+};
 
 export interface ProvisioningStatusPayload {
   status: 'provisioning' | 'ready' | 'failed';
@@ -19,13 +25,12 @@ function sleep(ms: number): Promise<void> {
 /**
  * Calls the backend PATCH /companies/:companyId/edc-provisioning to update status.
  *
- * - Intermediate statuses (provisioning): fire-and-forget — backend being down is fine.
- * - Terminal statuses (ready / failed): retries with exponential backoff until the
- *   backend acknowledges. This ensures the final state is never silently lost even if
- *   the backend is temporarily down during provisioning.
+ * - Intermediate statuses (provisioning): fire-and-forget.
+ * - Terminal statuses (ready / failed): retries with a fixed delay (CALLBACK_RETRY_DELAY_MS)
+ *   up to CALLBACK_MAX_RETRIES times until the backend acknowledges.
  *
- * The backend derives all EDC config (URLs, keys, namespaces) from tenantCode itself —
- * the payload only carries status, vaultPath, and provisionedAt.
+ * Default retry config: 10 retries × 3s delay.
+ * Override via env: CALLBACK_MAX_RETRIES, CALLBACK_RETRY_DELAY_MS, CALLBACK_TIMEOUT_MS.
  */
 export async function notifyBackend(
   companyId: string,
@@ -37,33 +42,34 @@ export async function notifyBackend(
   if (!isTerminal) {
     // Fire-and-forget for intermediate status updates
     axios
-      .patch(url, payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 })
+      .patch(url, payload, { headers: { 'Content-Type': 'application/json' }, timeout: RETRY_CONFIG.timeoutMs })
       .then(() => console.log(`[callback] Backend notified (${payload.status}) for ${companyId}`))
       .catch(err => console.warn(`[callback] Could not notify backend (${payload.status}) for ${companyId}: ${err.message}`));
     return;
   }
 
-  // Terminal status — retry with exponential backoff until backend confirms
-  console.log(`[callback] Persisting terminal status "${payload.status}" for company ${companyId}`);
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+  // Terminal status — retry with fixed delay until backend confirms
+  const { maxRetries, delayMs, timeoutMs } = RETRY_CONFIG;
+  console.log(`[callback] Persisting "${payload.status}" for ${companyId} (max ${maxRetries} retries, ${delayMs}ms delay)`);
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await axios.patch(url, payload, {
         headers: { 'Content-Type': 'application/json' },
-        timeout: 10000,
+        timeout: timeoutMs,
       });
-      console.log(`[callback] Backend confirmed "${payload.status}" for ${companyId} (attempt ${attempt})`);
+      console.log(`[callback] Backend confirmed "${payload.status}" for ${companyId} (attempt ${attempt}/${maxRetries})`);
       return;
     } catch (err: any) {
-      if (attempt === MAX_RETRIES) {
+      if (attempt === maxRetries) {
         console.error(
-          `[callback] Failed to persist "${payload.status}" for ${companyId} after ${MAX_RETRIES} attempts. ` +
-          `Status is safe in Vault — backend can re-derive config from tenantCode.`,
+          `[callback] Failed to persist "${payload.status}" for ${companyId} after ${maxRetries} attempts. ` +
+          `Config is safe in Vault — backend can re-derive it from tenantCode.`,
         );
         return;
       }
-      const delay = Math.min(BASE_DELAY_MS * Math.pow(2, attempt - 1), 60_000);
-      console.warn(`[callback] Attempt ${attempt}/${MAX_RETRIES} failed (${err.message}). Retrying in ${delay / 1000}s…`);
-      await sleep(delay);
+      console.warn(`[callback] Attempt ${attempt}/${maxRetries} failed (${err.message}). Retrying in ${delayMs}ms…`);
+      await sleep(delayMs);
     }
   }
 }

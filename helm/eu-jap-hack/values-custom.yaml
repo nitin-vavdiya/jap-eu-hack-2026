@@ -250,6 +250,9 @@ provisioning:
     GIT_REPO_URL: "https://github.com/smartSenseSolutions/jap-eu-hack-2026"
     ARGOCD_SERVER_URL: "http://argocd-server.argocd.svc.cluster.local"
     ARGOCD_AUTH_TOKEN: "<path:k8s-stack/data/jap-eu-hack/provisioning#argocdProvisioningToken>"
+    CALLBACK_MAX_RETRIES: "10"
+    CALLBACK_RETRY_DELAY_MS: "3000"
+    CALLBACK_TIMEOUT_MS: "10000"
   resources:
     requests:
       cpu: 50m
