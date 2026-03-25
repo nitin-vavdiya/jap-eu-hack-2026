@@ -1,0 +1,203 @@
+install:
+  postgresql: false
+  vault: false
+fullnameOverride: "tx-ecd-connector-smartsense4-consulting-solutio"
+nameOverride: "tx-ecd-connector-smartsense4-consulting-solutio"
+participant:
+  id: "BPNLKUANLB6BCUQB"
+iatp:
+  id: "did:web:wallet.tx.the-sense.io:BPNLKUANLB6BCUQB"
+  trustedIssuers:
+    - "did:web:wallet.tx.the-sense.io:BPNL000000000000"
+  sts:
+    dim:
+      url: https://wallet.tx.the-sense.io/api/sts
+    oauth:
+      token_url: https://wallet.tx.the-sense.io/oauth/token
+      client:
+        id: "BPNLKUANLB6BCUQB"
+        secret_alias: "edc-stub"
+
+controlplane:
+  image:
+    repository: "tractusx/edc-controlplane-postgresql-hashicorp-vault"
+    pullPolicy: IfNotPresent
+    tag: "0.11.0"
+  debug:
+    enabled: false
+    port: 1044
+    suspendOnStart: false
+  logs:
+    level: INFO
+  endpoints:
+    default:
+      port: 8080
+      path: /api
+    management:
+      port: 8081
+      path: /management
+      authKey: "smartsense4-consulting-solutio"
+      jwksUrl:
+    control:
+      port: 8083
+      path: /control
+    protocol:
+      port: 8084
+      path: /api/v1/dsp
+    metrics:
+      port: 9090
+      path: /metrics
+    catalog:
+      port: 8085
+      path: /catalog
+      authKey: "smartsense4-consulting-solutio"
+
+  bdrs:
+    cache_validity_seconds: 600
+    server:
+      url: https://bdrs.tx.the-sense.io/api/directory
+  catalog:
+    enabled: false
+    crawler:
+      num:
+      period:
+      initialDelay:
+      targetsFile:
+  policy:
+    validation:
+      enabled: true
+  env: {}
+  envValueFrom: {}
+
+  ingresses:
+    - enabled: true
+      hostname: "smartsense4-consulting-solutio-protocol.tx.the-sense.io"
+      annotations: {}
+      endpoints:
+        - protocol
+        - public
+      className: "nginx"
+      tls:
+        enabled: true
+        secretName: "edc-protocol-smartsense4-consulting-solutio"
+      certManager:
+        issuer: ""
+        clusterIssuer: "letsencrypt-prod"
+    - enabled: true
+      hostname: "smartsense4-consulting-solutio-controlplane.tx.the-sense.io"
+      annotations: {}
+      endpoints:
+        - management
+        - control
+      className: "nginx"
+      tls:
+        enabled: true
+        secretName: "edc-control-smartsense4-consulting-solutio-intranet"
+      certManager:
+        issuer: ""
+        clusterIssuer: "letsencrypt-prod"
+
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 1024Mi
+    requests:
+      cpu: 50m
+      memory: 1024Mi
+  replicaCount: 1
+
+  url:
+    protocol: ""
+
+dataplane:
+  image:
+    repository: "tractusx/edc-dataplane-hashicorp-vault"
+    pullPolicy: IfNotPresent
+    tag: "0.11.0"
+  initContainers: []
+  debug:
+    enabled: false
+    port: 1044
+    suspendOnStart: false
+  logs:
+    level: INFO
+  endpoints:
+    default:
+      port: 8080
+      path: /api
+    public:
+      port: 8081
+      path: /api/public
+    control:
+      port: 8084
+      path: /api/control
+    proxy:
+      port: 8186
+      path: /proxy
+      authKey: "password"
+    metrics:
+      port: 9090
+      path: /metrics
+
+  token:
+    refresh:
+      expiry_seconds: 300
+      expiry_tolerance_seconds: 10
+      refresh_endpoint:
+    signer:
+      privatekey_alias: "private-key"
+    verifier:
+      publickey_alias: "public-key"
+  env: {}
+  envValueFrom: {}
+
+  ingresses:
+    - enabled: true
+      hostname: "smartsense4-consulting-solutio-dataplane.tx.the-sense.io"
+      annotations: {}
+      endpoints:
+        - public
+      className: "nginx"
+      tls:
+        enabled: true
+        secretName: "edc-dataplane-smartsense4-consulting-solutio"
+      certManager:
+        issuer: ""
+        clusterIssuer: "letsencrypt-prod"
+
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 1024Mi
+    requests:
+      cpu: 50m
+      memory: 1024Mi
+  replicaCount: 1
+
+postgresql:
+  # Shared PostgreSQL server running in edc-postgres namespace.
+  # Database and user are created at runtime by the provisioning service.
+  jdbcUrl: "jdbc:postgresql://postgres.postgres-edc.svc.cluster.local:5432/edc_smartsense4-consulting-solutio"
+  auth:
+    database: "edc_smartsense4-consulting-solutio"
+    username: "edc_smartsense4-consulting-solutio"
+    password: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_smartsense4_consulting_solutio#dbpass>"
+
+vault:
+  injector:
+    enabled: true
+  server:
+    dev:
+      enabled: false
+    postStart:
+  hashicorp:
+    url: "https://vault.the-sense.io"
+    token: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_smartsense4_consulting_solutio#vault-token>"
+    timeout: 30
+    healthCheck:
+      enabled: false
+      standbyOk: false
+    paths:
+      secret: /v1/edc
+      health: /v1/sys/health
+      folder: ""
