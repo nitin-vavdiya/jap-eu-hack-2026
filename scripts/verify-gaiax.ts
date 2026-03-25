@@ -103,20 +103,20 @@ async function main() {
   let credentialId: string | null = null;
   try {
     const payload = {
-      legalName: 'TATA Motors Limited (Test)',
+      legalName: 'Toyota Motor Corporation (Test)',
       legalRegistrationNumber: {
-        vatId: 'IN27AAACT2727Q1Z',
-        localId: 'L28920MH1945PLC004415',
+        vatId: 'JP-TOYOTA-VAT-TEST',
+        localId: '0180-01-008846',
       },
       legalAddress: {
-        streetAddress: 'Bombay House, 24 Homi Mody Street',
-        locality: 'Mumbai',
-        postalCode: '400001',
-        countryCode: 'IN',
-        countrySubdivisionCode: 'IN-MH',
+        streetAddress: '1 Toyota-cho',
+        locality: 'Toyota City',
+        postalCode: '471-8571',
+        countryCode: 'JP',
+        countrySubdivisionCode: 'JP-23',
       },
-      contactEmail: 'test@tatamotors.com',
-      website: 'https://www.tatamotors.com',
+      contactEmail: 'test@toyota-global.com',
+      website: 'https://www.toyota-global.com',
     };
 
     const res = await axios.post(`${API}/org-credentials`, payload);

@@ -35,7 +35,7 @@ router.post('/', requireRole('insurance_agent'), async (req, res) => {
 
   // issuer links to the insurance company's resolvable Legal Participant VC
   const baseUrl = getVCBaseUrl();
-  const insurerCredentialUrl = `${baseUrl}/vc/org-cred-digit-001`;
+  const insurerCredentialUrl = `${baseUrl}/vc/org-cred-tokiomarine-001`;
 
   const credentialSubject = {
     policyNumber,
@@ -50,7 +50,7 @@ router.post('/', requireRole('insurance_agent'), async (req, res) => {
     annualPremium: premiumBreakdown?.total || 1200,
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
-    insurer: 'Digit Insurance',
+    insurer: 'Tokio Marine',
   };
 
   const credential = await prisma.credential.create({
@@ -58,7 +58,7 @@ router.post('/', requireRole('insurance_agent'), async (req, res) => {
       id: credentialId,
       type: 'InsuranceVC',
       issuerId: insurerCredentialUrl,
-      issuerName: 'Digit Insurance',
+      issuerName: 'Tokio Marine',
       subjectId: targetUserId,
       expiresAt: endDate,
       status: 'active',
@@ -69,7 +69,7 @@ router.post('/', requireRole('insurance_agent'), async (req, res) => {
   // Also issue via walt.id OID4VCI (non-blocking)
   issueCredentialSimple({
     type: 'InsuranceVC',
-    issuerDid: 'did:web:digit-insurance',
+    issuerDid: 'did:web:tokio-marine',
     subjectDid: `did:smartsense:${targetUserId}`,
     credentialSubject,
   }).catch(() => {});

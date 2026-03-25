@@ -27,13 +27,13 @@ function WalletHome() {
   const [vpFormCredId, setVpFormCredId] = useState<string | null>(null)
   const [vpFormVin, setVpFormVin] = useState('')
   const [vpChallenge, setVpChallenge] = useState('')
-  const [vpDomain, setVpDomain] = useState('digit-insurance')
+  const [vpDomain, setVpDomain] = useState('tokio-marine')
 
   const openVpForm = (credId: string, vin: string) => {
     setVpFormCredId(credId)
     setVpFormVin(vin)
     setVpChallenge('')
-    setVpDomain('digit-insurance')
+    setVpDomain('tokio-marine')
   }
 
   const handleGenerateVP = async () => {
@@ -287,7 +287,7 @@ function WalletHome() {
                   type="text"
                   value={vpDomain}
                   onChange={e => setVpDomain(e.target.value)}
-                  placeholder="e.g. digit-insurance"
+                  placeholder="e.g. tokio-marine"
                   className="w-full border border-[#E5EAF0] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#34A853] focus:ring-1 focus:ring-[#34A853]/20 transition-all"
                 />
               </div>

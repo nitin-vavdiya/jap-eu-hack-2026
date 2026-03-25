@@ -51,38 +51,38 @@ export const SERVICE_TYPES = {
 
 // --------------- DID Document Builders ---------------
 
-function buildTataMotorsDidDocument(): DidDocument {
+function buildToyotaDidDocument(): DidDocument {
   return {
     '@context': [
       'https://www.w3.org/ns/did/v1',
       'https://w3id.org/security/suites/ed25519-2020/v1',
     ],
-    id: 'did:eu-dataspace:company-tata-001',
+    id: 'did:eu-dataspace:company-toyota-001',
     verificationMethod: [
       {
-        id: 'did:eu-dataspace:company-tata-001#key-1',
+        id: 'did:eu-dataspace:company-toyota-001#key-1',
         type: 'Ed25519VerificationKey2020',
-        controller: 'did:eu-dataspace:company-tata-001',
+        controller: 'did:eu-dataspace:company-toyota-001',
         publicKeyMultibase: 'z6Mkf5rGMoatrSj1f4CyvuHBeXJELe9RPdzo2PKGNCKVtZxP',
       },
     ],
-    authentication: ['did:eu-dataspace:company-tata-001#key-1'],
-    assertionMethod: ['did:eu-dataspace:company-tata-001#key-1'],
+    authentication: ['did:eu-dataspace:company-toyota-001#key-1'],
+    assertionMethod: ['did:eu-dataspace:company-toyota-001#key-1'],
     service: [
       {
-        id: 'did:eu-dataspace:company-tata-001#vehicle-registry',
+        id: 'did:eu-dataspace:company-toyota-001#vehicle-registry',
         type: SERVICE_TYPES.VEHICLE_REGISTRY,
         serviceEndpoint: `${REGISTRY_BASE}/api/vehicle-registry`,
-        description: 'TATA Motors Vehicle Asset Registry — resolve Car IDs and public vehicle data',
+        description: 'Toyota Motor Corporation Vehicle Asset Registry — resolve Car IDs and public vehicle data',
       },
       {
-        id: 'did:eu-dataspace:company-tata-001#vp-verification',
+        id: 'did:eu-dataspace:company-toyota-001#vp-verification',
         type: SERVICE_TYPES.VP_VERIFICATION,
         serviceEndpoint: `${REGISTRY_BASE}/api/vehicle-registry/verify-vp`,
         description: 'VP verification endpoint — validate holder presentations',
       },
       {
-        id: 'did:eu-dataspace:company-tata-001#data-service',
+        id: 'did:eu-dataspace:company-toyota-001#data-service',
         type: SERVICE_TYPES.DATA_SERVICE,
         serviceEndpoint: 'https://tata-motors-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
         description: 'IDSA Dataspace Protocol endpoint for sovereign data exchange — DSP URL with provider BPNL',
@@ -91,29 +91,29 @@ function buildTataMotorsDidDocument(): DidDocument {
   };
 }
 
-function buildDigitInsuranceDidDocument(): DidDocument {
+function buildTokioMarineDidDocument(): DidDocument {
   return {
     '@context': [
       'https://www.w3.org/ns/did/v1',
       'https://w3id.org/security/suites/ed25519-2020/v1',
     ],
-    id: 'did:eu-dataspace:company-digit-001',
+    id: 'did:eu-dataspace:company-tokiomarine-001',
     verificationMethod: [
       {
-        id: 'did:eu-dataspace:company-digit-001#key-1',
+        id: 'did:eu-dataspace:company-tokiomarine-001#key-1',
         type: 'Ed25519VerificationKey2020',
-        controller: 'did:eu-dataspace:company-digit-001',
+        controller: 'did:eu-dataspace:company-tokiomarine-001',
         publicKeyMultibase: 'z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK',
       },
     ],
-    authentication: ['did:eu-dataspace:company-digit-001#key-1'],
-    assertionMethod: ['did:eu-dataspace:company-digit-001#key-1'],
+    authentication: ['did:eu-dataspace:company-tokiomarine-001#key-1'],
+    assertionMethod: ['did:eu-dataspace:company-tokiomarine-001#key-1'],
     service: [
       {
-        id: 'did:eu-dataspace:company-digit-001#verifier',
+        id: 'did:eu-dataspace:company-tokiomarine-001#verifier',
         type: 'OpenID4VPVerifier',
         serviceEndpoint: `${REGISTRY_BASE}/api/verifier`,
-        description: 'Digit Insurance OpenID4VP verifier endpoint',
+        description: 'Tokio Marine & Nichido Fire Insurance OpenID4VP verifier endpoint',
       },
     ],
   };
@@ -143,8 +143,8 @@ function buildUserDidDocument(userId: string): DidDocument {
 // --------------- DID Resolution ---------------
 
 const DID_DOCUMENTS: Record<string, () => DidDocument> = {
-  'did:eu-dataspace:company-tata-001': buildTataMotorsDidDocument,
-  'did:eu-dataspace:company-digit-001': buildDigitInsuranceDidDocument,
+  'did:eu-dataspace:company-toyota-001': buildToyotaDidDocument,
+  'did:eu-dataspace:company-tokiomarine-001': buildTokioMarineDidDocument,
 };
 
 export function resolveDid(did: string): DidResolutionResult {

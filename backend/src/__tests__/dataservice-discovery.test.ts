@@ -12,20 +12,20 @@ import { resolveDid } from '../services/did-resolver';
 import type { DidDocument, ServiceEndpoint } from '../services/did-resolver';
 
 describe('discoverDataService', () => {
-  it('should discover DataService from TATA Motors DID', () => {
-    const { didDocument } = resolveDid('did:eu-dataspace:company-tata-001');
+  it('should discover DataService from Toyota DID', () => {
+    const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
     const result = discoverDataService(didDocument!);
 
     expect(result.dspUrl).toBe('https://tata-motors-protocol.tx.the-sense.io/api/v1/dsp');
     expect(result.issuerBpnl).toBe('BPNL00000000024R');
-    expect(result.serviceId).toBe('did:eu-dataspace:company-tata-001#data-service');
+    expect(result.serviceId).toBe('did:eu-dataspace:company-toyota-001#data-service');
     expect(result.serviceEndpoint).toBe(
       'https://tata-motors-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
     );
   });
 
   it('should throw NO_DATASERVICE for DID without DataService', () => {
-    const { didDocument } = resolveDid('did:eu-dataspace:company-digit-001');
+    const { didDocument } = resolveDid('did:eu-dataspace:company-tokiomarine-001');
     expect(() => discoverDataService(didDocument!)).toThrow(DataServiceDiscoveryError);
 
     try {
@@ -201,9 +201,9 @@ describe('parseDataServiceEndpoint', () => {
 });
 
 describe('end-to-end: DID resolution → DataService discovery', () => {
-  it('should extract DSP URL and BPNL from TATA Motors DID in one flow', () => {
+  it('should extract DSP URL and BPNL from Toyota DID in one flow', () => {
     // This mirrors the actual verifier flow
-    const issuerDid = 'did:eu-dataspace:company-tata-001';
+    const issuerDid = 'did:eu-dataspace:company-toyota-001';
     const { didDocument } = resolveDid(issuerDid);
     expect(didDocument).not.toBeNull();
 
@@ -213,7 +213,7 @@ describe('end-to-end: DID resolution → DataService discovery', () => {
   });
 
   it('should fail gracefully for issuers without DataService', () => {
-    const digitDid = 'did:eu-dataspace:company-digit-001';
+    const digitDid = 'did:eu-dataspace:company-tokiomarine-001';
     const { didDocument } = resolveDid(digitDid);
     expect(didDocument).not.toBeNull();
 
@@ -229,7 +229,7 @@ describe('end-to-end: DID resolution → DataService discovery', () => {
   it('old env vars EDC_PARTNER_BPN and EDC_PARTNER_DSP_URL should not be required', () => {
     // These env vars were removed - verify they don't exist in process.env
     // (or if they do, they shouldn't affect the new discovery flow)
-    const { didDocument } = resolveDid('did:eu-dataspace:company-tata-001');
+    const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
     const result = discoverDataService(didDocument!);
 
     // The DSP URL and BPNL come from the DID document, not from env vars

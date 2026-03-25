@@ -7,7 +7,7 @@
  *          VPs are signed as vp+jwt by the holder's private key.
  * Verification: VP/VC JWTs are verified using the signer's public key.
  *
- * Each entity (TATA Motors, users) gets a persistent RSA keypair.
+ * Each entity (Toyota, users) gets a persistent RSA keypair.
  */
 
 import crypto from 'crypto';
@@ -176,7 +176,7 @@ function getHolderKeys(holderId: string): KeyPair {
  * Used by verifiers to verify signatures.
  */
 export function getPublicKeyForDid(did: string): string | null {
-  if (did === 'did:eu-dataspace:company-tata-001') {
+  if (did === 'did:eu-dataspace:company-toyota-001') {
     return getIssuerKeys().publicKey;
   }
   if (did.startsWith('did:smartsense:')) {
@@ -193,7 +193,7 @@ export function getPublicKeyForDid(did: string): string | null {
 
 /**
  * Sign a VC as a JWT (vc+jwt format per VC-JOSE-COSE spec).
- * The issuer (TATA Motors) signs with its private key.
+ * The issuer (Toyota) signs with its private key.
  */
 export function signVC(vcPayload: Record<string, unknown>, issuerDid: string): string {
   const keys = getIssuerKeys();
@@ -248,7 +248,7 @@ export function createVerifiablePresentation(
   // Sign embedded VCs with issuer key if they don't already have JWTs
   const signedCredentials = credentials.map(vc => {
     if (vc._jwt) return vc; // Already signed
-    const issuerDid = typeof vc.issuer === 'string' ? vc.issuer : vc.issuer?.id || 'did:eu-dataspace:company-tata-001';
+    const issuerDid = typeof vc.issuer === 'string' ? vc.issuer : vc.issuer?.id || 'did:eu-dataspace:company-toyota-001';
     const vcJwt = signVC({
       '@context': vc['@context'],
       type: vc.type,
@@ -546,7 +546,7 @@ export function buildOwnershipVC(
     id: vcId,
     issuer: {
       id: issuerDid,
-      name: 'TATA Motors Limited',
+      name: 'Toyota Motor Corporation',
     },
     issuanceDate,
     credentialSubject: {

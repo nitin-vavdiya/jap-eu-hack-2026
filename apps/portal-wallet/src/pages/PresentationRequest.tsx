@@ -148,7 +148,7 @@ export default function PresentationRequest() {
         userId,
         credentialIds: [selectedCredId],
         challenge: request.nonce,
-        domain: 'digit-insurance',
+        domain: 'tokio-marine',
       })
 
       const vpData = generateRes.data as GeneratedVP

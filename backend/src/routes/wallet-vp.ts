@@ -123,7 +123,7 @@ function formatAsW3CVC(dbCred: any): VerifiableCredential {
 
   // For OwnershipVC, the issuer is the manufacturer
   const issuer = dbCred.type === 'OwnershipVC'
-    ? { id: 'did:eu-dataspace:company-tata-001', name: 'TATA Motors Limited' }
+    ? { id: 'did:eu-dataspace:company-toyota-001', name: 'Toyota Motor Corporation' }
     : { id: issuerDid, name: dbCred.issuerName || 'Unknown' };
 
   const resolvedIssuerDid = typeof issuer === 'string' ? issuer : issuer.id;

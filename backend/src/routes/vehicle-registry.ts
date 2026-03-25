@@ -27,9 +27,9 @@ function buildResolutionDocument(car: any, orgCred: any) {
     vin,
     status: car.status,
     manufacturer: {
-      id: 'company-tata-001',
-      name: 'TATA Motors Limited',
-      did: 'did:eu-dataspace:company-tata-001',
+      id: 'company-toyota-001',
+      name: 'Toyota Motor Corporation',
+      did: 'did:eu-dataspace:company-toyota-001',
       registryEndpoint: `${REGISTRY_BASE}/api/vehicle-registry`,
       verificationStatus: orgCred?.verificationStatus || 'unverified',
       orgCredentialId: orgCred?.id || null,
@@ -99,9 +99,9 @@ function buildPublicSummary(car: any) {
     color: car.color,
     status: car.status,
     manufacturer: {
-      name: 'TATA Motors Limited',
+      name: 'Toyota Motor Corporation',
       country: 'India',
-      did: 'did:eu-dataspace:company-tata-001',
+      did: 'did:eu-dataspace:company-toyota-001',
     },
     sustainability: {
       energyType: car.fuelType === 'Electric' ? 'Battery Electric Vehicle (BEV)' : car.fuelType,
@@ -231,13 +231,13 @@ async function checkAccessGrant(vin: string, requesterId: string): Promise<boole
 // Well-known vehicle registry endpoint
 router.get('/well-known', async (_req, res) => {
   const cars = await prisma.car.findMany();
-  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-tata-001' } });
+  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-toyota-001' } });
   res.json({
     '@context': 'https://w3id.org/catenax/vehicle-registry/v1',
-    registryId: 'tata-motors-vehicle-registry',
+    registryId: 'toyota-vehicle-registry',
     manufacturer: {
-      name: 'TATA Motors Limited',
-      did: 'did:eu-dataspace:company-tata-001',
+      name: 'Toyota Motor Corporation',
+      did: 'did:eu-dataspace:company-toyota-001',
       verificationStatus: orgCred?.verificationStatus || 'unverified',
     },
     totalVehicles: cars.length,
@@ -262,7 +262,7 @@ router.get('/well-known', async (_req, res) => {
 // List all vehicles in registry
 router.get('/vehicles', async (_req, res) => {
   const cars = await prisma.car.findMany();
-  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-tata-001' } });
+  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-toyota-001' } });
   res.json(cars.map((c: any) => ({
     carId: buildCarId(c.vin),
     vin: c.vin,
@@ -282,7 +282,7 @@ router.get('/vehicles/:vin', async (req, res) => {
   const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
-  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-tata-001' } });
+  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-toyota-001' } });
   const doc = buildResolutionDocument(car, orgCred);
 
   await logAudit(car.vin, 'resolve', req.query.requester as string || 'anonymous');
@@ -311,7 +311,7 @@ router.get('/vehicles/:vin/verification-status', async (req, res) => {
   const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
-  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-tata-001' } });
+  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-toyota-001' } });
   const manufacturerCred = car.manufacturerCredentialId
     ? await prisma.credential.findUnique({ where: { id: car.manufacturerCredentialId } })
     : null;
@@ -321,7 +321,7 @@ router.get('/vehicles/:vin/verification-status', async (req, res) => {
     carId: buildCarId(car.vin),
     vin: car.vin,
     manufacturer: {
-      name: 'TATA Motors Limited',
+      name: 'Toyota Motor Corporation',
       orgCredentialStatus: orgCred?.verificationStatus || 'unverified',
       gaiaxCompliant: complianceResult?.status === 'compliant',
       credentialId: orgCred?.id,
@@ -508,7 +508,7 @@ import { parseVP, extractCredentials, validateVP } from '../services/vp-processo
 /**
  * POST /vehicles/:vin/insurance-data-vp
  * VP-validated endpoint for insurance data.
- * Digit Insurance calls this with the holder's VP.
+ * Tokio Marine calls this with the holder's VP.
  */
 router.post('/vehicles/:vin/insurance-data-vp', async (req, res) => {
   const { vpToken, requestId, verifierDid } = req.body;

@@ -10,21 +10,21 @@ import CaddePage from './pages/CaddePage'
 const API = getApiBase()
 
 const adminTheme: PortalTheme = {
-  portalName: 'TATA Motors Admin',
+  portalName: 'Toyota Admin',
   subtitle: 'Fleet & DPP Management Console',
   primaryColor: 'bg-[#4285F4]',
   primaryHover: 'hover:bg-[#3367D6]',
   accentGradient: 'bg-gradient-to-br from-[#4285F4] via-[#3367D6] to-[#1a47a0]',
-  iconText: 'T',
+  iconText: 'TY',
   iconBg: 'bg-[#4285F4]',
-  description: 'Manage your vehicle fleet, create and edit Digital Product Passports, and oversee the full lifecycle of every car in the TATA Motors ecosystem.',
+  description: 'Manage your vehicle fleet, create and edit Digital Product Passports, and oversee the full lifecycle of every car in the Toyota ecosystem.',
   features: [
     'Create and manage Digital Product Passports for every vehicle',
     'Full 10-section DPP hierarchy: identity, powertrain, emissions, materials',
     'Track service history, damage records, and condition ratings',
     'Issue verifiable credentials for vehicle provenance',
   ],
-  loginHint: 'Login as tata-admin / tata-admin',
+  loginHint: 'Login as toyota-admin / toyota',
 }
 
 function OrgVerificationBanner() {
@@ -67,10 +67,10 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
             <div className="w-8 h-8 bg-[#4285F4] rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">T</span>
+              <span className="text-white font-bold text-xs">TY</span>
             </div>
             <div>
-              <span className="font-semibold text-[#1F1F1F] text-sm">TATA Motors Admin</span>
+              <span className="font-semibold text-[#1F1F1F] text-sm">Toyota Admin</span>
               <span className="text-[#9AA0A6] text-xs ml-2">DPP Management</span>
             </div>
           </a>

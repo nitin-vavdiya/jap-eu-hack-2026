@@ -11,30 +11,30 @@ async function seed() {
   console.log('Seeding organization credential...\n');
 
   const payload = {
-    legalName: 'TATA Motors Limited',
+    legalName: 'Toyota Motor Corporation',
     legalRegistrationNumber: {
-      vatId: 'IN27AAACT2727Q1ZW',
-      eoriNumber: 'IN987654321000',
-      localId: 'L28920MH1945PLC004415',
-      taxId: 'AAACT2727Q',
+      vatId: 'JP-TOYOTA-VAT-2024',
+      eoriNumber: 'JP987654321000',
+      localId: '0180-01-008846',
+      taxId: 'T2080401050646',
     },
     legalAddress: {
-      streetAddress: 'Bombay House, 24 Homi Mody Street',
-      locality: 'Mumbai',
-      postalCode: '400001',
-      countryCode: 'IN',
-      countrySubdivisionCode: 'IN-MH',
+      streetAddress: '1 Toyota-cho',
+      locality: 'Toyota City',
+      postalCode: '471-8571',
+      countryCode: 'JP',
+      countrySubdivisionCode: 'JP-23',
     },
     headquartersAddress: {
-      streetAddress: 'Bombay House, 24 Homi Mody Street',
-      locality: 'Mumbai',
-      postalCode: '400001',
-      countryCode: 'IN',
-      countrySubdivisionCode: 'IN-MH',
+      streetAddress: '1 Toyota-cho',
+      locality: 'Toyota City',
+      postalCode: '471-8571',
+      countryCode: 'JP',
+      countrySubdivisionCode: 'JP-23',
     },
-    website: 'https://www.tatamotors.com',
-    contactEmail: 'admin@tatamotors.com',
-    did: 'did:web:participant.gxdch.io:tata-motors',
+    website: 'https://www.toyota-global.com',
+    contactEmail: 'admin@toyota-global.com',
+    did: 'did:web:participant.gxdch.io:toyota-motors',
   };
 
   try {

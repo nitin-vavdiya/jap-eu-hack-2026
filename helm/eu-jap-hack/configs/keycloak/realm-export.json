@@ -180,15 +180,15 @@
   ],
   "users": [
     {
-      "username": "tata-admin",
+      "username": "toyota-admin",
       "enabled": true,
-      "email": "tata-admin@tatamotors.com",
-      "firstName": "TATA",
+      "email": "toyota-admin@toyota-global.com",
+      "firstName": "Toyota",
       "lastName": "Admin",
       "credentials": [
         {
           "type": "password",
-          "value": "tata-admin",
+          "value": "toyota-admin",
           "temporary": false
         }
       ],
@@ -210,15 +210,15 @@
       "realmRoles": ["customer"]
     },
     {
-      "username": "digit-agent",
+      "username": "tokiomarine-agent",
       "enabled": true,
-      "email": "agent@digitinsurance.com",
-      "firstName": "Digit",
+      "email": "agent@tokiomarine.com",
+      "firstName": "Tokio Marine",
       "lastName": "Agent",
       "credentials": [
         {
           "type": "password",
-          "value": "digit",
+          "value": "tokiomarine",
           "temporary": false
         }
       ],

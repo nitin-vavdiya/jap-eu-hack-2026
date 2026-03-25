@@ -5,21 +5,21 @@ import CarDetail from './pages/CarDetail'
 import BuySuccess from './pages/BuySuccess'
 
 const publicTheme: PortalTheme = {
-  portalName: 'TATA Motors',
+  portalName: 'Toyota',
   subtitle: 'Digital Showroom & Car Marketplace',
   primaryColor: 'bg-[#4285F4]',
   primaryHover: 'hover:bg-[#3367D6]',
   accentGradient: 'bg-gradient-to-br from-[#4285F4] via-[#3367D6] to-[#1a47a0]',
-  iconText: 'T',
+  iconText: 'TY',
   iconBg: 'bg-[#4285F4]',
-  description: 'Browse the TATA Motors lineup with full Digital Product Passport transparency. View specifications, history, and buy with confidence.',
+  description: 'Browse the Toyota lineup with full Digital Product Passport transparency. View specifications, history, and buy with confidence.',
   features: [
-    'Browse all TATA Motors vehicles with full specifications',
+    'Browse all Toyota vehicles with full specifications',
     'View Digital Product Passports — emissions, materials, service history',
     'Purchase vehicles and receive Ownership Verifiable Credentials',
     'Transparent vehicle data powered by the EU Digital Trust Framework',
   ],
-  loginHint: 'Login as mario-sanchez / mario',
+  loginHint: 'Login as toyota-customer / toyota',
 }
 
 export default function App() {
@@ -34,7 +34,7 @@ export default function App() {
             <div className="w-7 h-7 bg-[#4285F4] rounded-md flex items-center justify-center">
               <span className="text-white font-bold text-xs">T</span>
             </div>
-            <span className="font-semibold text-[#1F1F1F]">TATA Motors</span>
+            <span className="font-semibold text-[#1F1F1F]">Toyota</span>
             <span className="text-[#E5EAF0]">|</span>
             <span className="text-[#9AA0A6] text-sm">Digital Showroom</span>
           </div>

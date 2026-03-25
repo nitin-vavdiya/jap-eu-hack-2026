@@ -224,7 +224,7 @@ export default function CreateOrgCredential() {
             <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Legal Entity Information</h2>
             <div>
               <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Legal Name *</label>
-              <input value={form.legalName} onChange={e => set('legalName', e.target.value)} placeholder="TATA Motors Limited" className={ic('legalName')} />
+              <input value={form.legalName} onChange={e => set('legalName', e.target.value)} placeholder="Toyota Motor Corporation" className={ic('legalName')} />
               {errors.legalName && <p className="text-[11px] text-[#EA4335] mt-1">{errors.legalName}</p>}
             </div>
           </div>
@@ -261,27 +261,27 @@ export default function CreateOrgCredential() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Street Address *</label>
-                <input value={form.streetAddress} onChange={e => set('streetAddress', e.target.value)} placeholder="Bombay House, 24 Homi Mody Street" className={ic('streetAddress')} />
+                <input value={form.streetAddress} onChange={e => set('streetAddress', e.target.value)} placeholder="1 Toyota-cho, Toyota City" className={ic('streetAddress')} />
                 {errors.streetAddress && <p className="text-[11px] text-[#EA4335] mt-1">{errors.streetAddress}</p>}
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#5F6368] mb-1.5">City *</label>
-                <input value={form.locality} onChange={e => set('locality', e.target.value)} placeholder="Mumbai" className={ic('locality')} />
+                <input value={form.locality} onChange={e => set('locality', e.target.value)} placeholder="Aichi" className={ic('locality')} />
                 {errors.locality && <p className="text-[11px] text-[#EA4335] mt-1">{errors.locality}</p>}
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Postal Code *</label>
-                <input value={form.postalCode} onChange={e => set('postalCode', e.target.value)} placeholder="400001" className={ic('postalCode')} />
+                <input value={form.postalCode} onChange={e => set('postalCode', e.target.value)} placeholder="471-8571" className={ic('postalCode')} />
                 {errors.postalCode && <p className="text-[11px] text-[#EA4335] mt-1">{errors.postalCode}</p>}
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Country Code (ISO) *</label>
-                <input value={form.countryCode} onChange={e => set('countryCode', e.target.value.toUpperCase())} placeholder="IN" maxLength={2} className={ic('countryCode')} />
+                <input value={form.countryCode} onChange={e => set('countryCode', e.target.value.toUpperCase())} placeholder="JP" maxLength={2} className={ic('countryCode')} />
                 {errors.countryCode && <p className="text-[11px] text-[#EA4335] mt-1">{errors.countryCode}</p>}
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Subdivision Code</label>
-                <input value={form.countrySubdivisionCode} onChange={e => set('countrySubdivisionCode', e.target.value.toUpperCase())} placeholder="IN-MH" className={ic('countrySubdivisionCode')} />
+                <input value={form.countrySubdivisionCode} onChange={e => set('countrySubdivisionCode', e.target.value.toUpperCase())} placeholder="JP-23" className={ic('countrySubdivisionCode')} />
               </div>
             </div>
             <label className="flex items-center gap-2 pt-4 border-t border-[#E5EAF0]">
@@ -307,11 +307,11 @@ export default function CreateOrgCredential() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Website</label>
-                <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://www.tatamotors.com" className={ic('website')} />
+                <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://www.toyota-global.com" className={ic('website')} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Contact Email *</label>
-                <input value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} type="email" placeholder="admin@tatamotors.com" className={ic('contactEmail')} />
+                <input value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} type="email" placeholder="admin@toyota-global.com" className={ic('contactEmail')} />
                 {errors.contactEmail && <p className="text-[11px] text-[#EA4335] mt-1">{errors.contactEmail}</p>}
               </div>
             </div>

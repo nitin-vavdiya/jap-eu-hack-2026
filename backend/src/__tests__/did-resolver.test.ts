@@ -10,17 +10,17 @@ import {
 } from '../services/did-resolver';
 
 describe('resolveDid', () => {
-  it('should resolve TATA Motors DID', () => {
-    const result = resolveDid('did:eu-dataspace:company-tata-001');
+  it('should resolve Toyota Motor Corporation DID', () => {
+    const result = resolveDid('did:eu-dataspace:company-toyota-001');
     expect(result.didDocument).not.toBeNull();
-    expect(result.didDocument!.id).toBe('did:eu-dataspace:company-tata-001');
+    expect(result.didDocument!.id).toBe('did:eu-dataspace:company-toyota-001');
     expect(result.didResolutionMetadata.error).toBeUndefined();
   });
 
-  it('should resolve Digit Insurance DID', () => {
-    const result = resolveDid('did:eu-dataspace:company-digit-001');
+  it('should resolve Tokio Marine DID', () => {
+    const result = resolveDid('did:eu-dataspace:company-tokiomarine-001');
     expect(result.didDocument).not.toBeNull();
-    expect(result.didDocument!.id).toBe('did:eu-dataspace:company-digit-001');
+    expect(result.didDocument!.id).toBe('did:eu-dataspace:company-tokiomarine-001');
   });
 
   it('should resolve user DIDs', () => {
@@ -36,13 +36,13 @@ describe('resolveDid', () => {
   });
 
   it('should include verification methods', () => {
-    const result = resolveDid('did:eu-dataspace:company-tata-001');
+    const result = resolveDid('did:eu-dataspace:company-toyota-001');
     expect(result.didDocument!.verificationMethod).toBeDefined();
     expect(result.didDocument!.verificationMethod!.length).toBeGreaterThan(0);
   });
 
-  it('should include DataService and VehicleRegistryService for TATA Motors', () => {
-    const result = resolveDid('did:eu-dataspace:company-tata-001');
+  it('should include DataService and VehicleRegistryService for Toyota', () => {
+    const result = resolveDid('did:eu-dataspace:company-toyota-001');
     const services = result.didDocument!.service || [];
     expect(services.length).toBeGreaterThanOrEqual(3);
 
@@ -53,7 +53,7 @@ describe('resolveDid', () => {
   });
 
   it('should NOT include removed direct-fetch service types', () => {
-    const result = resolveDid('did:eu-dataspace:company-tata-001');
+    const result = resolveDid('did:eu-dataspace:company-toyota-001');
     const serviceTypes = (result.didDocument!.service || []).map(s => s.type);
     expect(serviceTypes).not.toContain(SERVICE_TYPES.VEHICLE_INSURANCE_DATA);
     expect(serviceTypes).not.toContain(SERVICE_TYPES.VEHICLE_DPP);
@@ -61,18 +61,18 @@ describe('resolveDid', () => {
   });
 
   it('should have DataService with DSP URL and BPNL in fragment', () => {
-    const result = resolveDid('did:eu-dataspace:company-tata-001');
+    const result = resolveDid('did:eu-dataspace:company-toyota-001');
     const dataService = (result.didDocument!.service || []).find(s => s.type === 'DataService');
     expect(dataService).toBeDefined();
     expect(dataService!.serviceEndpoint).toContain('#BPNL');
     expect(dataService!.serviceEndpoint).toContain('https://');
-    expect(dataService!.id).toBe('did:eu-dataspace:company-tata-001#data-service');
+    expect(dataService!.id).toBe('did:eu-dataspace:company-toyota-001#data-service');
   });
 });
 
 describe('selectEndpoint', () => {
   it('should find DataService endpoint', () => {
-    const { didDocument } = resolveDid('did:eu-dataspace:company-tata-001');
+    const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
     const endpoint = selectEndpoint(didDocument!, SERVICE_TYPES.DATA_SERVICE);
     expect(endpoint).not.toBeNull();
     expect(endpoint!.type).toBe('DataService');
@@ -80,20 +80,20 @@ describe('selectEndpoint', () => {
   });
 
   it('should find VehicleRegistryService endpoint', () => {
-    const { didDocument } = resolveDid('did:eu-dataspace:company-tata-001');
+    const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
     const endpoint = selectEndpoint(didDocument!, SERVICE_TYPES.VEHICLE_REGISTRY);
     expect(endpoint).not.toBeNull();
     expect(endpoint!.serviceEndpoint).toContain('/vehicle-registry');
   });
 
   it('should return null for unknown service type', () => {
-    const { didDocument } = resolveDid('did:eu-dataspace:company-tata-001');
+    const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
     const endpoint = selectEndpoint(didDocument!, 'UnknownServiceType');
     expect(endpoint).toBeNull();
   });
 
   it('should return null for removed VehicleInsuranceDataService', () => {
-    const { didDocument } = resolveDid('did:eu-dataspace:company-tata-001');
+    const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
     const endpoint = selectEndpoint(didDocument!, SERVICE_TYPES.VEHICLE_INSURANCE_DATA);
     expect(endpoint).toBeNull();
   });
@@ -101,7 +101,7 @@ describe('selectEndpoint', () => {
 
 describe('getServiceEndpoints', () => {
   it('should return all service endpoints', () => {
-    const { didDocument } = resolveDid('did:eu-dataspace:company-tata-001');
+    const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
     const endpoints = getServiceEndpoints(didDocument!);
     expect(endpoints.length).toBe(3);
     endpoints.forEach(ep => {

@@ -7,12 +7,12 @@ import PolicySuccess from './pages/PolicySuccess'
 import VPInsuranceFlow from './pages/VPInsuranceFlow'
 
 const insuranceTheme: PortalTheme = {
-  portalName: 'Digit Insurance',
+  portalName: 'Tokio Marine',
   subtitle: 'Smart Vehicle Coverage Portal',
   primaryColor: 'bg-[#FBBC05]',
   primaryHover: 'hover:bg-[#F59E0B]',
   accentGradient: 'bg-gradient-to-br from-[#FBBC05] via-[#F59E0B] to-[#EA4335]',
-  iconText: 'D',
+  iconText: 'TM',
   iconBg: 'bg-[#FBBC05]',
   description: 'Look up any vehicle by VIN, request DPP access with owner consent, and generate transparent, data-driven insurance quotes instantly.',
   features: [
@@ -21,7 +21,7 @@ const insuranceTheme: PortalTheme = {
     'DID-resolved manufacturer service endpoints',
     'Transparent premium calculation from DPP damage & condition data',
   ],
-  loginHint: 'Login as digit-agent / digit',
+  loginHint: 'Login as tokiomarine-agent / tokiomarine',
 }
 
 export default function App() {
@@ -34,10 +34,10 @@ export default function App() {
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 bg-[#FBBC05] rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-xs">D</span>
+              <span className="text-white font-bold text-xs">TM</span>
             </div>
             <div>
-              <span className="font-semibold text-[#1F1F1F] text-sm">Digit Insurance</span>
+              <span className="font-semibold text-[#1F1F1F] text-sm">Tokio Marine</span>
               <span className="text-[#9AA0A6] text-xs ml-2">Smart Vehicle Coverage</span>
             </div>
           </div>

@@ -429,7 +429,7 @@ export default function CompanyRegistration() {
             <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Legal Entity Information</h2>
             <div>
               <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Legal Name *</label>
-              <input value={form.legalName} onChange={e => set('legalName', e.target.value)} placeholder="TATA Motors Ltd." className={ic('legalName')} />
+              <input value={form.legalName} onChange={e => set('legalName', e.target.value)} placeholder="Toyota Motor Corporation" className={ic('legalName')} />
               {errors.legalName && <p className="text-[11px] text-[#EA4335] mt-1">{errors.legalName}</p>}
             </div>
             <div>

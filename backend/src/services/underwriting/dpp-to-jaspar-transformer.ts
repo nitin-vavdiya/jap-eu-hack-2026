@@ -1,8 +1,8 @@
 /**
  * DPP → JASPAR Transformer
  *
- * Converts the TATA Vehicle Digital Product Passport (DPP) format received
- * via EDC data exchange into the Digit Insurance JASPAR-like underwriting
+ * Converts the Vehicle Digital Product Passport (DPP) format received
+ * via EDC data exchange into the Tokio Marine JASPAR-like underwriting
  * dataset schema expected by the insurance scoring engine.
  */
 
@@ -345,8 +345,8 @@ export function transformDppToJaspar(
   const jaspar: JasparInsuranceDataset = {
     jasparVersion: '1.0',
     assessmentDate: new Date().toISOString(),
-    sourceProfile: 'TATA_DPP_v1',
-    targetProfile: 'DIGIT_JASPAR_v1',
+    sourceProfile: 'TOYOTA_DPP_v1',
+    targetProfile: 'TOKIOMARINE_JASPAR_v1',
     vehicleProfile,
     technicalCondition,
     riskIndicators,
@@ -398,8 +398,8 @@ export function transformDppToJaspar(
   ];
 
   const report: TransformationReport = {
-    sourceProfile: 'TATA_DPP_v1',
-    targetProfile: 'DIGIT_JASPAR_v1',
+    sourceProfile: 'TOYOTA_DPP_v1',
+    targetProfile: 'TOKIOMARINE_JASPAR_v1',
     transformedAt: jaspar.assessmentDate,
     fieldsExpected: EXPECTED_FIELDS.length,
     fieldsPresent: presentFields.length,

@@ -257,7 +257,7 @@ export async function negotiateAndFetchData(
   const tx: EdcTransaction = {
     id: txId,
     vin,
-    consumer: { name: 'Digit Insurance', bpn: process.env.BPN_NUMBER || 'BPNL_CONSUMER' },
+    consumer: { name: 'Tokio Marine', bpn: process.env.BPN_NUMBER || 'BPNL_CONSUMER' },
     provider: { name: 'Provider', bpn: provider.bpnl, dspUrl: provider.dspUrl },
     status: 'running',
     steps: [],

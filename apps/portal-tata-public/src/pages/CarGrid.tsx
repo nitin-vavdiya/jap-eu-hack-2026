@@ -31,40 +31,32 @@ interface Car {
   }
 }
 
-// Car images mapped by VIN — pristine official photos for new cars, real used car photos for older/damaged ones
+// Car images mapped by VIN (Wikimedia Commons)
 const carImages: Record<string, string> = {
-  // Nexon EV 2025 — brand new, pristine (CarWale official)
-  'TATA2025NEXONEV001': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/149123/nexon-ev-exterior-right-front-three-quarter-80.png?isig=0&q=80',
-  // Curvv EV 2024 — lightly used (CarWale official)
-  'TATA2024CURVVEV001': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/115617/curvv-ev-exterior-right-front-three-quarter-8.png?isig=0&q=80',
-  // Harrier 2023 — moderate use, 2 minor incidents (used car listing photo)
-  'TATA2023HARRIER001': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/139139/harrier-exterior-right-front-three-quarter-7.png?isig=0&q=80',
-  // Safari 2022 — well used, 62k km, 3 incidents incl 1 major (used car listing)
-  'TATA2022SAFARI0001': 'https://images10.gaadi.com/usedcar_image/5186594/original/processed_de9f26c2-1c91-44e3-9f8f-3c1c99a8ca67.jpg?imwidth=640',
-  // Nexon 2020 ICE — heavily used, 105k km, 4 incidents (used car listing)
-  'TATA2020NEXON00002': 'https://images10.gaadi.com/usedcar_image/5173722/original/processed_74be42ef-c68f-47b4-a979-db26f0d5e1d5.jpg?imwidth=640',
-  // Punch EV 2025 — factory fresh (CarWale official)
-  'TATA2025PUNCHEV001': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/217141/punch-ev-facelift-exterior-right-front-three-quarter-4.png?isig=0&q=80',
-  // Safari Storme 2018 — old, 158k km, 5 incidents, 4 owners (used car listing)
-  'TATA2018SAFARI0002': 'https://images10.gaadi.com/usedcar_image/5045581/original/processed_fc3e7b38-7001-4583-9215-8e1400f72006.jpg?imwidth=640',
-  // Tiago EV 2024 — clean, 1 owner (CarWale official)
-  'TATA2024TIAGOEV01': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/40453/tiago-ev-exterior-right-front-three-quarter-15.png?isig=0&q=80',
+  'TOYO2025BZ4X000001': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/2026_Toyota_bZ4X_Auto_Zuerich_2025_DSC_3391.jpg/1280px-2026_Toyota_bZ4X_Auto_Zuerich_2025_DSC_3391.jpg',
+  'TOYO2024RAV4HY0001': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/2024_Toyota_RAV4_2.5_LTD_HEV_in_White_Pearl_Crystal_Shine%2C_front_right%2C_06-09-2024.jpg/1280px-2024_Toyota_RAV4_2.5_LTD_HEV_in_White_Pearl_Crystal_Shine%2C_front_right%2C_06-09-2024.jpg',
+  'TOYO2023CAMRYH0001': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/2022_Toyota_Camry_Hybrid_XLE_in_Midnight_Black_Metallic%2C_Front_Right%2C_12-25-2021.jpg/1280px-2022_Toyota_Camry_Hybrid_XLE_in_Midnight_Black_Metallic%2C_Front_Right%2C_12-25-2021.jpg',
+  'TOYO2022LANDCR0001': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/2021_Toyota_Land_Cruiser_300_%28Russia%29_front_view.jpg/1280px-2021_Toyota_Land_Cruiser_300_%28Russia%29_front_view.jpg',
+  'TOYO2020COROLL0001': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/2020_Toyota_Corolla_SE%2C_front_2.29.20.jpg/1280px-2020_Toyota_Corolla_SE%2C_front_2.29.20.jpg',
+  'TOYO2025YARISCR001': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/2024_Toyota_Yaris_Cross_GR_Sport_front.jpg/1280px-2024_Toyota_Yaris_Cross_GR_Sport_front.jpg',
+  'TOYO2018PRIUSH0001': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/2019_Toyota_Prius_AWD-e_in_Super_White%2C_Front_Left%2C_08-21-2022.jpg/1280px-2019_Toyota_Prius_AWD-e_in_Super_White%2C_Front_Left%2C_08-21-2022.jpg',
+  'TOYO2024CHRHYB0001': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Toyota_C-HR%2B_Auto_Zuerich_2025_DSC_3053.jpg/1280px-Toyota_C-HR%2B_Auto_Zuerich_2025_DSC_3053.jpg',
 }
 
 // Fallback images by model name
 const modelImages: Record<string, string> = {
-  'Nexon EV': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/149123/nexon-ev-exterior-right-front-three-quarter-80.png?isig=0&q=80',
-  'Curvv EV': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/115617/curvv-ev-exterior-right-front-three-quarter-8.png?isig=0&q=80',
-  'Harrier': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/139139/harrier-exterior-right-front-three-quarter-7.png?isig=0&q=80',
-  'Safari': 'https://images10.gaadi.com/usedcar_image/5186594/original/processed_de9f26c2-1c91-44e3-9f8f-3c1c99a8ca67.jpg?imwidth=640',
-  'Safari Storme': 'https://images10.gaadi.com/usedcar_image/5045581/original/processed_fc3e7b38-7001-4583-9215-8e1400f72006.jpg?imwidth=640',
-  'Nexon': 'https://images10.gaadi.com/usedcar_image/5173722/original/processed_74be42ef-c68f-47b4-a979-db26f0d5e1d5.jpg?imwidth=640',
-  'Punch EV': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/217141/punch-ev-facelift-exterior-right-front-three-quarter-4.png?isig=0&q=80',
-  'Tiago EV': 'https://imgd.aeplcdn.com/664x374/n/cw/ec/40453/tiago-ev-exterior-right-front-three-quarter-15.png?isig=0&q=80',
+  'bZ4X': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/2026_Toyota_bZ4X_Auto_Zuerich_2025_DSC_3391.jpg/1280px-2026_Toyota_bZ4X_Auto_Zuerich_2025_DSC_3391.jpg',
+  'RAV4 Hybrid': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/2024_Toyota_RAV4_2.5_LTD_HEV_in_White_Pearl_Crystal_Shine%2C_front_right%2C_06-09-2024.jpg/1280px-2024_Toyota_RAV4_2.5_LTD_HEV_in_White_Pearl_Crystal_Shine%2C_front_right%2C_06-09-2024.jpg',
+  'Camry Hybrid': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/2022_Toyota_Camry_Hybrid_XLE_in_Midnight_Black_Metallic%2C_Front_Right%2C_12-25-2021.jpg/1280px-2022_Toyota_Camry_Hybrid_XLE_in_Midnight_Black_Metallic%2C_Front_Right%2C_12-25-2021.jpg',
+  'Land Cruiser': 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/2021_Toyota_Land_Cruiser_300_%28Russia%29_front_view.jpg/1280px-2021_Toyota_Land_Cruiser_300_%28Russia%29_front_view.jpg',
+  'Corolla': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/2020_Toyota_Corolla_SE%2C_front_2.29.20.jpg/1280px-2020_Toyota_Corolla_SE%2C_front_2.29.20.jpg',
+  'Yaris Cross': 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/2024_Toyota_Yaris_Cross_GR_Sport_front.jpg/1280px-2024_Toyota_Yaris_Cross_GR_Sport_front.jpg',
+  'Prius': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/2019_Toyota_Prius_AWD-e_in_Super_White%2C_Front_Left%2C_08-21-2022.jpg/1280px-2019_Toyota_Prius_AWD-e_in_Super_White%2C_Front_Left%2C_08-21-2022.jpg',
+  'C-HR Hybrid': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Toyota_C-HR%2B_Auto_Zuerich_2025_DSC_3053.jpg/1280px-Toyota_C-HR%2B_Auto_Zuerich_2025_DSC_3053.jpg',
 }
 
 function getCarImage(car: Car): string {
-  return carImages[car.vin] || modelImages[car.model] || modelImages['Nexon'] || ''
+  return carImages[car.vin] || modelImages[car.model] || modelImages['Corolla'] || ''
 }
 
 export default function CarGrid() {

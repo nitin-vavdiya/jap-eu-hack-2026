@@ -1,6 +1,6 @@
 /**
  * Converts a company name to a URL-safe tenant code (slug).
- * e.g. "Tata Motors Ltd." → "tata-motors-ltd"
+ * e.g. "Toyota Motor Corp." → "toyota-motor-corp"
  * Max 30 characters. Uniqueness must be enforced by DB constraint;
  * callers should append "-2", "-3" etc. on collision.
  */

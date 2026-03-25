@@ -18,19 +18,19 @@ import {
 // --------------- Test Fixtures ---------------
 
 function makeSignedOwnershipVC(overrides: Partial<VerifiableCredential> = {}): VerifiableCredential {
-  const issuerDid = 'did:eu-dataspace:company-tata-001';
+  const issuerDid = 'did:eu-dataspace:company-toyota-001';
   const base: Record<string, unknown> = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
     type: ['VerifiableCredential', 'OwnershipVC'],
     id: 'urn:credential:test-001',
-    issuer: { id: issuerDid, name: 'TATA Motors' },
+    issuer: { id: issuerDid, name: 'Toyota Motor Corporation' },
     issuanceDate: new Date().toISOString(),
     credentialSubject: {
       ownerId: 'mario-sanchez',
       ownerDid: 'did:smartsense:mario-sanchez',
-      vin: 'TATA2024NEXONEV001',
-      make: 'TATA',
-      model: 'Nexon EV',
+      vin: 'TOYO2024RAV4HY0001',
+      make: 'Toyota',
+      model: 'RAV4 Hybrid',
       year: 2024,
     },
     ...overrides,
@@ -55,7 +55,7 @@ function makeSignedOwnershipVC(overrides: Partial<VerifiableCredential> = {}): V
 
 describe('signVC / verifyVCJwt', () => {
   it('should sign a VC and verify it with the issuer public key', () => {
-    const issuerDid = 'did:eu-dataspace:company-tata-001';
+    const issuerDid = 'did:eu-dataspace:company-toyota-001';
     const vcPayload = {
       '@context': ['https://www.w3.org/2018/credentials/v1'],
       type: ['VerifiableCredential', 'OwnershipVC'],
@@ -77,7 +77,7 @@ describe('signVC / verifyVCJwt', () => {
   });
 
   it('should fail verification with wrong key', () => {
-    const issuerDid = 'did:eu-dataspace:company-tata-001';
+    const issuerDid = 'did:eu-dataspace:company-toyota-001';
     const vcJwt = signVC({ type: ['VerifiableCredential'], credentialSubject: {} }, issuerDid);
 
     // Use a holder key (different from issuer)
@@ -92,8 +92,8 @@ describe('signVC / verifyVCJwt', () => {
 describe('buildOwnershipVC', () => {
   it('should build a signed OwnershipVC', () => {
     const vc = buildOwnershipVC('test-owner', 'VIN123', {
-      make: 'TATA', model: 'Nexon', year: 2024,
-    }, 'did:eu-dataspace:company-tata-001');
+      make: 'Toyota', model: 'RAV4', year: 2024,
+    }, 'did:eu-dataspace:company-toyota-001');
 
     expect(vc.type).toContain('OwnershipVC');
     expect(vc.proof?.jws).toBeTruthy();
@@ -160,15 +160,15 @@ describe('extractCredentials', () => {
     const creds = extractCredentials(vp);
     expect(creds).toHaveLength(1);
     expect(creds[0].type).toContain('OwnershipVC');
-    expect(creds[0].issuer).toBe('did:eu-dataspace:company-tata-001');
-    expect(creds[0].subject.vin).toBe('TATA2024NEXONEV001');
+    expect(creds[0].issuer).toBe('did:eu-dataspace:company-toyota-001');
+    expect(creds[0].subject.vin).toBe('TOYO2024RAV4HY0001');
   });
 
   it('should handle string issuer', () => {
-    const vc = makeSignedOwnershipVC({ issuer: 'did:eu-dataspace:company-tata-001' });
+    const vc = makeSignedOwnershipVC({ issuer: 'did:eu-dataspace:company-toyota-001' });
     const vp = createVerifiablePresentation('did:smartsense:mario-sanchez', [vc]);
     const creds = extractCredentials(vp);
-    expect(creds[0].issuer).toBe('did:eu-dataspace:company-tata-001');
+    expect(creds[0].issuer).toBe('did:eu-dataspace:company-toyota-001');
     expect(creds[0].issuerName).toBeUndefined();
   });
 });
@@ -178,13 +178,13 @@ describe('validateVP', () => {
     const vc = makeSignedOwnershipVC();
     const vp = createVerifiablePresentation('did:smartsense:mario-sanchez', [vc], {
       challenge: 'test-nonce-123',
-      domain: 'digit-insurance',
+      domain: 'tokio-marine',
     });
     const result = validateVP(vp, {
       expectedCredentialTypes: ['OwnershipVC'],
       expectedChallenge: 'test-nonce-123',
-      expectedDomain: 'digit-insurance',
-      vehicleVin: 'TATA2024NEXONEV001',
+      expectedDomain: 'tokio-marine',
+      vehicleVin: 'TOYO2024RAV4HY0001',
     });
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
@@ -281,14 +281,14 @@ describe('createVerifiablePresentation', () => {
     const vc = makeSignedOwnershipVC();
     const vp = createVerifiablePresentation('did:smartsense:mario-sanchez', [vc], {
       challenge: 'nonce-123',
-      domain: 'digit-insurance',
+      domain: 'tokio-marine',
     });
 
     const result = validateVP(vp, {
       expectedChallenge: 'nonce-123',
-      expectedDomain: 'digit-insurance',
+      expectedDomain: 'tokio-marine',
       expectedCredentialTypes: ['OwnershipVC'],
-      vehicleVin: 'TATA2024NEXONEV001',
+      vehicleVin: 'TOYO2024RAV4HY0001',
     });
 
     expect(result.valid).toBe(true);

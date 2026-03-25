@@ -38,7 +38,7 @@ router.post('/', requireRole('customer'), async (req, res) => {
     year: car.year,
     purchaseDate: purchaseDate.toISOString(),
     purchasePrice: car.price,
-    dealerName: 'TATA Motors Official',
+    dealerName: 'Toyota Official',
   };
 
   const credential = await prisma.credential.create({
@@ -46,7 +46,7 @@ router.post('/', requireRole('customer'), async (req, res) => {
       id: credentialId,
       type: 'OwnershipVC',
       issuerId: issuerCredentialUrl,
-      issuerName: 'TATA Motors',
+      issuerName: 'Toyota',
       subjectId: userId,
       status: 'active',
       credentialSubject,
@@ -56,7 +56,7 @@ router.post('/', requireRole('customer'), async (req, res) => {
   // Also issue via walt.id OID4VCI (non-blocking)
   issueCredentialSimple({
     type: 'OwnershipVC',
-    issuerDid: 'did:web:tata-motors',
+    issuerDid: 'did:web:toyota-motors',
     subjectDid: `did:smartsense:${userId}`,
     credentialSubject,
   }).catch(() => {});
@@ -102,7 +102,7 @@ router.post('/', requireRole('customer'), async (req, res) => {
       year: car.year,
       price: car.price,
       purchaseDate,
-      dealerName: 'TATA Motors Official',
+      dealerName: 'Toyota Official',
       credentialId,
     },
   });

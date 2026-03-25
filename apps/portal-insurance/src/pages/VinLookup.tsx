@@ -98,7 +98,7 @@ export default function VinLookup() {
       // Create consent request
       const consentResp = await api.post(`/consent/request`, {
         requesterId: userId,
-        requesterName: 'Digit Insurance',
+        requesterName: 'Tokio Marine',
         userId: car.ownerId,
         vin,
         purpose: 'Insurance premium calculation based on vehicle condition and history',
@@ -128,7 +128,7 @@ export default function VinLookup() {
           type="text"
           value={carId}
           onChange={e => { setCarId(e.target.value); setError(''); setResolution(null); setPublicSummary(null) }}
-          placeholder={`e.g. ${API_BASE}/vehicle-registry/vehicles/TATA2025NEXONEV001`}
+          placeholder={`e.g. ${API_BASE}/vehicle-registry/vehicles/TOYO2025BZ4X000001`}
           className="w-full border border-[#E5EAF0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FBBC05] focus:ring-1 focus:ring-[#FBBC05]/20 transition-all"
           onKeyDown={e => e.key === 'Enter' && handleResolve()}
         />
@@ -146,7 +146,7 @@ export default function VinLookup() {
         <div className="mt-4 pt-3 border-t border-[#E5EAF0]">
           <p className="text-[10px] text-[#9AA0A6] uppercase tracking-wide mb-2">Demo Car IDs</p>
           <div className="space-y-1">
-            {['TATA2025NEXONEV001', 'TATA2022SAFARI0001', 'TATA2018SAFARI0002', 'TATA2020NEXON00002'].map(v => (
+            {['TOYO2025BZ4X000001', 'TOYO2022LANDCR0001', 'TOYO2018PRIUSH0001', 'TOYO2020COROLL0001'].map(v => (
               <button key={v} onClick={() => setCarId(`${API_BASE}/vehicle-registry/vehicles/${v}`)} className="block text-[11px] font-mono text-[#9AA0A6] hover:text-[#FBBC05] transition-colors truncate max-w-full">
                 {`${API_BASE}/vehicle-registry/vehicles/${v}`}
               </button>

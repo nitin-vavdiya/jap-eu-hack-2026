@@ -25,7 +25,7 @@ export default function BuySuccess() {
         </div>
         <p className="text-[11px] text-blue-800 font-mono break-all">{carId}</p>
         <p className="text-[10px] text-blue-500 mt-2">
-          This is your vehicle's resolvable identifier in the TATA Motors Vehicle Asset Registry.
+          This is your vehicle's resolvable identifier in the Toyota Motor Corporation Vehicle Asset Registry.
           Third parties (like insurers) will use this Car ID to look up your vehicle — but protected data
           requires your explicit consent in the SmartSense Wallet.
         </p>
@@ -41,7 +41,7 @@ export default function BuySuccess() {
         <div className="space-y-1.5 text-sm text-gray-500">
           <p>Ownership VC added to SmartSense Wallet (port 3004)</p>
           <p>Car DPP now linked to your identity</p>
-          <p>Get insurance at Digit Insurance Portal (port 3005)</p>
+          <p>Get insurance at Tokio Marine Insurance Portal (port 3005)</p>
           <p>Share your Car ID with insurers to start a quote</p>
         </div>
       </div>

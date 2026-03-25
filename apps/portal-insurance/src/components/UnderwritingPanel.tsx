@@ -276,7 +276,7 @@ function MappingAccordion({ mappings }: { mappings: MappingDetail[] }) {
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900">Transformation Mapping Details</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Expand to inspect how each TATA field was mapped and normalised into the insurer schema.</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">Expand to inspect how each Toyota field was mapped and normalised into the insurer schema.</p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -310,7 +310,7 @@ function MappingAccordion({ mappings }: { mappings: MappingDetail[] }) {
                       <div key={i} className="px-6 py-3 grid grid-cols-[1fr_auto_1fr_auto] gap-3 items-start hover:bg-gray-50/50 transition-colors">
                         {/* Source */}
                         <div className="min-w-0">
-                          <p className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">Source (TATA DPP)</p>
+                          <p className="text-[9px] text-gray-400 uppercase tracking-wide mb-0.5">Source (Toyota DPP)</p>
                           <p className="text-[10px] font-mono text-orange-600 break-all leading-relaxed">{m.sourcePath}</p>
                           <p className="text-[10px] text-gray-600 font-medium mt-0.5 truncate">{formatValue(m.sourceValue)}</p>
                         </div>
@@ -345,7 +345,7 @@ function MappingAccordion({ mappings }: { mappings: MappingDetail[] }) {
 
 // ─── Source/Target DPP Panel (left) ───────────────────────────────────────────
 
-function TataDppPanel({
+function ToyotaDppPanel({
   car, vin, issuerDid, showRaw, onToggleRaw,
 }: {
   car: Record<string, unknown>
@@ -386,8 +386,8 @@ function TataDppPanel({
               <span className="text-[9px] font-bold text-orange-600">DPP</span>
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-900">TATA Vehicle DPP Format</p>
-              <p className="text-[9px] text-gray-400 font-mono mt-0.5">TATA_DPP_v1</p>
+              <p className="text-xs font-semibold text-gray-900">Toyota Vehicle DPP Format</p>
+              <p className="text-[9px] text-gray-400 font-mono mt-0.5">TOYOTA_DPP_v1</p>
             </div>
           </div>
           <div className="flex flex-col gap-1 items-end flex-shrink-0">
@@ -395,7 +395,7 @@ function TataDppPanel({
             <span className="text-[8px] bg-orange-50 text-orange-600 border border-orange-200 px-2 py-0.5 rounded-full font-medium whitespace-nowrap">Manufacturer Authoritative</span>
           </div>
         </div>
-        <p className="text-[10px] text-gray-400">Vehicle data received from TATA through EDC in manufacturer-native DPP format.</p>
+        <p className="text-[10px] text-gray-400">Vehicle data received from Toyota through EDC in manufacturer-native DPP format.</p>
         {issuerDid && <p className="text-[9px] text-gray-300 font-mono mt-1 truncate">Issuer: {issuerDid}</p>}
       </div>
 
@@ -485,7 +485,7 @@ function InsurerSchemaPanel({
           <pre className="mt-1 mb-4 text-[8px] bg-gray-900 text-indigo-300 rounded-lg p-3 overflow-auto max-h-48 font-mono leading-relaxed">
 {`{
   "jasparVersion": "1.0",
-  "sourceProfile": "TATA_DPP_v1",
+  "sourceProfile": "TOYOTA_DPP_v1",
   "targetProfile": "DIGIT_JASPAR_v1",
   "vehicleProfile": {
     "vin": "string",
@@ -583,7 +583,7 @@ function TransformedJasparPanel({
           </div>
         </div>
         <p className="text-[10px] text-gray-400">
-          Transformation complete. {report.fieldsPresent}/{report.fieldsExpected} fields populated from TATA DPP source.
+          Transformation complete. {report.fieldsPresent}/{report.fieldsExpected} fields populated from Toyota DPP source.
         </p>
       </div>
 
@@ -643,14 +643,14 @@ function HeaderStrip({ status }: { status: 'ready' | 'transformed' }) {
       <div className="flex items-center gap-2.5">
         <div className="flex items-center gap-2 px-2.5 py-1 bg-orange-50 border border-orange-200 rounded-lg">
           <span className="text-[9px] font-bold text-orange-600">DPP</span>
-          <span className="text-[10px] text-orange-700 font-medium">TATA DPP v1</span>
+          <span className="text-[10px] text-orange-700 font-medium">Toyota DPP v1</span>
         </div>
         <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
         </svg>
         <div className="flex items-center gap-2 px-2.5 py-1 bg-indigo-50 border border-indigo-200 rounded-lg">
           <span className="text-[9px] font-bold text-indigo-600">JAS</span>
-          <span className="text-[10px] text-indigo-700 font-medium">DIGIT JASPAR v1</span>
+          <span className="text-[10px] text-indigo-700 font-medium">TOKIO MARINE JASPAR v1</span>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -736,7 +736,7 @@ export default function UnderwritingPanel({ vin, car, issuerDid, onAccept, onBac
         <HeaderStrip status="ready" />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <TataDppPanel
+          <ToyotaDppPanel
             car={car}
             vin={vin}
             issuerDid={issuerDid}
@@ -810,7 +810,7 @@ export default function UnderwritingPanel({ vin, car, issuerDid, onAccept, onBac
 
         {/* Side-by-side: source vs transformed */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-          <TataDppPanel
+          <ToyotaDppPanel
             car={car}
             vin={vin}
             issuerDid={issuerDid}

@@ -1,6 +1,6 @@
 /**
  * OpenID4VP-style Verifier Routes
- * Handles presentation requests from Digit Insurance,
+ * Handles presentation requests from Tokio Marine & Nichido Fire Insurance,
  * receives VPs from the wallet, processes them through the full
  * DID resolution + manufacturer validation pipeline.
  */
@@ -83,7 +83,7 @@ async function updateSessionStep(sessionId: string, stepNum: number, status: Ses
 
 /**
  * POST /presentation-request
- * Digit Insurance creates a presentation request (OpenID4VP Authorization Request)
+ * Tokio Marine creates a presentation request (OpenID4VP Authorization Request)
  */
 router.post('/presentation-request', authenticate, async (req, res) => {
   const { purpose, expectedCredentialTypes, requestedClaims } = req.body;
@@ -94,9 +94,9 @@ router.post('/presentation-request', authenticate, async (req, res) => {
   const request = await prisma.presentationRequest.create({
     data: {
       id: requestId,
-      verifierId: 'company-digit-001',
-      verifierName: 'Digit Insurance',
-      verifierDid: 'did:eu-dataspace:company-digit-001',
+      verifierId: 'company-tokiomarine-001',
+      verifierName: 'Tokio Marine & Nichido Fire Insurance',
+      verifierDid: 'did:eu-dataspace:company-tokiomarine-001',
       nonce,
       purpose: purpose || 'Vehicle insurance underwriting — verify ownership and access vehicle data',
       expectedCredentialTypes: expectedCredentialTypes || ['OwnershipVC'],
@@ -312,7 +312,7 @@ async function processVPAsync(sessionId: string, vpToken: unknown, request: Pres
     const validation = validateVP(vp, {
       expectedCredentialTypes: request.expectedCredentialTypes,
       expectedChallenge: request.nonce,
-      expectedDomain: 'digit-insurance',
+      expectedDomain: 'tokio-marine',
       vehicleVin: vin,
     });
 

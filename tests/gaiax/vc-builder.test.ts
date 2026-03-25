@@ -53,8 +53,8 @@ describe('buildLegalParticipantVC', () => {
   });
 
   it('should map legal name correctly', () => {
-    const vc = buildLegalParticipantVC(makeSampleOrg({ legalName: 'TATA Motors Limited' }));
-    expect(vc.credentialSubject['gx:legalName']).toBe('TATA Motors Limited');
+    const vc = buildLegalParticipantVC(makeSampleOrg({ legalName: 'Toyota Motor Corporation' }));
+    expect(vc.credentialSubject['gx:legalName']).toBe('Toyota Motor Corporation');
   });
 
   it('should map registration numbers correctly', () => {

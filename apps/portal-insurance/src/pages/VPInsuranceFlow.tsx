@@ -63,7 +63,7 @@ export default function VPInsuranceFlow() {
   const [requestId, setRequestId] = useState('')
   const [sessionId, setSessionId] = useState('')
   const [qrData, setQrData] = useState('')
-  const [verifierName, setVerifierName] = useState('Digit Insurance')
+  const [verifierName, setVerifierName] = useState('Tokio Marine')
   const [nonce, setNonce] = useState('')
   const [expectedTypes, setExpectedTypes] = useState<string[]>([])
   const [purpose, setPurpose] = useState('')
@@ -116,7 +116,7 @@ export default function VPInsuranceFlow() {
       setRequestId(data.id || data.requestId || data.request_id || '')
       setSessionId(data.sessionId || data.session_id || '')
       setQrData(data.qrData || data.qr_data || '')
-      setVerifierName(data.verifierName || data.verifier_name || 'Digit Insurance')
+      setVerifierName(data.verifierName || data.verifier_name || 'Tokio Marine')
       setNonce(data.nonce || '')
       setExpectedTypes(data.expectedCredentialTypes || data.expected_credential_types || ['VehicleOwnershipCredential'])
       setPurpose(data.purpose || 'Insurance premium calculation based on vehicle condition and history')
@@ -287,7 +287,7 @@ export default function VPInsuranceFlow() {
             type="text"
             value={vinInput}
             onChange={e => { setVinInput(e.target.value); setRequestError('') }}
-            placeholder={`e.g. TATA2025NEXONEV001 or ${API_BASE}/vehicle-registry/vehicles/TATA2025NEXONEV001`}
+            placeholder={`e.g. TOYO2025BZ4X000001 or ${API_BASE}/vehicle-registry/vehicles/TOYO2025BZ4X000001`}
             className="w-full border border-[#E5EAF0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#FBBC05] focus:ring-1 focus:ring-[#FBBC05]/20 transition-all"
             onKeyDown={e => e.key === 'Enter' && handleRequestProof()}
           />
@@ -305,7 +305,7 @@ export default function VPInsuranceFlow() {
           <div className="mt-4 pt-3 border-t border-[#E5EAF0]">
             <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Demo Car IDs</p>
             <div className="space-y-1">
-              {['TATA2025NEXONEV001', 'TATA2022SAFARI0001', 'TATA2018SAFARI0002', 'TATA2020NEXON00002'].map(v => (
+              {['TOYO2025BZ4X000001', 'TOYO2022LANDCR0001', 'TOYO2018PRIUSH0001', 'TOYO2020COROLL0001'].map(v => (
                 <button key={v} onClick={() => setVinInput(`${API_BASE}/vehicle-registry/vehicles/${v}`)} className="block text-[11px] font-mono text-gray-400 hover:text-[#FBBC05] transition-colors truncate max-w-full">
                   {`${API_BASE}/vehicle-registry/vehicles/${v}`}
                 </button>
@@ -323,7 +323,7 @@ export default function VPInsuranceFlow() {
                 { num: '1', text: 'A presentation request is created using OpenID4VP protocol' },
                 { num: '2', text: 'The vehicle owner scans or opens the request in SmartSense Wallet' },
                 { num: '3', text: 'Owner presents their Vehicle Ownership Credential as a VP' },
-                { num: '4', text: 'Digit Insurance verifies the VP and retrieves vehicle data from the manufacturer' },
+                { num: '4', text: 'Tokio Marine verifies the VP and retrieves vehicle data from the manufacturer' },
               ].map(item => (
                 <div key={item.num} className="flex items-start gap-3">
                   <div className="w-5 h-5 bg-orange-50 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -517,9 +517,9 @@ export default function VPInsuranceFlow() {
         <div className="flex items-center justify-center gap-2 mb-8 flex-wrap">
           <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
             <div className="w-5 h-5 bg-[#FBBC05] rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-[8px]">D</span>
+              <span className="text-white font-bold text-[8px]">TM</span>
             </div>
-            <span className="text-[10px] font-medium text-amber-800">Digit Insurance</span>
+            <span className="text-[10px] font-medium text-amber-800">Tokio Marine</span>
             <span className="text-[9px] text-amber-500">Verifier</span>
           </div>
           <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12M8 12h12M8 17h12" /></svg>
@@ -535,7 +535,7 @@ export default function VPInsuranceFlow() {
             <div className="w-5 h-5 bg-[#1A47A0] rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-[8px]">T</span>
             </div>
-            <span className="text-[10px] font-medium text-blue-800">TATA Motors</span>
+            <span className="text-[10px] font-medium text-blue-800">Toyota</span>
             <span className="text-[9px] text-blue-500">Issuer</span>
           </div>
         </div>
@@ -688,7 +688,7 @@ export default function VPInsuranceFlow() {
           </div>
           <div>
             <p className="text-xs font-medium text-emerald-800">Data Verified via OpenID4VP + EDC Sovereign Exchange</p>
-            <p className="text-[10px] text-emerald-600">Issuer DID: {issuerDid || 'did:web:tata-motors.smartsense.co'}</p>
+            <p className="text-[10px] text-emerald-600">Issuer DID: {issuerDid || 'did:web:toyota-motors.smartsense.co'}</p>
           </div>
         </div>
 
@@ -825,7 +825,7 @@ export default function VPInsuranceFlow() {
                       className="mt-0.5 w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
                     <div>
                       <p className="text-xs text-gray-700 font-medium group-hover:text-gray-900">DPP Data Usage for Risk Assessment</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">I consent to Digit Insurance accessing and using my vehicle's Digital Product Passport data — including damage history, condition ratings, and service records — for premium calculation and risk assessment.</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">I consent to Tokio Marine accessing and using my vehicle's Digital Product Passport data — including damage history, condition ratings, and service records — for premium calculation and risk assessment.</p>
                     </div>
                   </label>
 

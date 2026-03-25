@@ -189,16 +189,16 @@ export default function CreateCar() {
 
   // Step 0: Identification (was Vehicle Identity)
   const [identification, setIdentification] = useState({
-    manufacturerPartId: '', nameAtManufacturer: '', serial: '', make: 'TATA', model: '', variant: '',
+    manufacturerPartId: '', nameAtManufacturer: '', serial: '', make: 'Toyota', model: '', variant: '',
     year: 2025, color: '', bodyType: 'SUV', price: 25000,
     codes: '', dataCarrier: '', classification: 'Passenger Vehicle'
   })
 
   // Step 1: Operation (was Manufacturer)
   const [operation, setOperation] = useState({
-    manufacturerBpnl: 'BPNL00000003TATA', manufacturerName: 'TATA Motors Limited',
-    facility: 'Pune Manufacturing Plant', manufacturingDate: new Date().toISOString().slice(0, 10),
-    country: 'India', importInfo: '', certificationBody: 'ARAI'
+    manufacturerBpnl: 'BPNL00000003TOYO', manufacturerName: 'Toyota Motor Corporation',
+    facility: 'Toyota City Manufacturing Plant', manufacturingDate: new Date().toISOString().slice(0, 10),
+    country: 'Japan', importInfo: '', certificationBody: 'JARI'
   })
 
   // Step 2: Performance (was Powertrain)
@@ -236,7 +236,7 @@ export default function CreateCar() {
   const [stateOfHealth, setStateOfHealth] = useState({
     overallRating: 9.5, exteriorCondition: 9.5, interiorCondition: 9.5, mechanicalCondition: 9.5,
     batteryHealthPercent: 100, inspectionDate: new Date().toISOString().slice(0, 10),
-    inspectedBy: 'TATA Quality Assurance', notes: 'Factory new condition'
+    inspectedBy: 'Toyota Quality Assurance', notes: 'Factory new condition'
   })
 
   // Step 8: Service & Damage records
@@ -279,7 +279,7 @@ export default function CreateCar() {
       manufacturerPartId: String(identType.manufacturerPartId ?? ''),
       nameAtManufacturer: String(identType.nameAtManufacturer ?? ''),
       serial: '',  // VIN must be new
-      make: String(d.make ?? 'TATA'),
+      make: String(d.make ?? 'Toyota'),
       model: String(d.model ?? ''),
       variant: String(d.variant ?? ''),
       year: Number(d.year) || 2025,
@@ -291,11 +291,11 @@ export default function CreateCar() {
       classification: String(ident.classification ?? 'Passenger Vehicle'),
     })
     setOperation({
-      manufacturerBpnl: String(mfg.bpnl ?? 'BPNL00000003TATA'),
-      manufacturerName: String(mfg.name ?? 'TATA Motors Limited'),
+      manufacturerBpnl: String(mfg.bpnl ?? 'BPNL00000003TOYO'),
+      manufacturerName: String(mfg.name ?? 'Toyota Motor Corporation'),
       facility: String(op.facility ?? ''),
       manufacturingDate: String(op.manufacturingDate ?? new Date().toISOString().slice(0, 10)),
-      country: String(op.country ?? 'India'),
+      country: String(op.country ?? 'Japan'),
       importInfo: String(op.importInfo ?? ''),
       certificationBody: String(op.certificationBody ?? 'ARAI'),
     })
@@ -433,7 +433,7 @@ export default function CreateCar() {
           },
           identification: {
             type: {
-              manufacturerPartId: identification.manufacturerPartId || `TATA-${identification.model.replace(/\s+/g, '-').toUpperCase()}`,
+              manufacturerPartId: identification.manufacturerPartId || `TOYO-${identification.model.replace(/\s+/g, '-').toUpperCase()}`,
               nameAtManufacturer: identification.nameAtManufacturer || `${identification.make} ${identification.model}`
             },
             serial: identification.serial,
@@ -503,26 +503,26 @@ export default function CreateCar() {
           damageHistory: { totalIncidents: damages.length, incidents: damages },
           ownershipChain: {
             currentOwner: {
-              ownerName: 'TATA Motors (Inventory)', ownerId: 'tata-motors',
-              purchaseDate: now, purchasePrice: identification.price, country: 'India'
+              ownerName: 'Toyota (Inventory)', ownerId: 'toyota-motors',
+              purchaseDate: now, purchasePrice: identification.price, country: 'Japan'
             },
             previousOwners: [],
             totalOwners: 0
           },
           compliance: compliance,
           manufacturerCredential: {
-            credentialId: `cred-org-tata-${generateUUID().slice(0, 8)}`,
+            credentialId: `cred-org-toyota-${generateUUID().slice(0, 8)}`,
             type: 'ManufacturerVC',
             issuer: 'EU APAC Dataspace',
-            issuerDid: 'did:eu-dataspace:tata-motors-001',
-            holder: 'TATA Motors Limited',
+            issuerDid: 'did:eu-dataspace:toyota-motors-001',
+            holder: 'Toyota Motor Corporation',
             holderDid: `did:bpn:${operation.manufacturerBpnl}`,
             issuedAt: now,
             status: 'active',
             credentialSubject: {
-              companyName: 'TATA Motors Limited',
-              registrationNumber: 'L28920MH1945PLC004520',
-              manufacturingLicense: 'EU-MFG-2024-TATA-001',
+              companyName: 'Toyota Motor Corporation',
+              registrationNumber: '0180-01-008846',
+              manufacturingLicense: 'EU-MFG-2024-TOYOTA-001',
               isoQualityCertification: 'ISO 9001:2015',
               iatf16949Certified: true,
               manufacturingCountry: operation.country,
@@ -612,11 +612,11 @@ export default function CreateCar() {
             <p className="text-[11px] text-blue-700">CX-0143 Identification: Defines the product identity per Catena-X Digital Product Passport standard.</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Serial (VIN) *</label><input value={identification.serial} onChange={e => setIdentification({...identification, serial: e.target.value.toUpperCase()})} placeholder="TATA2025NEXO0021" className={inputClass} /></div>
-            <div><label className={labelClass}>Manufacturer Part ID</label><input value={identification.manufacturerPartId} onChange={e => setIdentification({...identification, manufacturerPartId: e.target.value})} placeholder="TATA-NEXON-EV-MAX" className={inputClass} /></div>
-            <div><label className={labelClass}>Name at Manufacturer</label><input value={identification.nameAtManufacturer} onChange={e => setIdentification({...identification, nameAtManufacturer: e.target.value})} placeholder="TATA Nexon EV Max" className={inputClass} /></div>
+            <div><label className={labelClass}>Serial (VIN) *</label><input value={identification.serial} onChange={e => setIdentification({...identification, serial: e.target.value.toUpperCase()})} placeholder="TOYO2025BZ4X0021" className={inputClass} /></div>
+            <div><label className={labelClass}>Manufacturer Part ID</label><input value={identification.manufacturerPartId} onChange={e => setIdentification({...identification, manufacturerPartId: e.target.value})} placeholder="TOYO-BZ4X-FWD" className={inputClass} /></div>
+            <div><label className={labelClass}>Name at Manufacturer</label><input value={identification.nameAtManufacturer} onChange={e => setIdentification({...identification, nameAtManufacturer: e.target.value})} placeholder="Toyota bZ4X FWD" className={inputClass} /></div>
             <div><label className={labelClass}>Make</label><input value={identification.make} onChange={e => setIdentification({...identification, make: e.target.value})} className={inputClass} /></div>
-            <div><label className={labelClass}>Model *</label><input value={identification.model} onChange={e => setIdentification({...identification, model: e.target.value})} placeholder="Nexon EV Max" className={inputClass} /></div>
+            <div><label className={labelClass}>Model *</label><input value={identification.model} onChange={e => setIdentification({...identification, model: e.target.value})} placeholder="bZ4X" className={inputClass} /></div>
             <div><label className={labelClass}>Variant</label><input value={identification.variant} onChange={e => setIdentification({...identification, variant: e.target.value})} placeholder="LR Dark Edition" className={inputClass} /></div>
             <div><label className={labelClass}>Year</label><input type="number" value={identification.year} onChange={e => setIdentification({...identification, year: Number(e.target.value)})} className={inputClass} /></div>
             <div><label className={labelClass}>Color</label><input value={identification.color} onChange={e => setIdentification({...identification, color: e.target.value})} placeholder="Pristine White" className={inputClass} /></div>

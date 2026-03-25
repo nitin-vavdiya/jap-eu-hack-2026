@@ -13,7 +13,7 @@ interface StepData {
 }
 
 const STEP_LABELS = [
-  { name: 'Query Partner Catalog', desc: 'Discovering available assets from TATA Motors connector' },
+  { name: 'Query Partner Catalog', desc: 'Discovering available assets from Toyota connector' },
   { name: 'Initiate Contract Negotiation', desc: 'Proposing ODRL contract with provider' },
   { name: 'Wait for Agreement Finalization', desc: 'Awaiting mutual contract agreement via IDSA protocol' },
   { name: 'Initiate Data Transfer', desc: 'Requesting HttpData-PULL transfer' },
@@ -30,16 +30,16 @@ function EdcNegotiationStepper({ steps, error, done, onContinue }: { steps: Step
           <svg className="w-7 h-7 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
         </div>
         <h2 className="text-lg font-semibold text-gray-900 mb-1">EDC Data Exchange</h2>
-        <p className="text-xs text-gray-400">Sovereign data negotiation between Digit Insurance &amp; TATA Motors</p>
+        <p className="text-xs text-gray-400">Sovereign data negotiation between Tokio Marine &amp; Toyota</p>
       </div>
 
       {/* Party badges */}
       <div className="flex items-center justify-center gap-3 mb-8">
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
           <div className="w-5 h-5 bg-[#FBBC05] rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-[8px]">D</span>
+            <span className="text-white font-bold text-[8px]">TM</span>
           </div>
-          <span className="text-[10px] font-medium text-amber-800">Digit Insurance</span>
+          <span className="text-[10px] font-medium text-amber-800">Tokio Marine</span>
           <span className="text-[9px] text-amber-500">Consumer</span>
         </div>
         <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
@@ -47,7 +47,7 @@ function EdcNegotiationStepper({ steps, error, done, onContinue }: { steps: Step
           <div className="w-5 h-5 bg-[#1A47A0] rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-[8px]">T</span>
           </div>
-          <span className="text-[10px] font-medium text-blue-800">TATA Motors</span>
+          <span className="text-[10px] font-medium text-blue-800">Toyota</span>
           <span className="text-[9px] text-blue-500">Provider</span>
         </div>
       </div>
@@ -314,7 +314,7 @@ export default function QuotePage() {
         </div>
         <div>
           <p className="text-xs font-medium text-emerald-800">Data Obtained via Sovereign EDC Exchange</p>
-          <p className="text-[10px] text-emerald-600">Vehicle DPP transferred from TATA Motors connector using IDSA Dataspace Protocol with ODRL contract agreement</p>
+          <p className="text-[10px] text-emerald-600">Vehicle DPP transferred from Toyota connector using IDSA Dataspace Protocol with ODRL contract agreement</p>
         </div>
       </div>
 
@@ -450,7 +450,7 @@ export default function QuotePage() {
                     className="mt-0.5 w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
                   <div>
                     <p className="text-xs text-gray-700 font-medium group-hover:text-gray-900">DPP Data Usage for Risk Assessment</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">I consent to Digit Insurance accessing and using my vehicle's Digital Product Passport data — including damage history, condition ratings, and service records — for premium calculation and risk assessment.</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">I consent to Tokio Marine accessing and using my vehicle's Digital Product Passport data — including damage history, condition ratings, and service records — for premium calculation and risk assessment.</p>
                   </div>
                 </label>
 
