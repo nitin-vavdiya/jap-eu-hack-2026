@@ -17,7 +17,7 @@ backend:
   replicaCount: 1
   image:
     repository: eu-jap-hack/backend
-    tag: "1.0.21"
+    tag: "1.0.22"
     pullPolicy: Always
   service:
     port: 8000
@@ -68,7 +68,7 @@ portalDataspace:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-dataspace
-    tag: "1.0.21"
+    tag: "1.0.22"
     pullPolicy: Always
   service:
     port: 80
@@ -91,7 +91,7 @@ portalTataAdmin:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-tata-admin
-    tag: "1.0.21"
+    tag: "1.0.22"
     pullPolicy: Always
   service:
     port: 80
@@ -114,7 +114,7 @@ portalTataPublic:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-tata-public
-    tag: "1.0.21"
+    tag: "1.0.22"
     pullPolicy: Always
   service:
     port: 80
@@ -137,7 +137,7 @@ portalWallet:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-wallet
-    tag: "1.0.21"
+    tag: "1.0.22"
     pullPolicy: Always
   service:
     port: 80
@@ -159,7 +159,7 @@ portalInsurance:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-insurance
-    tag: "1.0.21"
+    tag: "1.0.22"
     pullPolicy: Always
   service:
     port: 80
@@ -182,7 +182,7 @@ portalCompany:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-company
-    tag: "1.0.21"
+    tag: "1.0.22"
     pullPolicy: Always
   service:
     port: 80
@@ -209,7 +209,7 @@ keycloak:
   replicaCount: 1
   image:
     repository: eu-jap-hack/keycloak
-    tag: "1.0.21"
+    tag: "1.0.22"
     pullPolicy: Always
   adminUsername: admin
   adminPassword: "<path:k8s-stack/data/jap-eu-hack#keycloakAdminPassword>"
@@ -237,7 +237,7 @@ provisioning:
   replicaCount: 1
   image:
     repository: eu-jap-hack/provisioning
-    tag: "1.0.21"
+    tag: "1.0.22"
     pullPolicy: Always
   service:
     port: 3001
