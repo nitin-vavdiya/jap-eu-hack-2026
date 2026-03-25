@@ -81,7 +81,12 @@ export class VPSigner {
     this.x5c = this.generateSelfSignedCert();
 
     this.initialized = true;
-    console.log(`[VPSigner] Initialized | source=${source} | DID: ${this.did}`);
+
+    // Log key fingerprint so we can verify same key across deploys
+    const keyFingerprint = crypto.createHash('sha256')
+      .update(this.publicKey)
+      .digest('hex').slice(0, 16);
+    console.log(`[VPSigner] Initialized | source=${source} | DID: ${this.did} | key=${keyFingerprint}`);
   }
 
   /**

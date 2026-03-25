@@ -115,6 +115,20 @@ export class GaiaXOrchestrator {
     const signer = getVPSigner();
     // Always use the VPSigner's DID (backed by ngrok for public resolution)
     const did = signer.getDid();
+    const publicKeyJwk = signer.getPublicKeyJwk();
+
+    // Log signer identity for debugging key mismatch issues
+    const crypto = await import('crypto');
+    const keyFingerprint = crypto.createHash('sha256')
+      .update(JSON.stringify({ n: publicKeyJwk.n, e: publicKeyJwk.e }))
+      .digest('hex').slice(0, 16);
+    console.log(`[GaiaX] ──── Compliance submission for org ${org.id} ────`);
+    console.log(`[GaiaX]   signer DID     = ${did}`);
+    console.log(`[GaiaX]   key fingerprint= ${keyFingerprint}`);
+    console.log(`[GaiaX]   DID doc URL    = https://${(process.env.GAIAX_DID_DOMAIN || 'localhost:8000').replace(/%3A/g, ':')}/${(process.env.GAIAX_DID_PATH || 'v1')}/did.json`);
+    console.log(`[GaiaX]   endpoint set   = ${endpointSet.name}`);
+    console.log(`[GaiaX]   compliance URL = ${endpointSet.compliance}`);
+    console.log(`[GaiaX]   has x5c cert   = ${(signer.getX5c()?.length || 0) > 0}`);
 
     // ── Step 2: Sign the LegalParticipant VC as JWT ──
     this.emitProgress(org.id, 'preparing', 'in-progress');
@@ -216,10 +230,21 @@ export class GaiaXOrchestrator {
     const vpJwt = signer.signVP(vcsForVP, endpointSet.compliance);
     console.log(`[GaiaX] Signed VP-JWT (${vpJwt.length} chars) for compliance submission`);
 
+    // Log VP-JWT header for debugging signature verification failures
+    try {
+      const vpHeader = JSON.parse(Buffer.from(vpJwt.split('.')[0], 'base64url').toString());
+      console.log(`[GaiaX] VP-JWT header:`, JSON.stringify(vpHeader));
+    } catch { /* ignore parse errors */ }
+
+    const vcId = `${getVCBaseUrl()}/vc/${org.id}`;
+    console.log(`[GaiaX] Submitting to compliance | url=${endpointSet.compliance}/api/credential-offers/standard-compliance?vcid=${vcId}`);
+    console.log(`[GaiaX]   VC count in VP = ${vcsForVP.length}`);
+    console.log(`[GaiaX]   VC issuers     = ${vcsForVP.map(j => { try { return JSON.parse(Buffer.from(j.split('.')[1], 'base64url').toString()).iss; } catch { return '?'; } }).join(', ')}`);
+
     const complianceResult = await this.liveClient.submitCompliance(
       endpointSet.compliance,
       vpJwt,
-      `${getVCBaseUrl()}/vc/${org.id}`,
+      vcId,
     );
 
     attempts.push({
