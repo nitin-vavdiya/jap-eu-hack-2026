@@ -27,9 +27,9 @@ function buildResolutionDocument(car: any, orgCred: any) {
     vin,
     status: car.status,
     manufacturer: {
-      id: 'company-toyota-001',
-      name: 'Toyota Motor Corporation',
-      did: 'did:eu-dataspace:company-toyota-001',
+      id: car.manufacturerCompanyId || null,
+      name: car.manufacturerCompany?.name || car.make,
+      did: car.manufacturerCompany?.did || null,
       registryEndpoint: `${REGISTRY_BASE}/api/vehicle-registry`,
       verificationStatus: orgCred?.verificationStatus || 'unverified',
       orgCredentialId: orgCred?.id || null,
@@ -99,9 +99,9 @@ function buildPublicSummary(car: any) {
     color: car.color,
     status: car.status,
     manufacturer: {
-      name: 'Toyota Motor Corporation',
-      country: 'India',
-      did: 'did:eu-dataspace:company-toyota-001',
+      name: car.manufacturerCompany?.name || car.make,
+      country: car.manufacturerCompany?.country || null,
+      did: car.manufacturerCompany?.did || null,
     },
     sustainability: {
       energyType: car.fuelType === 'Electric' ? 'Battery Electric Vehicle (BEV)' : car.fuelType,
@@ -231,15 +231,9 @@ async function checkAccessGrant(vin: string, requesterId: string): Promise<boole
 // Well-known vehicle registry endpoint
 router.get('/well-known', async (_req, res) => {
   const cars = await prisma.car.findMany();
-  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-toyota-001' } });
   res.json({
     '@context': 'https://w3id.org/catenax/vehicle-registry/v1',
-    registryId: 'toyota-vehicle-registry',
-    manufacturer: {
-      name: 'Toyota Motor Corporation',
-      did: 'did:eu-dataspace:company-toyota-001',
-      verificationStatus: orgCred?.verificationStatus || 'unverified',
-    },
+    registryId: 'vehicle-registry',
     totalVehicles: cars.length,
     registeredVehicles: cars.map((c: any) => ({
       carId: buildCarId(c.vin),
@@ -261,8 +255,7 @@ router.get('/well-known', async (_req, res) => {
 
 // List all vehicles in registry
 router.get('/vehicles', async (_req, res) => {
-  const cars = await prisma.car.findMany();
-  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-toyota-001' } });
+  const cars = await prisma.car.findMany({ include: { manufacturerCompany: true } });
   res.json(cars.map((c: any) => ({
     carId: buildCarId(c.vin),
     vin: c.vin,
@@ -273,16 +266,18 @@ router.get('/vehicles', async (_req, res) => {
     fuelType: c.fuelType,
     status: c.status,
     isSold: !!c.ownerId,
-    manufacturerVerified: !!orgCred,
+    manufacturerVerified: !!c.manufacturerCompany,
   })));
 });
 
 // Resolve Car ID — the core resolution endpoint
 router.get('/vehicles/:vin', async (req, res) => {
-  const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
+  const car = await prisma.car.findUnique({ where: { vin: req.params.vin }, include: { manufacturerCompany: true } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
-  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-toyota-001' } });
+  const orgCred = car.manufacturerCompanyId
+    ? await prisma.orgCredential.findFirst({ where: { companyId: car.manufacturerCompanyId } })
+    : null;
   const doc = buildResolutionDocument(car, orgCred);
 
   await logAudit(car.vin, 'resolve', req.query.requester as string || 'anonymous');
@@ -291,7 +286,7 @@ router.get('/vehicles/:vin', async (req, res) => {
 
 // Public summary — no auth needed
 router.get('/vehicles/:vin/public-summary', async (req, res) => {
-  const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
+  const car = await prisma.car.findUnique({ where: { vin: req.params.vin }, include: { manufacturerCompany: true } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
   await logAudit(car.vin, 'public_summary_viewed', req.query.requester as string || 'anonymous');
@@ -308,10 +303,12 @@ router.get('/vehicles/:vin/policies', async (req, res) => {
 
 // Verification status
 router.get('/vehicles/:vin/verification-status', async (req, res) => {
-  const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
+  const car = await prisma.car.findUnique({ where: { vin: req.params.vin }, include: { manufacturerCompany: true } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
-  const orgCred = await prisma.orgCredential.findFirst({ where: { companyId: 'company-toyota-001' } });
+  const orgCred = car.manufacturerCompanyId
+    ? await prisma.orgCredential.findFirst({ where: { companyId: car.manufacturerCompanyId } })
+    : null;
   const manufacturerCred = car.manufacturerCredentialId
     ? await prisma.credential.findUnique({ where: { id: car.manufacturerCredentialId } })
     : null;
@@ -321,7 +318,7 @@ router.get('/vehicles/:vin/verification-status', async (req, res) => {
     carId: buildCarId(car.vin),
     vin: car.vin,
     manufacturer: {
-      name: 'Toyota Motor Corporation',
+      name: car.manufacturerCompany?.name || car.make,
       orgCredentialStatus: orgCred?.verificationStatus || 'unverified',
       gaiaxCompliant: complianceResult?.status === 'compliant',
       credentialId: orgCred?.id,

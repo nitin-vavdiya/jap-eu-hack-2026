@@ -121,9 +121,9 @@ function formatAsW3CVC(dbCred: any): VerifiableCredential {
   const issuerDid = dbCred.credentialSubject?.issuedBy
     || (dbCred.issuerId === 'eu-dataspace' ? 'did:eu-dataspace:eu-apac' : `did:eu-dataspace:${dbCred.issuerId}`);
 
-  // For OwnershipVC, the issuer is the manufacturer
+  // For OwnershipVC, use the stored issuer DID and name (set at purchase time from the car's manufacturer company)
   const issuer = dbCred.type === 'OwnershipVC'
-    ? { id: 'did:eu-dataspace:company-toyota-001', name: 'Toyota Motor Corporation' }
+    ? { id: dbCred.issuerId, name: dbCred.issuerName || dbCred.issuerId }
     : { id: issuerDid, name: dbCred.issuerName || 'Unknown' };
 
   const resolvedIssuerDid = typeof issuer === 'string' ? issuer : issuer.id;

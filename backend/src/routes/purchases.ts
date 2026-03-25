@@ -57,7 +57,7 @@ router.post('/', requireRole('customer'), async (req, res) => {
     data: {
       id: credentialId,
       type: 'OwnershipVC',
-      issuerId: issuerCredentialUrl,
+      issuerId: issuerDid,
       issuerName,
       subjectId: userId,
       status: 'active',

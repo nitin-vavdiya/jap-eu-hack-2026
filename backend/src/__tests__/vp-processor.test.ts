@@ -93,7 +93,7 @@ describe('buildOwnershipVC', () => {
   it('should build a signed OwnershipVC', () => {
     const vc = buildOwnershipVC('test-owner', 'VIN123', {
       make: 'Toyota', model: 'RAV4', year: 2024,
-    }, 'did:eu-dataspace:company-toyota-001');
+    }, 'did:eu-dataspace:company-toyota-001', 'Toyota Motor Corporation');
 
     expect(vc.type).toContain('OwnershipVC');
     expect(vc.proof?.jws).toBeTruthy();

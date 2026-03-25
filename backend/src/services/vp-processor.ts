@@ -176,17 +176,17 @@ function getHolderKeys(holderId: string): KeyPair {
  * Used by verifiers to verify signatures.
  */
 export function getPublicKeyForDid(did: string): string | null {
-  if (did === 'did:eu-dataspace:company-toyota-001') {
-    return getIssuerKeys().publicKey;
-  }
   if (did.startsWith('did:smartsense:')) {
     const userId = did.replace('did:smartsense:', '');
     const pubPath = path.join(KEYS_DIR, `${HOLDER_PREFIX}${userId}-public.pem`);
     if (fs.existsSync(pubPath)) {
       return fs.readFileSync(pubPath, 'utf-8');
     }
+    return null;
   }
-  return null;
+  // Any issuer/manufacturer DID uses the platform issuer key
+  // (all VCs are signed with the same platform key regardless of the DID label)
+  return getIssuerKeys().publicKey;
 }
 
 // --------------- VC Signing (Issuer) ---------------
@@ -248,7 +248,7 @@ export function createVerifiablePresentation(
   // Sign embedded VCs with issuer key if they don't already have JWTs
   const signedCredentials = credentials.map(vc => {
     if (vc._jwt) return vc; // Already signed
-    const issuerDid = typeof vc.issuer === 'string' ? vc.issuer : vc.issuer?.id || 'did:eu-dataspace:company-toyota-001';
+    const issuerDid = typeof vc.issuer === 'string' ? vc.issuer : vc.issuer?.id || 'did:web:unknown-issuer';
     const vcJwt = signVC({
       '@context': vc['@context'],
       type: vc.type,
@@ -533,6 +533,7 @@ export function buildOwnershipVC(
   vin: string,
   carData: Record<string, unknown>,
   issuerDid: string,
+  issuerName: string,
 ): VerifiableCredential {
   const vcId = `urn:uuid:${uuidv4()}`;
   const issuanceDate = new Date().toISOString();
@@ -546,7 +547,7 @@ export function buildOwnershipVC(
     id: vcId,
     issuer: {
       id: issuerDid,
-      name: 'Toyota Motor Corporation',
+      name: issuerName,
     },
     issuanceDate,
     credentialSubject: {
