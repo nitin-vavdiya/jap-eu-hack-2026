@@ -319,7 +319,7 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
     updatedAt: now.toISOString(),
   };
   const signer = getVPSigner();
-  orgCredRecord.vcPayload = buildLegalParticipantVC(orgCredRecord);
+  orgCredRecord.vcPayload = buildLegalParticipantVC(orgCredRecord, signer.getDid());
   orgCredRecord.vcJwt = signer.signVC(orgCredRecord.vcPayload as unknown as Record<string, unknown>);
 
   const orgCredential = await prisma.orgCredential.create({
