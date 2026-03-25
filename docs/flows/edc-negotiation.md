@@ -217,7 +217,7 @@ Every negotiation creates an `EdcTransaction` record:
 ```typescript
 {
   id: "txn-uuid",
-  providerDspUrl: "https://tata-motors-controlplane...",
+  providerDspUrl: "https://toyota-controlplane...",
   providerBpn: "BPNL00000000024R",
   assetId: "asset_dpp_1HGBH41",
   status: "completed",

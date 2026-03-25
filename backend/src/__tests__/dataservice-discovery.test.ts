@@ -16,11 +16,11 @@ describe('discoverDataService', () => {
     const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
     const result = discoverDataService(didDocument!);
 
-    expect(result.dspUrl).toBe('https://tata-motors-protocol.tx.the-sense.io/api/v1/dsp');
+    expect(result.dspUrl).toBe('https://toyota-protocol.tx.the-sense.io/api/v1/dsp');
     expect(result.issuerBpnl).toBe('BPNL00000000024R');
     expect(result.serviceId).toBe('did:eu-dataspace:company-toyota-001#data-service');
     expect(result.serviceEndpoint).toBe(
-      'https://tata-motors-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
+      'https://toyota-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
     );
   });
 

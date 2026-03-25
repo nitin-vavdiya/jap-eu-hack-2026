@@ -17,7 +17,7 @@ backend:
   replicaCount: 1
   image:
     repository: eu-jap-hack/backend
-    tag: "1.0.18"
+    tag: "1.0.20"
     pullPolicy: Always
   service:
     port: 8000
@@ -35,7 +35,7 @@ backend:
     MAX_COMPANIES: "10"
     GAIAX_DID_DOMAIN: "jeh-api.tx.the-sense.io"
     GAIAX_DID_PATH: "v7"
-    EDC_BASE_URL: "https://tata-motors-controlplane.tx.the-sense.io"
+    EDC_BASE_URL: "https://toyota-controlplane.tx.the-sense.io"
     EDC_API_KEY: "tata-motors"
     BPN_NUMBER: "BPNL00000000024R"
     APP_BASE_URL: "https://jeh-api.tx.the-sense.io"
@@ -47,7 +47,7 @@ backend:
     EDC_NEGOTIATION_POLL_INTERVAL_MS: "5000"
     EDC_NEGOTIATION_MAX_RETRIES: "3"
     CADDE_ASSET_ID: "asset_7"
-    CADDE_PARTNER_EDC_DSP_URL: "https://tata-motors-protocol.tx.the-sense.io/api/v1/dsp"
+    CADDE_PARTNER_EDC_DSP_URL: "https://toyota-protocol.tx.the-sense.io/api/v1/dsp"
     CADDE_PARTNER_EDC_BPN: "BPNL00000000024R"
     PROVISIONING_SERVICE_URL: "http://eu-jap-hack-provisioning:3001"
     WALTID_ISSUER_URL: "http://eu-jap-hack-waltid-issuer:7002"
@@ -68,7 +68,7 @@ portalDataspace:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-dataspace
-    tag: "1.0.17"
+    tag: "1.0.20"
     pullPolicy: Always
   service:
     port: 80
@@ -91,7 +91,7 @@ portalTataAdmin:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-tata-admin
-    tag: "1.0.17"
+    tag: "1.0.20"
     pullPolicy: Always
   service:
     port: 80
@@ -114,7 +114,7 @@ portalTataPublic:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-tata-public
-    tag: "1.0.17"
+    tag: "1.0.20"
     pullPolicy: Always
   service:
     port: 80
@@ -137,7 +137,7 @@ portalWallet:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-wallet
-    tag: "1.0.17"
+    tag: "1.0.20"
     pullPolicy: Always
   service:
     port: 80
@@ -159,7 +159,7 @@ portalInsurance:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-insurance
-    tag: "1.0.17"
+    tag: "1.0.20"
     pullPolicy: Always
   service:
     port: 80
@@ -182,7 +182,7 @@ portalCompany:
   replicaCount: 1
   image:
     repository: eu-jap-hack/portal-company
-    tag: "1.0.17"
+    tag: "1.0.20"
     pullPolicy: Always
   service:
     port: 80
@@ -209,7 +209,7 @@ keycloak:
   replicaCount: 1
   image:
     repository: eu-jap-hack/keycloak
-    tag: "1.0.17"
+    tag: "1.0.20"
     pullPolicy: Always
   adminUsername: admin
   adminPassword: "<path:k8s-stack/data/jap-eu-hack#keycloakAdminPassword>"
@@ -237,7 +237,7 @@ provisioning:
   replicaCount: 1
   image:
     repository: eu-jap-hack/provisioning
-    tag: "1.0.17"
+    tag: "1.0.20"
     pullPolicy: Always
   service:
     port: 3001

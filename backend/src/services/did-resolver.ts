@@ -84,7 +84,7 @@ function buildToyotaDidDocument(): DidDocument {
       {
         id: 'did:eu-dataspace:company-toyota-001#data-service',
         type: SERVICE_TYPES.DATA_SERVICE,
-        serviceEndpoint: 'https://tata-motors-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
+        serviceEndpoint: 'https://toyota-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
         description: 'IDSA Dataspace Protocol endpoint for sovereign data exchange — DSP URL with provider BPNL',
       },
     ],

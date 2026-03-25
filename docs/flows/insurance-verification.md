@@ -239,7 +239,7 @@ GET https://tata-admin.tx.the-sense.io/.well-known/did.json
       "id": "#edc-dsp",
       "type": "DataService",
       "serviceEndpoint": {
-        "dspUrl": "https://tata-motors-controlplane.tx.the-sense.io/api/v1/dsp",
+        "dspUrl": "https://toyota-controlplane.tx.the-sense.io/api/v1/dsp",
         "bpn": "BPNL00000000024R"
       }
     }
