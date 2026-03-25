@@ -25,9 +25,9 @@ export default function BuySuccess() {
         </div>
         <p className="text-[11px] text-blue-800 font-mono break-all">{carId}</p>
         <p className="text-[10px] text-blue-500 mt-2">
-          This is your vehicle's resolvable identifier in the Toyota Motor Corporation Vehicle Asset Registry.
-          Third parties (like insurers) will use this Car ID to look up your vehicle — but protected data
-          requires your explicit consent in the SmartSense Wallet.
+          This is your vehicle's resolvable identifier in the Toyota Motors Vehicle Asset Registry.
+          Third parties (such as insurers) can use this Vehicle ID to look up your vehicle, but access to
+          protected data requires your explicit consent through the SmartSense Wallet.
         </p>
         <div className="flex flex-wrap gap-1.5 mt-2">
           <span className="text-[8px] bg-emerald-100 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded-full">Manufacturer-Hosted</span>
