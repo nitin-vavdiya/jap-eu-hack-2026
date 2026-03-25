@@ -3,259 +3,304 @@
   <img src="https://img.shields.io/badge/Dataspaces-Interoperability-blue?style=for-the-badge" alt="Dataspaces"/>
   <img src="https://img.shields.io/badge/W3C-Verifiable%20Credentials-green?style=for-the-badge" alt="W3C VC"/>
   <img src="https://img.shields.io/badge/Gaia--X-Compliant-orange?style=for-the-badge" alt="Gaia-X"/>
+  <img src="https://img.shields.io/badge/did%3Aweb-Self--Sovereign-brightgreen?style=for-the-badge" alt="did:web"/>
 </p>
 
 # Universal Dataspace Interoperability Gateway
 
 ### _One gateway. Every dataspace. Trusted everywhere._
 
-> Bridging EU (Eclipse Dataspace Connector) and Japanese (CADDE) data ecosystems through DID-based discovery, protocol translation, and verifiable trust — demonstrated via a real-world cross-border vehicle insurance use case.
+> A platform that lets companies in different countries and industries share data securely — without rebuilding their existing systems. Demonstrated through a real-world cross-border vehicle insurance scenario between Europe and Japan.
 
 ---
 
 ## The Problem
 
-Today's dataspaces are **islands**. The EU ecosystem speaks EDC + Gaia-X. Japan operates on CADDE. India has its own emerging standards. Each has different protocols, trust models, policy languages, and data formats.
+Businesses in Europe and Japan cannot easily share data with each other. Not because they don't want to — but because their digital infrastructure speaks completely different languages:
 
-A Japanese insurer cannot verify a European vehicle's Digital Product Passport. A European manufacturer cannot share data with a Japanese partner without rebuilding integrations from scratch. **Cross-border data sharing is fragmented, expensive, and trust-deficient.**
+- **Europe** uses EDC (Eclipse Dataspace Connector) + Gaia-X trust framework
+- **Japan** uses CADDE + JASPAR data standards
+- **India** and other regions have their own emerging standards
 
-There is no universal translator between dataspaces — until now.
+A Japanese insurer cannot verify a European car's history. A European manufacturer cannot share vehicle data with a Japanese partner without custom-built integrations that cost millions and take months.
+
+> **The result:** Cross-border data sharing is slow, expensive, and full of trust gaps.
 
 ---
 
 ## The Solution
 
-The **Universal Dataspace Interoperability Gateway** acts as a **protocol translator + trust bridge** between incompatible dataspace ecosystems. It doesn't replace existing infrastructure — it connects them.
+The **Universal Dataspace Interoperability Gateway** is a **translator and trust bridge** between different dataspace ecosystems.
+
+Think of it like an international airport — planes from every country land, transfer, and depart, without each airline needing to rebuild the entire airport for themselves.
 
 ```
 ┌──────────────┐                                      ┌──────────────┐
-│   EU  Stack   │                                      │  Japan Stack  │
-│  EDC + Gaia-X │ ◄──── Universal Gateway ────► │    CADDE      │
-│  ODRL + VP    │    (Translate ↔ Trust ↔ Route)       │  JASPAR + VP  │
+│  Europe       │                                      │  Japan        │
+│  EDC + Gaia-X │ ◄──── Universal Gateway ────►  │  CADDE        │
+│  ODRL + VC    │    (Translate · Trust · Route)       │  JASPAR + VC  │
 └──────────────┘                                      └──────────────┘
 ```
 
-**What the gateway does:**
+**The gateway does four things:**
 
-- **Discovers** data services via DID resolution (no hardcoded endpoints)
-- **Translates** between EDC and CADDE protocols seamlessly
-- **Transforms** data formats (EU Digital Product Passport → Japanese JASPAR standard)
-- **Enforces** trust through W3C Verifiable Credentials, Gaia-X compliance, and consent-gated access
+| What | How | Business Value |
+|------|-----|----------------|
+| **Discovers** endpoints | Resolves digital identity documents (DIDs) to find where data lives | No phone calls or emails to ask "what's your API URL?" |
+| **Translates** protocols | Converts between EDC and CADDE data-sharing protocols | No custom integration per partner |
+| **Transforms** formats | Converts EU vehicle data (DPP) to Japanese insurance standard (JASPAR) | No manual data re-entry |
+| **Enforces** trust | Verifies every participant's identity and consent before sharing anything | No unauthorized data access |
 
 ---
 
 ## Live Demo: Cross-Border Vehicle Insurance
 
-We demonstrate the gateway through an end-to-end scenario where a **Japanese insurer** underwrites a policy for a **European-manufactured vehicle**, touching every layer of the interoperability stack.
+We demonstrate the complete gateway with one real-world scenario: **a Japanese insurance company wants to underwrite a policy for a European-manufactured car.**
 
-### The Actors
+### The People in the Story
 
-| Actor               | Role                                      | DID                                  |
-| ------------------- | ----------------------------------------- | ------------------------------------ |
-| **TATA Motors**     | Vehicle manufacturer & data provider (EU) | `did:eu-dataspace:company-tata-001`  |
-| **Digit Insurance** | Insurer & data consumer (Japan)           | `did:eu-dataspace:company-digit-001` |
-| **Mario Sanchez**   | Vehicle owner & consent holder            | `did:smartsense:mario-sanchez`       |
+| Person / Company    | Role                          |
+| ------------------- | ----------------------------- |
+| **TATA Motors**     | European car manufacturer — owns and provides vehicle data |
+| **Digit Insurance** | Japanese insurer — wants to assess the car's risk to price a policy |
+| **Mario Sanchez**   | Car owner — must approve any sharing of his vehicle's data |
 
-### Demo Flow (Step by Step)
+### What Happens, Step by Step
 
 ```
- ① TATA registers vehicle → DPP published to EDC
- ② Mario purchases vehicle → OwnershipVC issued to wallet
- ③ Digit agent requests insurance quote → enters VIN
- ④ Mario receives consent request → approves in wallet
- ⑤ Backend resolves TATA's DID → discovers EDC endpoint
- ⑥ 7-step EDC sovereign negotiation completes
- ⑦ DPP fetched from TATA's data plane
- ⑧ DPP transformed to JASPAR format (24-field mapping)
- ⑨ 9-factor scoring engine calculates risk (0–100)
- ⑩ Dynamic insurance package recommended with premium
- ⑪ InsuranceVC issued to Mario's wallet
+ Step 1   TATA Motors registers on the platform
+          → Gets a verified digital identity (Gaia-X compliance)
+          → Gets a data-sharing endpoint (EDC connector)
+
+ Step 2   TATA registers Mario's vehicle
+          → Vehicle history published as a Digital Product Passport (DPP)
+
+ Step 3   Mario buys the car
+          → Ownership credential issued to his digital wallet
+
+ Step 4   Digit Insurance requests a quote for Mario's car (enters VIN)
+          → Platform sends Mario a consent request
+
+ Step 5   Mario approves in his wallet
+          → Platform finds TATA's data endpoint automatically (via DID)
+
+ Step 6   Secure 7-step data negotiation between Digit and TATA's systems
+          → Contract agreed, data access granted under ODRL policy
+
+ Step 7   Vehicle data fetched from TATA's system
+          → Automatically converted from EU format (DPP) to Japanese format (JASPAR)
+
+ Step 8   9-factor risk scoring engine runs
+          → Score calculated (0–100 points)
+
+ Step 9   Insurance package recommended with exact premium
+          → Policy credential issued to Mario's wallet
 ```
 
-**End-to-end time:** ~30–60 seconds
+**Total time: 30–60 seconds, fully automated, zero manual intervention.**
 
 ---
 
-## Architecture
+## What Makes This Different
 
-![Architecture](docs/images/architecture.png)
+### 1. Every Company Gets a Real Digital Identity — Automatically
+
+When a company registers on the platform, it instantly gets a **W3C-standard digital identity** (`did:web`) that:
+- Is **publicly resolvable** by any compliant system worldwide
+- **Passes Gaia-X compliance** — the EU's trust framework for data spaces
+- **Automatically includes its data-sharing endpoint** once its connector is live
+- Is **company-specific** — not shared with anyone else
+
+> No manual setup. No IT tickets. No waiting. Register → identity live in seconds.
+
+### 2. Gaia-X Compliance Is Fully Automated
+
+Traditionally, getting Gaia-X compliance requires manual paperwork, IT setup, and weeks of back-and-forth. On this platform:
+
+1. Company fills in a registration form (legal name, VAT ID, address)
+2. Platform automatically builds and signs the required credentials **in the company's name**
+3. Sends them to the Gaia-X compliance authority (GXDCH)
+4. Compliance credential returned — issued directly to the company's own digital identity
+
+> From form submission to Gaia-X verified: minutes, not months.
+
+### 3. Data Endpoints Are Discovered, Not Configured
+
+When Digit Insurance wants TATA's vehicle data, nobody types a URL or calls an IT department. The platform:
+1. Reads the car's manufacturer credential
+2. Resolves TATA's digital identity document
+3. Finds the exact data endpoint listed inside it
+4. Connects automatically
+
+> It works like DNS for the internet — but for trusted data sharing.
+
+### 4. Consent Is Non-Negotiable
+
+No data moves without the owner's explicit approval. Mario must:
+- Receive a clear description of who is asking, what they want, and why
+- Actively approve in his wallet
+- All access expires after 1 hour automatically
+
+> Data sovereignty is built into every transaction — not bolted on afterwards.
+
+---
+
+## Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                    6 React Portals (Vite + Tailwind CSS)                │
+│                        6 Web Portals (browser-based)                    │
 │                                                                         │
-│  Dataspace    TATA Admin    Showroom    Wallet    Insurance    Company   │
-│  Registry     Fleet Mgmt    Marketplace Creds     Underwriting Directory │
-│  :3001        :3002         :3003       :3004     :3005        :3006     │
+│  Dataspace    Manufacturer  Showroom    Wallet    Insurance    Company   │
+│  Registry     Admin         Marketplace           Underwriting Directory │
 └───────────────────────────────┬─────────────────────────────────────────┘
-                                │ HTTPS / REST
+                                │
                   ┌─────────────▼──────────────┐
-                  │    Express.js API (:8000)    │
-                  │    Prisma ORM + PostgreSQL   │
+                  │       Central API Server    │
+                  │    (business logic + DB)    │
                   └──┬────┬────┬────┬────┬──────┘
                      │    │    │    │    │
            ┌─────────┘    │    │    │    └───────────────┐
            ▼              ▼    ▼    ▼                    ▼
-      Keycloak 26     walt.id  Gaia-X  EDC Tractus-X   CADDE
-      ─────────       ──────   ──────  ─────────────   ─────
-      OIDC Auth       OID4VCI  GXDCH   Sovereign Data  Cross-Domain
-      RS256 JWT       OID4VP   Notary  ODRL Policies   JP Interop
-      4 Roles         Wallet   Compl.  7-Step Negot.   Asset Bridge
+     Identity &       Wallet  Gaia-X  Data Connector   Japan
+     Access Mgmt      (VC/VP) Trust   (EDC / CADDE)    Bridge
+     (Keycloak)       (walt.id) (GXDCH)  (Tractus-X)   (CADDE)
 ```
 
-### The 4-Layer Gateway
+### The 4 Layers of the Gateway
 
-| Layer                    | What It Does                                            | Implementation                                                                                |
-| ------------------------ | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| **Discovery**            | Resolves DIDs to find data service endpoints            | `did:web`, `did:eu-dataspace`, `did:smartsense` → DID Documents with `DataService` endpoints  |
-| **Protocol Translation** | Bridges EDC ↔ CADDE negotiation protocols               | EDC consumer service handles catalog query, contract negotiation, transfer, and EDR exchange  |
-| **Data Transformation**  | Converts between data standards                         | DPP-to-JASPAR transformer maps 24 fields across 7 categories with data quality tracking       |
-| **Trust Enforcement**    | Ensures all parties are verified and consent is granted | Gaia-X compliance VCs, OpenID4VP verification, nonce-based challenges, 1-hour access sessions |
-
----
-
-## Key Features
-
-- **DID-Based Service Discovery** — No hardcoded URLs. EDC endpoints are resolved dynamically from issuer DIDs, making the system truly decentralized
-- **Sovereign Data Exchange** — Full 7-step EDC contract negotiation (catalog → negotiate → agree → transfer → EDR → auth → fetch) with ODRL policy enforcement
-- **Gaia-X Compliance Pipeline** — Organizations submit Legal Participant VCs through notary signing → registry validation → GXDCH SHACL compliance check
-- **OpenID4VP Verification** — 11-step verifiable presentation pipeline: parse → extract → validate proof → resolve DID → discover service → negotiate → fetch
-- **Consent-Gated Access** — Every data request requires explicit owner approval. Access sessions expire after 1 hour with full audit trail
-- **Cross-Standard Data Transformation** — EU Digital Product Passport → Japanese JASPAR format with completeness scoring and unmapped field reporting
-- **Explainable AI-Ready Scoring** — 9-factor insurance scoring engine with per-factor breakdowns, enabling transparent underwriting decisions
-- **Real Cryptography** — RSA-2048 keypairs, RS256 JWT signing, x5c certificate chains, nonce-based replay prevention
-- **SSE Real-Time Progress** — EDC negotiation streams step-by-step progress to the frontend via Server-Sent Events
+| Layer | Business Purpose | What It Does Technically |
+|-------|-----------------|--------------------------|
+| **Discovery** | Find any partner's data endpoint automatically | Resolves `did:web` identity documents; DSP URLs auto-published after connector setup |
+| **Protocol Translation** | Connect EU and Japanese systems without rebuilding either | Bridges EDC ↔ CADDE negotiation protocols |
+| **Data Transformation** | Speak each partner's data language | Converts EU Digital Product Passport → Japanese JASPAR (24 fields, 7 categories) |
+| **Trust Enforcement** | Ensure only verified, consenting parties exchange data | Gaia-X compliance VCs + OpenID4VP verification + consent gates + time-limited access |
 
 ---
 
-## Security & Trust Model
+## Company Onboarding Journey
 
-| Mechanism                  | Purpose                         | Detail                                                                  |
-| -------------------------- | ------------------------------- | ----------------------------------------------------------------------- |
-| **Nonce-Based Challenges** | Prevent VP replay attacks       | Random nonce embedded in every presentation request with expiry         |
-| **RSA-2048 JWS Signing**   | Cryptographic proof of origin   | Persistent keypairs in `.keys/`, RS256 algorithm, x5c certificate chain |
-| **Consent Gates**          | User-controlled data sharing    | Explicit approval required; denied requests are logged for audit        |
-| **AccessSession TTL**      | Time-bound data access          | 1-hour expiry on all access sessions; no persistent tokens              |
-| **ODRL Policies**          | Provider-controlled usage rules | Embedded in EDC catalog; enforced before any data transfer              |
-| **Gaia-X Compliance VCs**  | Organizational trust            | Notary-signed, registry-validated, SHACL-checked credentials            |
-| **VP Proof Validation**    | Credential authenticity         | JWT signature verification against issuer's published public key        |
+```
+① Register company (name, VAT ID, address, contact)
+        ↓
+② Platform assigns a unique digital identity:
+   did:web:platform-domain:company:your-company-id
+        ↓
+③ Gaia-X compliance check runs automatically
+   (notary verification → SHACL compliance → credential issued)
+        ↓
+④ Company is now a verified Gaia-X participant
+        ↓
+⑤ EDC data connector provisioned automatically
+        ↓
+⑥ Connector endpoint published in company's identity document
+   (any partner can now discover and connect — no manual config)
+        ↓
+⑦ Company is ready to share and receive data across dataspaces
+```
 
 ---
 
 ## Dynamic Insurance Underwriting Engine
 
-### DPP → JASPAR Transformation
+### How Vehicle Data Becomes an Insurance Quote
 
-The transformer converts European Digital Product Passports into the Japanese JASPAR automotive data standard:
+The platform automatically converts the EU standard vehicle history (Digital Product Passport) into the Japanese insurance format (JASPAR):
 
-```
-DPP (TATA_DPP_v1)                    JASPAR (DIGIT_JASPAR_v1)
-─────────────────                     ────────────────────────
-stateOfHealth.mileageKm          →    technicalCondition.odometer
-performance.motorType            →    vehicleProfile.powertrain
-emissions.co2GPerKm              →    sustainabilityMetrics.emissions
-damageHistory                    →    riskIndicators.incidents
-compliance.typeApproval          →    regulatoryCompliance.certifications
-ownershipChain                   →    ownershipAndProvenance
-serviceHistory                   →    technicalCondition.maintenanceLog
-```
+| EU Vehicle Data | → | Japanese Insurance Format |
+|----------------|---|--------------------------|
+| Mileage (km) | → | Odometer reading |
+| Motor type | → | Powertrain classification |
+| CO₂ emissions | → | Sustainability metrics |
+| Damage history | → | Risk indicators |
+| Type approval | → | Regulatory compliance |
+| Ownership chain | → | Provenance record |
+| Service history | → | Maintenance log |
 
-**24 fields mapped** across 7 categories with data quality tracking (completeness %, warnings for missing critical fields).
+**24 data fields mapped automatically** with quality tracking — the system tells you exactly how complete the data is and flags any missing critical fields.
 
-### 9-Factor Scoring Engine (100 Points)
+### Risk Scoring (100-Point Scale)
 
-| #   | Factor                    | Max Points | Scoring Logic                                                    |
-| --- | ------------------------- | ---------- | ---------------------------------------------------------------- |
-| 1   | **Vehicle Age**           | 15         | 0 yrs → 15 pts … 10+ yrs → 0 pts                                 |
-| 2   | **Safety Rating**         | 15         | 5★ NCAP → 15 pts, 4★ → 12, 3★ → 9, 2★ → 6, 1★ → 3                |
-| 3   | **Regulatory Compliance** | 10         | Type approval +3, roadworthy +3, homologation +2, Euro 6/BEV +2  |
-| 4   | **Powertrain & Battery**  | 10         | Battery SoH ≥95% → 10 pts (EV-specific logic)                    |
-| 5   | **Sustainability**        | 5          | BEV → 3 pts, CO₂ <50g/km → 2 pts, efficiency label bonus         |
-| 6   | **Ownership Confidence**  | 15         | Manufacturer credential +3, single owner → 8 pts, data source +2 |
-| 7   | **Mileage & Usage**       | 15         | ≤5K km → 15 pts … >150K km → 1 pt                                |
-| 8   | **Damage History**        | 10         | 0 incidents → 10 pts, major damage penalty, unrepaired deduction |
-| 9   | **Data Completeness**     | 5          | ≥90% fields → 5 pts, ≥80% → 4 pts, ≥70% → 3 pts                  |
+| Factor | Max Score | What It Measures |
+|--------|-----------|-----------------|
+| Vehicle Age | 15 | Newer = lower risk |
+| Safety Rating | 15 | NCAP star rating |
+| Regulatory Compliance | 10 | Type approval, roadworthiness |
+| Powertrain & Battery | 10 | EV battery health, motor type |
+| Sustainability | 5 | Emissions, energy label |
+| Ownership Confidence | 15 | Single owner, verified credentials |
+| Mileage & Usage | 15 | Lower mileage = lower wear |
+| Damage History | 10 | Incidents, repairs |
+| Data Completeness | 5 | Quality of available data |
 
-### Risk Bands & Insurance Packages
+### Insurance Packages by Risk Score
 
-| Score  | Band             | Risk Level | Annual Premium  | Coverage                                                       |
-| ------ | ---------------- | ---------- | --------------- | -------------------------------------------------------------- |
-| 85–100 | **Premium Plus** | Very Low   | €800 – €1,050   | Fully comprehensive, zero excess, new-for-old (3yr), worldwide |
-| 70–84  | **Premium**      | Low        | €950 – €1,250   | Fully comprehensive, low excess, European coverage             |
-| 55–69  | **Standard**     | Medium     | €1,150 – €1,550 | Comprehensive with standard excess                             |
-| 40–54  | **Basic Plus**   | High       | €1,400 – €1,900 | Third-party, fire & theft                                      |
-| 0–39   | **Basic**        | Very High  | €1,800 – €2,500 | Third-party only (manual underwriter review required)          |
+| Score  | Package          | Typical Annual Premium | Coverage Level |
+| ------ | ---------------- | ---------------------- | -------------- |
+| 85–100 | **Premium Plus** | €800 – €1,050          | Full comprehensive, zero excess, worldwide |
+| 70–84  | **Premium**      | €950 – €1,250          | Full comprehensive, low excess |
+| 55–69  | **Standard**     | €1,150 – €1,550        | Comprehensive, standard excess |
+| 40–54  | **Basic Plus**   | €1,400 – €1,900        | Third-party, fire & theft |
+| 0–39   | **Basic**        | €1,800 – €2,500        | Third-party only (manual review) |
 
-EV-specific add-ons: charging cable theft coverage, home charger insurance, battery warranty extension.
+EV owners get automatic add-on options: charging cable theft, home charger insurance, battery warranty extension.
 
 ---
 
-## Interoperability Matrix
+## Trust & Security — Plain Language
 
-| Dimension           | EU Stack                                | Japan Stack            | Gateway Bridge                                  |
-| ------------------- | --------------------------------------- | ---------------------- | ----------------------------------------------- |
-| **Protocol**        | Eclipse Dataspace Connector (Tractus-X) | CADDE                  | EDC consumer service translates between both    |
-| **Identity**        | `did:web`, `did:eu-dataspace`           | `did:smartsense`       | Universal DID resolver handles all methods      |
-| **Trust**           | Gaia-X GXDCH (Notary + Compliance)      | Verifiable Credentials | Both validated before data exchange             |
-| **Policy**          | ODRL                                    | Consent-based          | ODRL policies + consent gates enforced together |
-| **Data Format**     | Digital Product Passport (DPP)          | JASPAR                 | DPP-to-JASPAR transformer with quality scoring  |
-| **Credential Flow** | OID4VCI / OID4VP (walt.id)              | VP Verification        | Same VC/VP stack bridges both ecosystems        |
-
----
-
-## Tech Stack
-
-| Layer              | Technologies                                                       |
-| ------------------ | ------------------------------------------------------------------ |
-| **Frontend**       | React 18, TypeScript, Vite, Tailwind CSS, React Router v6          |
-| **Backend**        | Node.js 20, Express.js, TypeScript, Prisma ORM                     |
-| **Database**       | PostgreSQL 16 (15+ models)                                         |
-| **Identity**       | Keycloak 26 (OIDC, RS256), walt.id (OID4VCI, OID4VP, Wallet)       |
-| **Dataspaces**     | Eclipse Dataspace Connector (Tractus-X), CADDE, ODRL               |
-| **Compliance**     | Gaia-X GXDCH (Notary, Registry, Compliance APIs)                   |
-| **Cryptography**   | RSA-2048, RS256 JWT, x5c chains, W3C Verifiable Credentials        |
-| **Infrastructure** | Docker Compose, Kubernetes + Helm 3, AWS ECR, nginx + cert-manager |
+| What We Protect | How | Why It Matters |
+|----------------|-----|----------------|
+| **Company identity** | Every company gets a unique, verifiable digital identity (Gaia-X certified) | You always know exactly who you're dealing with |
+| **Data ownership** | Car owners must explicitly approve every data request | Owners stay in control — GDPR compliant by design |
+| **Access expiry** | All data access expires after 1 hour | No "set and forget" data leaks |
+| **Credential integrity** | All credentials cryptographically signed (RSA-2048) | Credentials cannot be forged or tampered with |
+| **Signing keys** | Platform's signing key stored in database — survives restarts | Consistency across deployments and updates |
+| **Policy enforcement** | Data usage policies (ODRL) enforced before any transfer | Providers control exactly how their data is used |
 
 ---
 
-## Use Cases Beyond Automotive
+## Who Can Use This
 
-The Universal Dataspace Interoperability Gateway is **sector-agnostic**. The same 4-layer architecture applies to:
+The gateway is **industry-agnostic**. The same platform works for any cross-border data sharing scenario:
 
-| Sector           | Data Provider | Data Consumer           | Credential                          |
-| ---------------- | ------------- | ----------------------- | ----------------------------------- |
-| **Healthcare**   | Hospital (EU) | Research institute (JP) | PatientConsentVC + MedicalRecordDPP |
-| **Supply Chain** | Manufacturer  | Customs authority       | OriginCertificateVC + ShipmentDPP   |
-| **Energy**       | Grid operator | Carbon auditor          | EnergyProductionVC + GridDataDPP    |
-| **Finance**      | Bank (EU)     | Regulator (JP)          | ComplianceVC + TransactionDPP       |
+| Industry | Data Provider | Data Consumer | What Gets Shared |
+| -------- | ------------- | ------------- | ---------------- |
+| **Automotive** | Car manufacturer (EU) | Insurer (Japan) | Vehicle history, DPP |
+| **Healthcare** | Hospital (EU) | Research institute (JP) | Anonymised patient records |
+| **Supply Chain** | Manufacturer | Customs authority | Origin certificates, shipment data |
+| **Energy** | Grid operator | Carbon auditor | Production data, emissions |
+| **Finance** | Bank (EU) | Regulator (JP) | Compliance reports, transaction data |
 
-Replace the DPP schema, swap the scoring engine, keep the gateway.
-
----
-
-## Future Scope
-
-- **Multi-Dataspace Mesh** — Connect 3+ dataspaces (EU + JP + India + ASEAN) through federated gateway routing
-- **EBSI/eIDAS Integration** — European Blockchain Services Infrastructure for cross-border legal identity
-- **AI-Powered Scoring** — ML models trained on historical underwriting data using the 9-factor framework
-- **Catena-X Alignment** — Native support for automotive industry Catena-X use cases (battery passport, traceability)
-- **Real-Time Policy Negotiation** — Dynamic ODRL policy generation based on data sensitivity and consumer trust level
-- **Zero-Knowledge Proofs** — Prove vehicle meets insurance criteria without revealing raw DPP data
+> Change the data format, keep the gateway.
 
 ---
 
-## Why This Matters
+## Key Numbers
 
-**$4.2 trillion** in annual cross-border trade depends on trusted data exchange. Today, every new bilateral data-sharing agreement requires custom integration — different protocols, different trust models, different formats.
+| Metric | Value |
+|--------|-------|
+| End-to-end insurance quote time | 30–60 seconds |
+| Data fields transformed (DPP → JASPAR) | 24 fields across 7 categories |
+| Risk scoring factors | 9 factors, 100-point scale |
+| Steps in EDC data negotiation | 7 steps (fully automated) |
+| Steps in VP verification pipeline | 11 steps |
+| Data access session lifetime | 1 hour (auto-expires) |
+| Database models | 15+ |
+| Web portals | 6 |
 
-This gateway proves that **a single interoperability layer can bridge fundamentally different dataspace architectures** while preserving:
+---
 
-- **Data sovereignty** — Providers keep control through EDC + ODRL
-- **User consent** — Owners decide who sees their data
-- **Organizational trust** — Gaia-X compliance ensures only verified participants
-- **Standards compliance** — Both EU and Japanese standards respected, not replaced
+## Future Roadmap
 
-**One gateway. Every dataspace. Trusted everywhere.**
+| Milestone | What It Unlocks |
+|-----------|----------------|
+| **Multi-region mesh** | Connect EU + Japan + India + ASEAN through a single federated gateway |
+| **EBSI / eIDAS integration** | Cross-border legal identity recognised under EU law |
+| **AI-powered underwriting** | ML models trained on real historical underwriting data |
+| **Catena-X alignment** | Native support for automotive battery passport and traceability |
+| **Zero-knowledge proofs** | Prove a car meets criteria without revealing the raw data |
+| **Per-company keypairs** | True self-sovereign keys — platform holds nothing on behalf of companies |
 
 ---
 
@@ -265,6 +310,7 @@ This gateway proves that **a single interoperability layer can bridge fundamenta
 
 - Docker & Docker Compose
 - Node.js 20+ / npm 10+
+- [ngrok](https://ngrok.com) free account — required so Gaia-X can verify your company's digital identity document
 
 ### Quick Start
 
@@ -276,9 +322,26 @@ cp backend/.env.example backend/.env
 docker compose up -d
 ```
 
-Access the portals:
+### Enable Gaia-X Compliance Locally
 
-| Portal             | URL                   | Role                |
+For Gaia-X to verify company identities, the backend needs a public URL. Use ngrok:
+
+```bash
+# In a separate terminal:
+ngrok http 8000
+
+# Copy the URL shown (e.g. https://abc123.ngrok-free.app)
+# Add to backend/.env:
+GAIAX_DID_DOMAIN=abc123.ngrok-free.app
+APP_BASE_URL=https://abc123.ngrok-free.app
+
+# Restart backend
+npm run dev --prefix backend
+```
+
+### Access the Portals
+
+| Portal             | URL                   | Who Uses It         |
 | ------------------ | --------------------- | ------------------- |
 | Dataspace Registry | http://localhost:3001 | Organization admin  |
 | TATA Admin         | http://localhost:3002 | Fleet management    |
