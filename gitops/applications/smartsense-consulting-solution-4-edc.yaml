@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: edc-smartsense-consulting-solution-4
+  namespace: argocd
+  labels:
+    tenant: smartsense-consulting-solution-4
+    managed-by: edc-provisioning
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/smartSenseSolutions/jap-eu-hack-2026
+    targetRevision: HEAD
+    path: edc/tx-edc-eleven
+    plugin:
+      name: argocd-vault-plugin-helm
+      env:
+        - name: VAULT_SECRET
+          value: vault-secret
+        - name: HELM_VALUES_FILE
+          value: "values.yaml -f values-smartsense-consulting-solution-4.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: edc-smartsense-consulting-solution-4
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
