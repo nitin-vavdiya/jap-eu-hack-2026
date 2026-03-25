@@ -10,7 +10,7 @@ metadata:
   name: edc-{{tenantCode}}
   namespace: argocd
   labels:
-    tenant: {{tenantCode}}
+    tenant: "{{tenantCode}}"
     managed-by: edc-provisioning
 spec:
   project: default
