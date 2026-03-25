@@ -17,7 +17,7 @@ backend:
   replicaCount: 1
   image:
     repository: eu-jap-hack/backend
-    tag: "1.0.32"
+    tag: "1.0.33"
     pullPolicy: Always
   service:
     port: 8000
@@ -34,7 +34,7 @@ backend:
     ENABLE_EDC_PROVISIONING: "true"
     MAX_COMPANIES: "20"
     GAIAX_DID_DOMAIN: "jeh-api.tx.the-sense.io"
-    GAIAX_DID_PATH: "v10"
+    GAIAX_DID_PATH: "v11"
     EDC_BASE_URL: "https://toyota-controlplane.tx.the-sense.io"
     EDC_API_KEY: "tata-motors"
     BPN_NUMBER: "BPNL00000000024R"
