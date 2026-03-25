@@ -319,8 +319,12 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
     updatedAt: now.toISOString(),
   };
   const signer = getVPSigner();
-  orgCredRecord.vcPayload = buildLegalParticipantVC(orgCredRecord, signer.getDid());
-  orgCredRecord.vcJwt = signer.signVC(orgCredRecord.vcPayload as unknown as Record<string, unknown>);
+  // Use company DID as issuer — company self-asserts its own identity (custodial signing)
+  orgCredRecord.vcPayload = buildLegalParticipantVC(orgCredRecord, companyDid);
+  orgCredRecord.vcJwt = signer.signVCAs(
+    orgCredRecord.vcPayload as unknown as Record<string, unknown>,
+    { did: companyDid, kid: `${companyDid}#key-1` },
+  );
 
   const orgCredential = await prisma.orgCredential.create({
     data: {
@@ -371,7 +375,10 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
         data: {
           verificationStatus: isVerified ? 'verified' : 'failed',
           vcPayload: result.vc as any,
-          vcJwt: getVPSigner().signVC(result.vc as unknown as Record<string, unknown>),
+          vcJwt: getVPSigner().signVCAs(
+            result.vc as unknown as Record<string, unknown>,
+            { did: companyDid, kid: `${companyDid}#key-1` },
+          ),
           complianceResult: result.complianceResult as any,
           notaryResult: result.notaryResult as any,
           issuedVCs: result.issuedVCs as any,
