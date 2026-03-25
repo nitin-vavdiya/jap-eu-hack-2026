@@ -345,3 +345,13 @@ model PresentationSession {
 
   @@map("presentation_sessions")
 }
+
+model PlatformKeypair {
+  id         String   @id @default("platform-signer")
+  privateKey String
+  publicKey  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("platform_keypairs")
+}

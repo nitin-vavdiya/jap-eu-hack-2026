@@ -2,34 +2,62 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
+import prisma from '../../db';
 
 const KEYS_DIR = path.join(__dirname, '../../../.keys');
 const PRIVATE_KEY_PATH = path.join(KEYS_DIR, 'gaiax-private.pem');
 const PUBLIC_KEY_PATH = path.join(KEYS_DIR, 'gaiax-public.pem');
 
+const KEYPAIR_ID = 'platform-signer';
+
 /**
  * VP-JWT signer for Gaia-X compliance submission.
  *
- * Uses did:web with a persistent RSA keypair saved to disk.
- * The DID domain is configurable via GAIAX_DID_DOMAIN env var
- * (set to your ngrok domain for public resolution).
+ * Uses did:web with a persistent RSA keypair.
+ * Keypair persistence priority: Database → Filesystem → Generate new.
+ * This ensures keys survive container restarts even without volume mounts.
  *
  * Includes a self-signed X.509 certificate in x5c for the
  * GXDCH compliance service trust chain.
  */
 export class VPSigner {
-  private privateKey: string;
-  private publicKey: string;
-  private did: string;
-  private kid: string;
-  private x5c: string[];
+  private privateKey!: string;
+  private publicKey!: string;
+  private did!: string;
+  private kid!: string;
+  private x5c!: string[];
+  private initialized = false;
 
-  constructor() {
-    // Load or generate persistent keypair
-    if (fs.existsSync(PRIVATE_KEY_PATH) && fs.existsSync(PUBLIC_KEY_PATH)) {
+  /**
+   * Initialize the signer — loads keypair from DB, then filesystem, then generates new.
+   * Must be called before any signing operations.
+   */
+  async init(): Promise<void> {
+    if (this.initialized) return;
+
+    let source = '';
+
+    // 1. Try loading from database
+    try {
+      const row = await prisma.platformKeypair.findUnique({ where: { id: KEYPAIR_ID } });
+      if (row) {
+        this.privateKey = row.privateKey;
+        this.publicKey = row.publicKey;
+        source = 'database';
+      }
+    } catch {
+      // Table might not exist yet (pre-migration) — fall through
+    }
+
+    // 2. Fallback: try loading from filesystem
+    if (!source && fs.existsSync(PRIVATE_KEY_PATH) && fs.existsSync(PUBLIC_KEY_PATH)) {
       this.privateKey = fs.readFileSync(PRIVATE_KEY_PATH, 'utf-8');
       this.publicKey = fs.readFileSync(PUBLIC_KEY_PATH, 'utf-8');
-    } else {
+      source = 'filesystem';
+    }
+
+    // 3. Fallback: generate new keypair
+    if (!source) {
       const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
         modulusLength: 2048,
         publicKeyEncoding: { type: 'spki', format: 'pem' },
@@ -37,16 +65,13 @@ export class VPSigner {
       });
       this.privateKey = privateKey;
       this.publicKey = publicKey;
-
-      // Persist to disk
-      if (!fs.existsSync(KEYS_DIR)) fs.mkdirSync(KEYS_DIR, { recursive: true });
-      fs.writeFileSync(PRIVATE_KEY_PATH, privateKey, { mode: 0o600 });
-      fs.writeFileSync(PUBLIC_KEY_PATH, publicKey);
-      console.log(`[VPSigner] Generated and saved new keypair to ${KEYS_DIR}`);
+      source = 'generated';
     }
 
+    // Persist to both DB and filesystem for redundancy
+    await this.persistKeys(source);
+
     // Build did:web from configurable domain
-    // Use path-based DID (did:web:domain:path) to avoid stale caches on compliance service
     const domain = process.env.GAIAX_DID_DOMAIN || 'localhost%3A8000';
     const didPath = process.env.GAIAX_DID_PATH || 'v1';
     this.did = `did:web:${domain}:${didPath}`;
@@ -54,21 +79,62 @@ export class VPSigner {
 
     // Generate self-signed X.509 cert for x5c header
     this.x5c = this.generateSelfSignedCert();
-    console.log(`[VPSigner] DID: ${this.did}`);
+
+    this.initialized = true;
+    console.log(`[VPSigner] Initialized | source=${source} | DID: ${this.did}`);
   }
 
-  getDid(): string { return this.did; }
-  getKid(): string { return this.kid; }
+  /**
+   * Persist keys to both DB and filesystem for redundancy.
+   */
+  private async persistKeys(source: string): Promise<void> {
+    // Save to DB if not already there
+    if (source !== 'database') {
+      try {
+        await prisma.platformKeypair.upsert({
+          where: { id: KEYPAIR_ID },
+          create: { id: KEYPAIR_ID, privateKey: this.privateKey, publicKey: this.publicKey },
+          update: { privateKey: this.privateKey, publicKey: this.publicKey },
+        });
+        console.log(`[VPSigner] Keypair saved to database`);
+      } catch (err: any) {
+        console.warn(`[VPSigner] Could not save keypair to database: ${err.message}`);
+      }
+    }
+
+    // Save to filesystem if not already there
+    if (source !== 'filesystem') {
+      try {
+        if (!fs.existsSync(KEYS_DIR)) fs.mkdirSync(KEYS_DIR, { recursive: true });
+        fs.writeFileSync(PRIVATE_KEY_PATH, this.privateKey, { mode: 0o600 });
+        fs.writeFileSync(PUBLIC_KEY_PATH, this.publicKey);
+        console.log(`[VPSigner] Keypair saved to ${KEYS_DIR}`);
+      } catch (err: any) {
+        console.warn(`[VPSigner] Could not save keypair to filesystem: ${err.message}`);
+      }
+    }
+  }
+
+  private ensureInitialized(): void {
+    if (!this.initialized) {
+      throw new Error('VPSigner not initialized — call await getVPSigner() first');
+    }
+  }
+
+  getDid(): string { this.ensureInitialized(); return this.did; }
+  getKid(): string { this.ensureInitialized(); return this.kid; }
 
   getPublicKeyJwk(): Record<string, unknown> {
+    this.ensureInitialized();
     const keyObject = crypto.createPublicKey(this.publicKey);
     const jwk = keyObject.export({ format: 'jwk' });
     return { ...jwk, kid: this.kid, alg: 'RS256', x5c: this.x5c };
   }
 
-  getX5c(): string[] { return this.x5c; }
+  getX5c(): string[] { this.ensureInitialized(); return this.x5c; }
 
   signVC(vcPayload: Record<string, unknown>): string {
+    this.ensureInitialized();
     const now = Math.floor(Date.now() / 1000);
     // VC-JOSE-COSE spec: VC claims go at root of JWT payload (not inside a 'vc' wrapper)
     const payload = {
@@ -97,6 +163,7 @@ export class VPSigner {
   }
 
   signVP(vcJwts: string[], audience?: string): string {
+    this.ensureInitialized();
     const now = Math.floor(Date.now() / 1000);
 
     // VC-JOSE-COSE spec: VP claims go at root of JWT payload (not inside a 'vp' wrapper)
@@ -242,9 +309,36 @@ export class VPSigner {
   }
 }
 
-// Singleton
+// Singleton with async initialization
 let _signer: VPSigner | null = null;
+let _initPromise: Promise<VPSigner> | null = null;
+
+/**
+ * Get the initialized VPSigner singleton.
+ * First call initializes from DB → filesystem → generate new.
+ */
+export async function getVPSignerAsync(): Promise<VPSigner> {
+  if (_signer?.['initialized']) return _signer;
+  if (_initPromise) return _initPromise;
+
+  _initPromise = (async () => {
+    const signer = new VPSigner();
+    await signer.init();
+    _signer = signer;
+    return signer;
+  })();
+
+  return _initPromise;
+}
+
+/**
+ * Synchronous getter — returns the signer if already initialized.
+ * Throws if called before async initialization completes.
+ * Use getVPSignerAsync() for the first access.
+ */
 export function getVPSigner(): VPSigner {
-  if (!_signer) _signer = new VPSigner();
+  if (!_signer || !_signer['initialized']) {
+    throw new Error('VPSigner not initialized yet — use await getVPSignerAsync() first');
+  }
   return _signer;
 }

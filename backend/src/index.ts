@@ -38,7 +38,7 @@ import vehicleRegistryRouter from './routes/vehicle-registry';
 import verifierRouter from './routes/verifier';
 import walletVPRouter from './routes/wallet-vp';
 import underwritingRouter from './routes/underwriting';
-import { GaiaXClient, getVPSigner } from './services/gaiax';
+import { GaiaXClient, getVPSigner, getVPSignerAsync } from './services/gaiax';
 import { buildCompanyDidDocument } from './services/did-resolver';
 import prisma from './db';
 import { OrgCredentialRecord } from './services/gaiax/types';
@@ -183,6 +183,14 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend running at http://localhost:${PORT} (auth: ${AUTH_ENABLED ? 'ON' : 'OFF'})`);
-});
+// Initialize VPSigner (loads keypair from DB/filesystem) before accepting requests
+getVPSignerAsync()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Backend running at http://localhost:${PORT} (auth: ${AUTH_ENABLED ? 'ON' : 'OFF'})`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to initialize VPSigner:', err);
+    process.exit(1);
+  });
