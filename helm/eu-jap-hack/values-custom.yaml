@@ -17,7 +17,7 @@ backend:
   replicaCount: 1
   image:
     repository: eu-jap-hack/backend
-    tag: "1.0.25"
+    tag: "1.0.26"
     pullPolicy: Always
   service:
     port: 8000
