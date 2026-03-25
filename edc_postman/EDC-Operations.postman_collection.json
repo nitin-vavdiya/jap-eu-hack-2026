@@ -1635,7 +1635,7 @@
               }
             ],
             "url": {
-              "raw": "https://tata-motors-dataplane.tx.the-sense.io/api/public",
+              "raw": "https://toyota-dataplane.tx.the-sense.io/api/public",
               "protocol": "https",
               "host": [
                 "tata-motors-dataplane",

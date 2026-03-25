@@ -104,7 +104,7 @@ GAIAX_RETRY_DELAY=1000
 
 ```env
 ENABLE_EDC=true
-EDC_BASE_URL=https://tata-motors-controlplane.tx.the-sense.io
+EDC_BASE_URL=https://toyota-controlplane.tx.the-sense.io
 EDC_API_KEY=tata-motors
 BPN_NUMBER=BPNL00000000024R
 EDC_ACCESS_POLICY_ID=policy_2

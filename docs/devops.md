@@ -257,7 +257,7 @@ backend:
     AUTH_ENABLED: "false"
     ENABLE_EDC: "true"
     KEYCLOAK_URL: https://centralidp.tx.the-sense.io/auth
-    EDC_BASE_URL: https://tata-motors-controlplane.tx.the-sense.io
+    EDC_BASE_URL: https://toyota-controlplane.tx.the-sense.io
     EDC_API_KEY: tata-motors
     CADDE_ASSET_ID: asset_7
 
@@ -306,7 +306,7 @@ Production domain: `*.tx.the-sense.io`
 | Insurance | https://jeh-insurance.tx.the-sense.io |
 | Company Directory | https://jeh-company.tx.the-sense.io |
 | Keycloak | https://centralidp.tx.the-sense.io/auth |
-| EDC (TATA Provider) | https://tata-motors-controlplane.tx.the-sense.io |
+| EDC (TATA Provider) | https://toyota-controlplane.tx.the-sense.io |
 | EDC (Consumer) | https://nissan-motors-controlplane.tx.the-sense.io |
 
 **Key production differences from dev:**
