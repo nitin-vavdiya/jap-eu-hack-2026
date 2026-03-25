@@ -4,9 +4,9 @@ install:
 fullnameOverride: "tx-ecd-connector-toyota-motor-europe"
 nameOverride: "tx-ecd-connector-toyota-motor-europe"
 participant:
-  id: "BPNLlhddPDQCkK0u"
+  id: "BPNLNK47HNKZ9PTX"
 iatp:
-  id: "did:web:wallet.tx.the-sense.io:BPNLlhddPDQCkK0u"
+  id: "did:web:wallet.tx.the-sense.io:BPNLNK47HNKZ9PTX"
   trustedIssuers:
     - "did:web:wallet.tx.the-sense.io:BPNL000000000000"
   sts:
@@ -15,7 +15,7 @@ iatp:
     oauth:
       token_url: https://wallet.tx.the-sense.io/oauth/token
       client:
-        id: "BPNLlhddPDQCkK0u"
+        id: "BPNLNK47HNKZ9PTX"
         secret_alias: "edc-stub"
 
 controlplane:

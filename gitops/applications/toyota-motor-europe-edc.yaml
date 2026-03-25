@@ -4,7 +4,7 @@ metadata:
   name: edc-toyota-motor-europe
   namespace: argocd
   labels:
-    tenant: toyota-motor-europe
+    tenant: "toyota-motor-europe"
     managed-by: edc-provisioning
 spec:
   project: default
