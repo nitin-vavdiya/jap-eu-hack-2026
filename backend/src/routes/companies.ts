@@ -195,8 +195,9 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
   const tenantCode = await allocateTenantCode(name);
   console.log(`[onboarding] Assigned tenantCode "${tenantCode}" for company "${name}"`);
 
-  // Assign a did:web DID — resolvable at /company/<companyId>/did.json
-  const companyDid = inputDid || buildCompanyDidWeb(companyId);
+  // Always assign a did:web DID — resolvable at /company/<companyId>/did.json
+  // Ignore any user-provided DID; the system manages did:web identifiers
+  const companyDid = buildCompanyDidWeb(companyId);
 
   const credentialSubject = {
     companyName: name,
