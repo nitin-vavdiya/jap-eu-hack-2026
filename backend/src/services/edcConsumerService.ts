@@ -18,6 +18,16 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function logCurl(method: string, url: string, hdrs: Record<string, string>, body?: unknown) {
+  const headerFlags = Object.entries(hdrs)
+    .map(([k, v]) => `  -H '${k}: ${v}'`)
+    .join(' \\\n');
+  const bodyFlag = body
+    ? ` \\\n  -d '${JSON.stringify(body)}'`
+    : '';
+  console.log(`[EDC cURL] curl -X ${method} \\\n  '${url}' \\\n${headerFlags}${bodyFlag}`);
+}
+
 export interface EdcProviderConfig {
   dspUrl: string;
   bpnl: string;
@@ -93,6 +103,7 @@ export async function queryCatalog(vin: string, provider: EdcProviderConfig): Pr
     },
   };
 
+  logCurl('POST', `${EDC_MGMT_URL}/v3/catalog/request`, headers, payload);
   const response = await axios.post(`${EDC_MGMT_URL}/v3/catalog/request`, payload, { headers, timeout: 15000 });
 
   const datasets = response.data['dcat:dataset'];
@@ -136,6 +147,7 @@ export async function initiateNegotiation(offerId: string, assetId: string, prov
     },
   };
 
+  logCurl('POST', `${EDC_MGMT_URL}/v3/contractnegotiations`, headers, payload);
   const response = await axios.post(`${EDC_MGMT_URL}/v3/contractnegotiations`, payload, { headers, timeout: 10000 });
   return response.data['@id'];
 }
@@ -146,6 +158,7 @@ export async function waitForAgreement(negotiationId: string): Promise<string> {
   await sleep(NEGOTIATION_INITIAL_DELAY);
 
   for (let attempt = 1; attempt <= NEGOTIATION_MAX_RETRIES; attempt++) {
+    logCurl('GET', `${EDC_MGMT_URL}/v3/contractnegotiations/${negotiationId}`, { 'x-api-key': EDC_API_KEY });
     const response = await axios.get(`${EDC_MGMT_URL}/v3/contractnegotiations/${negotiationId}`, {
       headers: { 'x-api-key': EDC_API_KEY },
       timeout: 10000,
@@ -180,6 +193,7 @@ export async function initiateTransfer(assetId: string, contractAgreementId: str
     transferType: 'HttpData-PULL',
   };
 
+  logCurl('POST', `${EDC_MGMT_URL}/v3/transferprocesses`, headers, payload);
   const response = await axios.post(`${EDC_MGMT_URL}/v3/transferprocesses`, payload, { headers, timeout: 10000 });
   return response.data['@id'];
 }
@@ -204,6 +218,7 @@ export async function getTransferProcess(contractAgreementId: string): Promise<s
 
   for (let attempt = 1; attempt <= NEGOTIATION_MAX_RETRIES; attempt++) {
     console.log(`[EDC Consumer] EDR poll attempt ${attempt}/${NEGOTIATION_MAX_RETRIES}`);
+    logCurl('POST', `${EDC_MGMT_URL}/v3/edrs/request`, headers, payload);
     const response = await axios.post(`${EDC_MGMT_URL}/v3/edrs/request`, payload, { headers, timeout: 10000 });
     console.log('[EDC Consumer] EDR response:', JSON.stringify(response.data, null, 2));
     const entries = response.data;
@@ -226,6 +241,7 @@ export async function getTransferProcess(contractAgreementId: string): Promise<s
 // Step 6: Get auth code (data address with endpoint + token)
 export async function getAuthCode(transferId: string): Promise<{ endpoint: string; authorization: string }> {
   console.log(`[EDC Consumer] Obtaining auth token for transfer ${transferId} on EDC ${EDC_MGMT_URL}`);
+  logCurl('GET', `${EDC_MGMT_URL}/v2/edrs/${transferId}/dataaddress?auto_refresh=true`, { 'x-api-key': EDC_API_KEY });
   const response = await axios.get(
     `${EDC_MGMT_URL}/v2/edrs/${transferId}/dataaddress?auto_refresh=true`,
     { headers: { 'x-api-key': EDC_API_KEY }, timeout: 10000 },
@@ -244,6 +260,7 @@ export async function getAuthCode(transferId: string): Promise<{ endpoint: strin
 // Step 7: Fetch actual asset data from data plane
 export async function fetchAssetData(endpoint: string, authorization: string): Promise<any> {
   console.log(`[EDC Consumer] Fetching asset data from data plane endpoint: ${endpoint}`);
+  logCurl('GET', endpoint, { Authorization: authorization });
   const response = await axios.get(endpoint, {
     headers: { Authorization: authorization },
     timeout: 30000,
