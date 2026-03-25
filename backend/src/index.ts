@@ -1,11 +1,14 @@
 import 'dotenv/config';
 import { execSync } from 'child_process';
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 
+const schemaPath = process.env.PRISMA_SCHEMA_PATH || path.resolve(__dirname, '..', 'prisma', 'schema.prisma');
+
 console.log('Running pending migrations...');
 try {
-  execSync('npx prisma migrate deploy --schema=/app/backend/prisma/schema.prisma', { stdio: 'inherit' });
+  execSync(`npx prisma migrate deploy --schema=${schemaPath}`, { stdio: 'inherit' });
   console.log('Migrations applied.');
 } catch (e) {
   console.error('Migration failed:', e);
@@ -14,7 +17,7 @@ try {
 
 console.log('Generating Prisma client...');
 try {
-  execSync('npx prisma generate --schema=/app/backend/prisma/schema.prisma', { stdio: 'inherit' });
+  execSync(`npx prisma generate --schema=${schemaPath}`, { stdio: 'inherit' });
   console.log('Prisma client generated.');
 } catch (e) {
   console.error('Prisma generate failed:', e);

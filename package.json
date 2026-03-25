@@ -4,10 +4,12 @@
   "workspaces": [
     "packages/*",
     "apps/*",
-    "backend"
+    "backend",
+    "provisioning"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:dataspace\" \"npm run dev:admin\" \"npm run dev:public\" \"npm run dev:wallet\" \"npm run dev:insurance\" \"npm run dev:company\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:provisioning\" \"npm run dev:dataspace\" \"npm run dev:admin\" \"npm run dev:public\" \"npm run dev:wallet\" \"npm run dev:insurance\" \"npm run dev:company\"",
+    "dev:provisioning": "npm run dev --workspace=provisioning",
     "dev:backend": "npm run dev --workspace=backend",
     "dev:dataspace": "npm run dev --workspace=apps/portal-dataspace",
     "dev:admin": "npm run dev --workspace=apps/portal-tata-admin",

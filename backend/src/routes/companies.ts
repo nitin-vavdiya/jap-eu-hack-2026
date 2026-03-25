@@ -362,9 +362,15 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
     axios
       .post(`${PROVISIONING_SERVICE_URL}/provision`, { companyId, tenantCode, bpn })
       .then(() => console.log(`[onboarding] Provisioning triggered successfully for ${tenantCode}`))
-      .catch((err) =>
-        console.error(`[onboarding] Provisioning trigger failed for ${tenantCode}: ${err.message}`),
-      );
+      .catch(async (err) => {
+        console.error(`[onboarding] Provisioning trigger failed for ${tenantCode}: ${err.message}`);
+        await prisma.edcProvisioning.update({
+          where: { companyId },
+          data: { status: 'failed', lastError: `Provisioning service unreachable: ${err.message}` },
+        }).catch((dbErr) =>
+          console.error(`[onboarding] Failed to update EDC status to failed for ${companyId}: ${dbErr.message}`),
+        );
+      });
   } else {
     console.log(`[onboarding] EDC provisioning skipped for company ${companyId} (ENABLE_EDC_PROVISIONING is not set)`);
   }
