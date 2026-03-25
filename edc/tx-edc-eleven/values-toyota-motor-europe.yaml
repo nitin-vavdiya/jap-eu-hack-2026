@@ -1,12 +1,12 @@
 install:
   postgresql: false
   vault: false
-fullnameOverride: "tx-ecd-connector-smartsense-consulting-solution-4"
-nameOverride: "tx-ecd-connector-smartsense-consulting-solution-4"
+fullnameOverride: "tx-ecd-connector-toyota-motor-europe"
+nameOverride: "tx-ecd-connector-toyota-motor-europe"
 participant:
-  id: "BPNLWSa4ZTxanwpS"
+  id: "BPNLlhddPDQCkK0u"
 iatp:
-  id: "did:web:wallet.tx.the-sense.io:BPNLWSa4ZTxanwpS"
+  id: "did:web:wallet.tx.the-sense.io:BPNLlhddPDQCkK0u"
   trustedIssuers:
     - "did:web:wallet.tx.the-sense.io:BPNL000000000000"
   sts:
@@ -15,7 +15,7 @@ iatp:
     oauth:
       token_url: https://wallet.tx.the-sense.io/oauth/token
       client:
-        id: "BPNLWSa4ZTxanwpS"
+        id: "BPNLlhddPDQCkK0u"
         secret_alias: "edc-stub"
 
 controlplane:
@@ -36,7 +36,7 @@ controlplane:
     management:
       port: 8081
       path: /management
-      authKey: "smartsense-consulting-solution-4"
+      authKey: "toyota-motor-europe"
       jwksUrl:
     control:
       port: 8083
@@ -50,7 +50,7 @@ controlplane:
     catalog:
       port: 8085
       path: /catalog
-      authKey: "smartsense-consulting-solution-4"
+      authKey: "toyota-motor-europe"
 
   bdrs:
     cache_validity_seconds: 600
@@ -71,7 +71,7 @@ controlplane:
 
   ingresses:
     - enabled: true
-      hostname: "smartsense-consulting-solution-4-protocol.tx.the-sense.io"
+      hostname: "toyota-motor-europe-protocol.tx.the-sense.io"
       annotations: {}
       endpoints:
         - protocol
@@ -79,12 +79,12 @@ controlplane:
       className: "nginx"
       tls:
         enabled: true
-        secretName: "edc-protocol-smartsense-consulting-solution-4"
+        secretName: "edc-protocol-toyota-motor-europe"
       certManager:
         issuer: ""
         clusterIssuer: "letsencrypt-prod"
     - enabled: true
-      hostname: "smartsense-consulting-solution-4-controlplane.tx.the-sense.io"
+      hostname: "toyota-motor-europe-controlplane.tx.the-sense.io"
       annotations: {}
       endpoints:
         - management
@@ -92,7 +92,7 @@ controlplane:
       className: "nginx"
       tls:
         enabled: true
-        secretName: "edc-control-smartsense-consulting-solution-4-intranet"
+        secretName: "edc-control-toyota-motor-europe-intranet"
       certManager:
         issuer: ""
         clusterIssuer: "letsencrypt-prod"
@@ -153,14 +153,14 @@ dataplane:
 
   ingresses:
     - enabled: true
-      hostname: "smartsense-consulting-solution-4-dataplane.tx.the-sense.io"
+      hostname: "toyota-motor-europe-dataplane.tx.the-sense.io"
       annotations: {}
       endpoints:
         - public
       className: "nginx"
       tls:
         enabled: true
-        secretName: "edc-dataplane-smartsense-consulting-solution-4"
+        secretName: "edc-dataplane-toyota-motor-europe"
       certManager:
         issuer: ""
         clusterIssuer: "letsencrypt-prod"
@@ -177,11 +177,11 @@ dataplane:
 postgresql:
   # Shared PostgreSQL server running in edc-postgres namespace.
   # Database and user are created at runtime by the provisioning service.
-  jdbcUrl: "jdbc:postgresql://postgres.postgres-edc.svc.cluster.local:5432/edc_smartsense-consulting-solution-4"
+  jdbcUrl: "jdbc:postgresql://postgres.postgres-edc.svc.cluster.local:5432/edc_toyota-motor-europe"
   auth:
-    database: "edc_smartsense-consulting-solution-4"
-    username: "edc_smartsense-consulting-solution-4"
-    password: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_smartsense_consulting_solution_4#dbpass>"
+    database: "edc_toyota-motor-europe"
+    username: "edc_toyota-motor-europe"
+    password: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_toyota_motor_europe#dbpass>"
 
 vault:
   injector:
@@ -192,7 +192,7 @@ vault:
     postStart:
   hashicorp:
     url: "https://vault.the-sense.io"
-    token: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_smartsense_consulting_solution_4#vault-token>"
+    token: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_toyota_motor_europe#vault-token>"
     timeout: 30
     healthCheck:
       enabled: false

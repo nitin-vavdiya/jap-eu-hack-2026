@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: edc-honda-india
+  name: edc-tokio-marine-europe-s-a-french
   namespace: argocd
   labels:
-    tenant: honda-india
+    tenant: tokio-marine-europe-s-a-french
     managed-by: edc-provisioning
 spec:
   project: default
@@ -18,10 +18,10 @@ spec:
         - name: VAULT_SECRET
           value: vault-secret
         - name: HELM_VALUES_FILE
-          value: "values.yaml -f values-honda-india.yaml"
+          value: "values.yaml -f values-tokio-marine-europe-s-a-french.yaml"
   destination:
     server: https://kubernetes.default.svc
-    namespace: edc-honda-india
+    namespace: edc-tokio-marine-europe-s-a-french
   syncPolicy:
     automated:
       prune: true

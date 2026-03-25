@@ -1,12 +1,12 @@
 install:
   postgresql: false
   vault: false
-fullnameOverride: "tx-ecd-connector-lenovo"
-nameOverride: "tx-ecd-connector-lenovo"
+fullnameOverride: "tx-ecd-connector-tokio-marine-europe-s-a-french"
+nameOverride: "tx-ecd-connector-tokio-marine-europe-s-a-french"
 participant:
-  id: "BPNL4pV6czBiZdLj"
+  id: "BPNLRXy4LfyXutnU"
 iatp:
-  id: "did:web:wallet.tx.the-sense.io:BPNL4pV6czBiZdLj"
+  id: "did:web:wallet.tx.the-sense.io:BPNLRXy4LfyXutnU"
   trustedIssuers:
     - "did:web:wallet.tx.the-sense.io:BPNL000000000000"
   sts:
@@ -15,7 +15,7 @@ iatp:
     oauth:
       token_url: https://wallet.tx.the-sense.io/oauth/token
       client:
-        id: "BPNL4pV6czBiZdLj"
+        id: "BPNLRXy4LfyXutnU"
         secret_alias: "edc-stub"
 
 controlplane:
@@ -36,7 +36,7 @@ controlplane:
     management:
       port: 8081
       path: /management
-      authKey: "lenovo"
+      authKey: "tokio-marine-europe-s-a-french"
       jwksUrl:
     control:
       port: 8083
@@ -50,7 +50,7 @@ controlplane:
     catalog:
       port: 8085
       path: /catalog
-      authKey: "lenovo"
+      authKey: "tokio-marine-europe-s-a-french"
 
   bdrs:
     cache_validity_seconds: 600
@@ -71,7 +71,7 @@ controlplane:
 
   ingresses:
     - enabled: true
-      hostname: "lenovo-protocol.tx.the-sense.io"
+      hostname: "tokio-marine-europe-s-a-french-protocol.tx.the-sense.io"
       annotations: {}
       endpoints:
         - protocol
@@ -79,12 +79,12 @@ controlplane:
       className: "nginx"
       tls:
         enabled: true
-        secretName: "edc-protocol-lenovo"
+        secretName: "edc-protocol-tokio-marine-europe-s-a-french"
       certManager:
         issuer: ""
         clusterIssuer: "letsencrypt-prod"
     - enabled: true
-      hostname: "lenovo-controlplane.tx.the-sense.io"
+      hostname: "tokio-marine-europe-s-a-french-controlplane.tx.the-sense.io"
       annotations: {}
       endpoints:
         - management
@@ -92,7 +92,7 @@ controlplane:
       className: "nginx"
       tls:
         enabled: true
-        secretName: "edc-control-lenovo-intranet"
+        secretName: "edc-control-tokio-marine-europe-s-a-french-intranet"
       certManager:
         issuer: ""
         clusterIssuer: "letsencrypt-prod"
@@ -153,14 +153,14 @@ dataplane:
 
   ingresses:
     - enabled: true
-      hostname: "lenovo-dataplane.tx.the-sense.io"
+      hostname: "tokio-marine-europe-s-a-french-dataplane.tx.the-sense.io"
       annotations: {}
       endpoints:
         - public
       className: "nginx"
       tls:
         enabled: true
-        secretName: "edc-dataplane-lenovo"
+        secretName: "edc-dataplane-tokio-marine-europe-s-a-french"
       certManager:
         issuer: ""
         clusterIssuer: "letsencrypt-prod"
@@ -177,11 +177,11 @@ dataplane:
 postgresql:
   # Shared PostgreSQL server running in edc-postgres namespace.
   # Database and user are created at runtime by the provisioning service.
-  jdbcUrl: "jdbc:postgresql://postgres.postgres-edc.svc.cluster.local:5432/edc_lenovo"
+  jdbcUrl: "jdbc:postgresql://postgres.postgres-edc.svc.cluster.local:5432/edc_tokio-marine-europe-s-a-french"
   auth:
-    database: "edc_lenovo"
-    username: "edc_lenovo"
-    password: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_lenovo#dbpass>"
+    database: "edc_tokio-marine-europe-s-a-french"
+    username: "edc_tokio-marine-europe-s-a-french"
+    password: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_tokio_marine_europe_s_a_french#dbpass>"
 
 vault:
   injector:
@@ -192,7 +192,7 @@ vault:
     postStart:
   hashicorp:
     url: "https://vault.the-sense.io"
-    token: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_lenovo#vault-token>"
+    token: "<path:k8s-stack/data/runtime_edc/tx_edc_connector_tokio_marine_europe_s_a_french#vault-token>"
     timeout: 30
     healthCheck:
       enabled: false
