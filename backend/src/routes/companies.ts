@@ -344,7 +344,18 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
   });
   console.log(`[onboarding] Step 6/7 — OrgCredential created | orgCredId=${orgCredId} | Gaia-X verification triggered (async)`);
 
+  // ── Step 7: Create EDC provisioning record (waiting for Gaia-X to complete) ──
+  if (ENABLE_EDC_PROVISIONING) {
+    await prisma.edcProvisioning.create({
+      data: { companyId, status: 'pending' },
+    });
+    console.log(`[onboarding] Step 7/7 — EDC provisioning record created | companyId=${companyId} status=pending (waiting for Gaia-X)`);
+  } else {
+    console.log(`[onboarding] Step 7/7 — EDC provisioning skipped (ENABLE_EDC_PROVISIONING is not set)`);
+  }
+
   // Auto-trigger Gaia-X verification (fire-and-forget — does not block registration response)
+  // EDC provisioning is triggered only after Gaia-X verification succeeds.
   const orchestrator = new GaiaXOrchestrator(new GaiaXClient());
   prisma.orgCredential.update({ where: { id: orgCredId }, data: { verificationStatus: 'verifying' } })
     .then(() => {
@@ -372,37 +383,56 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
         console.error(`[onboarding:gaia-x] Compliance errors:`, JSON.stringify(result.complianceResult.errors || []));
         console.error(`[onboarding:gaia-x] Compliance raw response:`, JSON.stringify(result.complianceResult.raw));
       }
+
+      if (!isVerified) {
+        // Gaia-X failed — mark EDC provisioning as failed too
+        if (ENABLE_EDC_PROVISIONING) {
+          await prisma.edcProvisioning.update({
+            where: { companyId },
+            data: { status: 'failed', lastError: 'Gaia-X compliance verification failed; EDC provisioning aborted' },
+          }).catch((dbErr) =>
+            console.error(`[onboarding:edc] Failed to update EDC status to failed for ${companyId} | error="${dbErr.message}"`),
+          );
+          console.error(`[onboarding:edc] EDC provisioning aborted for ${companyId} — Gaia-X not verified`);
+        }
+        return;
+      }
+
+      // Gaia-X verified — now trigger EDC provisioning
+      if (ENABLE_EDC_PROVISIONING) {
+        console.log(`[onboarding:edc] Gaia-X verified — triggering EDC provisioning for tenantCode=${tenantCode}`);
+        axios
+          .post(`${PROVISIONING_SERVICE_URL}/provision`, { companyId, tenantCode, bpn })
+          .then(() => console.log(`[onboarding:edc] Provisioning request sent to ${PROVISIONING_SERVICE_URL} for tenantCode=${tenantCode}`))
+          .catch(async (err) => {
+            console.error(`[onboarding:edc] Provisioning request FAILED for tenantCode=${tenantCode} | error="${err.message}"`);
+            await prisma.edcProvisioning.update({
+              where: { companyId },
+              data: { status: 'failed', lastError: `Provisioning service unreachable: ${err.message}` },
+            }).catch((dbErr) =>
+              console.error(`[onboarding:edc] Failed to update EDC status to failed for ${companyId} | error="${dbErr.message}"`),
+            );
+          });
+      }
     })
-    .catch((err: Error) => {
-      prisma.orgCredential.update({
+    .catch(async (err: Error) => {
+      await prisma.orgCredential.update({
         where: { id: orgCredId },
         data: { verificationStatus: 'failed' },
       }).catch(() => {});
       console.error(`[onboarding:gaia-x] Verification FAILED for OrgCredential ${orgCredId} | error="${err.message}"`);
-    });
 
-  // ── Step 7: Trigger EDC provisioning ──
-  if (ENABLE_EDC_PROVISIONING) {
-    await prisma.edcProvisioning.create({
-      data: { companyId, status: 'pending' },
-    });
-    console.log(`[onboarding] Step 7/7 — EDC provisioning initiated | companyId=${companyId} tenantCode=${tenantCode} status=pending`);
-
-    axios
-      .post(`${PROVISIONING_SERVICE_URL}/provision`, { companyId, tenantCode, bpn })
-      .then(() => console.log(`[onboarding:edc] Provisioning request sent to ${PROVISIONING_SERVICE_URL} for tenantCode=${tenantCode}`))
-      .catch(async (err) => {
-        console.error(`[onboarding:edc] Provisioning request FAILED for tenantCode=${tenantCode} | error="${err.message}"`);
+      // Gaia-X threw — mark EDC provisioning as failed too
+      if (ENABLE_EDC_PROVISIONING) {
         await prisma.edcProvisioning.update({
           where: { companyId },
-          data: { status: 'failed', lastError: `Provisioning service unreachable: ${err.message}` },
+          data: { status: 'failed', lastError: `Gaia-X verification error: ${err.message}` },
         }).catch((dbErr) =>
           console.error(`[onboarding:edc] Failed to update EDC status to failed for ${companyId} | error="${dbErr.message}"`),
         );
-      });
-  } else {
-    console.log(`[onboarding] Step 7/7 — EDC provisioning skipped (ENABLE_EDC_PROVISIONING is not set)`);
-  }
+        console.error(`[onboarding:edc] EDC provisioning aborted for ${companyId} — Gaia-X threw an error`);
+      }
+    });
 
   const elapsed = Date.now() - onboardingStart;
   console.log(`[onboarding] ──── COMPLETE company onboarding for "${name}" (${elapsed}ms) ────`);

@@ -39,6 +39,29 @@ interface Company {
   orgCredentials?: OrgCredential[]
 }
 
+interface DidVerificationMethod {
+  id: string
+  type: string
+  controller: string
+  publicKeyJwk?: Record<string, unknown>
+}
+
+interface DidService {
+  id: string
+  type: string
+  serviceEndpoint: string
+  description?: string
+}
+
+interface DidDocument {
+  '@context': string[]
+  id: string
+  verificationMethod?: DidVerificationMethod[]
+  authentication?: string[]
+  assertionMethod?: string[]
+  service?: DidService[]
+}
+
 interface EdcProvisioning {
   status: 'pending' | 'provisioning' | 'ready' | 'failed'
   lastError?: string
@@ -121,6 +144,8 @@ export default function CompanyDetail() {
   const [loading, setLoading] = useState(true)
   const [selectedCred, setSelectedCred] = useState<Credential | null>(null)
   const [edc, setEdc] = useState<EdcProvisioning | null>(null)
+  const [didDoc, setDidDoc] = useState<DidDocument | null>(null)
+  const [didDocExpanded, setDidDocExpanded] = useState(false)
 
   useEffect(() => {
     axios.get(`${API_BASE}/companies/${id}`).then(r => {
@@ -133,6 +158,13 @@ export default function CompanyDetail() {
     if (!id) return
     axios.get(`${API_BASE}/companies/${id}/edc-status`)
       .then(r => setEdc(r.data))
+      .catch(() => {})
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    axios.get(`${VC_BASE}/company/${id}/did.json`)
+      .then(r => setDidDoc(r.data))
       .catch(() => {})
   }, [id])
 
@@ -333,6 +365,105 @@ export default function CompanyDetail() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* DID Document */}
+      {didDoc && (
+        <div className="border border-gray-100 rounded-lg p-5 mt-4">
+          <button
+            className="w-full flex items-center justify-between"
+            onClick={() => setDidDocExpanded(v => !v)}
+          >
+            <div>
+              <p className="text-xs font-medium text-gray-700 text-left">DID Document</p>
+              <p className="text-[10px] text-gray-400 mt-0.5 text-left font-mono truncate max-w-xs">{didDoc.id}</p>
+            </div>
+            <span className="text-gray-300 text-sm">{didDocExpanded ? '▲' : '▼'}</span>
+          </button>
+
+          {didDocExpanded && (
+            <div className="mt-4 space-y-4">
+              {/* Verification Methods */}
+              {didDoc.verificationMethod && didDoc.verificationMethod.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Verification Methods</p>
+                  <div className="space-y-2">
+                    {didDoc.verificationMethod.map(vm => (
+                      <div key={vm.id} className="bg-gray-50 rounded p-3 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] text-gray-400">ID</span>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-mono text-[10px] text-gray-600 truncate">{vm.id}</span>
+                            <CopyButton value={vm.id} />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] text-gray-400">Type</span>
+                          <span className="text-[10px] text-gray-600">{vm.type}</span>
+                        </div>
+                        {vm.publicKeyJwk && (
+                          <div>
+                            <p className="text-[10px] text-gray-400 mb-1">Public Key (JWK)</p>
+                            <pre className="text-[10px] text-gray-600 bg-white rounded border border-gray-100 p-2 overflow-x-auto whitespace-pre-wrap break-all">
+                              {JSON.stringify(vm.publicKeyJwk, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Services */}
+              {didDoc.service && didDoc.service.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-2">Services</p>
+                  <div className="space-y-2">
+                    {didDoc.service.map(svc => (
+                      <div key={svc.id} className="bg-gray-50 rounded p-3 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] text-gray-400">Type</span>
+                          <span className="text-[10px] text-gray-600">{svc.type}</span>
+                        </div>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-[10px] text-gray-400 shrink-0">Endpoint</span>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <a
+                              href={svc.serviceEndpoint}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-mono text-[10px] text-blue-600 hover:underline break-all"
+                            >
+                              {svc.serviceEndpoint}
+                            </a>
+                            <CopyButton value={svc.serviceEndpoint} />
+                          </div>
+                        </div>
+                        {svc.description && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] text-gray-400">Description</span>
+                            <span className="text-[10px] text-gray-500">{svc.description}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Raw JSON toggle */}
+              <details className="group">
+                <summary className="text-[10px] text-gray-400 cursor-pointer hover:text-gray-600 select-none">
+                  View raw JSON
+                </summary>
+                <pre className="mt-2 text-[10px] text-gray-600 bg-gray-50 rounded border border-gray-100 p-3 overflow-x-auto whitespace-pre-wrap break-all">
+                  {JSON.stringify(didDoc, null, 2)}
+                </pre>
+              </details>
+            </div>
+          )}
         </div>
       )}
 
