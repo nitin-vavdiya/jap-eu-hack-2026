@@ -48,10 +48,12 @@ export class GaiaXOrchestrator {
     const attempts: VerificationAttempt[] = [];
     const issuedVCs: IssuedVC[] = [];
 
-    // Step 1: Build VC (use signer's DID for live mode)
+    // Step 1: Build VC using the company's own DID as issuer (self-assertion)
+    // The company DID document hosts the platform's public key (custodial model),
+    // so GXDCH can resolve the company DID → get public key → verify signature
     this.emitProgress(org.id, 'preparing', 'in-progress');
-    const signerDid = this.client.isMockMode ? undefined : getVPSigner().getDid();
-    const vc = buildLegalParticipantVC(org, signerDid);
+    const companyDid = org.did || undefined;
+    const vc = buildLegalParticipantVC(org, companyDid);
     this.emitProgress(org.id, 'preparing', 'completed');
 
     if (this.client.isMockMode) {
@@ -113,37 +115,42 @@ export class GaiaXOrchestrator {
 
     const { endpointSet } = selected;
     const signer = getVPSigner();
-    // Always use the VPSigner's DID (backed by ngrok for public resolution)
-    const did = signer.getDid();
+
+    // Use the company's own DID for all VC/VP signing (custodial model)
+    // The company DID document at /company/<id>/did.json hosts the platform's public key
+    const companyDid = org.did!;
+    const companyKid = `${companyDid}#key-1`;
+    const companyIdentity = { did: companyDid, kid: companyKid };
     const publicKeyJwk = signer.getPublicKeyJwk();
 
-    // Log signer identity for debugging key mismatch issues
+    // Log signer identity for debugging
     const crypto = await import('crypto');
     const keyFingerprint = crypto.createHash('sha256')
       .update(JSON.stringify({ n: publicKeyJwk.n, e: publicKeyJwk.e }))
       .digest('hex').slice(0, 16);
     console.log(`[GaiaX] ──── Compliance submission for org ${org.id} ────`);
-    console.log(`[GaiaX]   signer DID     = ${did}`);
+    console.log(`[GaiaX]   company DID    = ${companyDid}`);
+    console.log(`[GaiaX]   company kid    = ${companyKid}`);
     console.log(`[GaiaX]   key fingerprint= ${keyFingerprint}`);
-    console.log(`[GaiaX]   DID doc URL    = https://${(process.env.GAIAX_DID_DOMAIN || 'localhost:8000').replace(/%3A/g, ':')}/${(process.env.GAIAX_DID_PATH || 'v1')}/did.json`);
+    console.log(`[GaiaX]   DID doc URL    = https://${(process.env.GAIAX_DID_DOMAIN || 'localhost:8000').replace(/%3A/g, ':')}/company/${org.companyId}/did.json`);
     console.log(`[GaiaX]   endpoint set   = ${endpointSet.name}`);
     console.log(`[GaiaX]   compliance URL = ${endpointSet.compliance}`);
     console.log(`[GaiaX]   has x5c cert   = ${(signer.getX5c()?.length || 0) > 0}`);
 
-    // ── Step 2: Sign the LegalParticipant VC as JWT ──
+    // ── Step 2: Sign the LegalParticipant VC as JWT using company DID (custodial) ──
     this.emitProgress(org.id, 'preparing', 'in-progress');
-    const vcJwt = signer.signVC(vc as unknown as Record<string, unknown>);
-    console.log(`[GaiaX] Signed LegalParticipant VC-JWT (${vcJwt.length} chars)`);
+    const vcJwt = signer.signVCAs(vc as unknown as Record<string, unknown>, companyIdentity);
+    console.log(`[GaiaX] Signed LegalParticipant VC-JWT as ${companyDid} (${vcJwt.length} chars)`);
 
     // Try to issue via walt.id as well for proper OID4VCI credential offer
-    const waltIdOffer = await this.tryWaltIdIssuance(org, vc, did);
+    const waltIdOffer = await this.tryWaltIdIssuance(org, vc, companyDid);
     if (waltIdOffer) {
       issuedVCs.push({
         id: `vc-lp-${uuidv4().slice(0, 8)}`,
         type: 'LegalParticipantVC',
         jwt: vcJwt,
         issuedAt: new Date().toISOString(),
-        issuer: did,
+        issuer: companyDid,
         storedInWallet: false,
         json: vc as unknown as Record<string, unknown>,
       });
@@ -170,7 +177,7 @@ export class GaiaXOrchestrator {
         regEntry.type,
         regEntry.value,
         `${getVCBaseUrl()}/vc/${org.id}`,
-        did,
+        companyDid,
       );
 
       attempts.push({
@@ -216,19 +223,19 @@ export class GaiaXOrchestrator {
     this.emitProgress(org.id, 'compliance', 'in-progress');
     const complianceStart = Date.now();
 
-    // Build VP with 3 self-signed VCs (Loire format):
+    // Build VP with 3 self-signed VCs (Loire format), all issued by the company DID:
     // 1. LegalPerson VC, 2. Registration Number VC, 3. T&C (gx:Issuer) VC
-    const lrnPayload = buildRegistrationNumberVC(did, org.id, org.legalRegistrationNumber, org.legalAddress.countryCode);
-    const lrnJwt = signer.signVC(lrnPayload);
-    console.log(`[GaiaX] Signed Registration Number VC-JWT (${(lrnPayload.type as string[])[1]})`);
+    const lrnPayload = buildRegistrationNumberVC(companyDid, org.id, org.legalRegistrationNumber, org.legalAddress.countryCode);
+    const lrnJwt = signer.signVCAs(lrnPayload, companyIdentity);
+    console.log(`[GaiaX] Signed Registration Number VC-JWT (${(lrnPayload.type as string[])[1]}) as ${companyDid}`);
 
-    const tandcPayload = buildTermsAndConditionsVC(did, org.id);
-    const tandcJwt = signer.signVC(tandcPayload);
+    const tandcPayload = buildTermsAndConditionsVC(companyDid, org.id);
+    const tandcJwt = signer.signVCAs(tandcPayload, companyIdentity);
     const vcsForVP = [vcJwt, lrnJwt, tandcJwt];
-    console.log(`[GaiaX] Signed T&C VC-JWT for compliance`);
+    console.log(`[GaiaX] Signed T&C VC-JWT for compliance as ${companyDid}`);
 
-    const vpJwt = signer.signVP(vcsForVP, endpointSet.compliance);
-    console.log(`[GaiaX] Signed VP-JWT (${vpJwt.length} chars) for compliance submission`);
+    const vpJwt = signer.signVPAs(vcsForVP, companyIdentity, endpointSet.compliance);
+    console.log(`[GaiaX] Signed VP-JWT (${vpJwt.length} chars) for compliance submission as ${companyDid}`);
 
     // Log VP-JWT header for debugging signature verification failures
     try {
@@ -246,10 +253,11 @@ export class GaiaXOrchestrator {
       console.error(`[GaiaX]   This means the signing key and public key are mismatched!`);
     }
 
-    // Fetch our own DID document to verify the compliance service will see the right key
+    // Fetch company DID document to verify the compliance service will see the right key
     try {
       const axios = (await import('axios')).default;
-      const didDocUrl = `https://${(process.env.GAIAX_DID_DOMAIN || 'localhost:8000').replace(/%3A/g, ':')}/${process.env.GAIAX_DID_PATH || 'v1'}/did.json`;
+      const domain = (process.env.GAIAX_DID_DOMAIN || 'localhost:8000').replace(/%3A/g, ':');
+      const didDocUrl = `https://${domain}/company/${org.companyId}/did.json`;
       const didDocResp = await axios.get(didDocUrl, { timeout: 5000 }).catch(() => null);
       if (didDocResp) {
         const servedKey = didDocResp.data?.verificationMethod?.[0]?.publicKeyJwk;
@@ -260,10 +268,10 @@ export class GaiaXOrchestrator {
         console.log(`[GaiaX]   local  key n   = ${String(localKey.n).slice(0, 20)}...`);
         console.log(`[GaiaX]   keys match     = ${keysMatch}`);
         if (!keysMatch) {
-          console.error(`[GaiaX]   ⚠ KEY MISMATCH — the DID document serves a different public key than what we're signing with!`);
+          console.error(`[GaiaX]   ⚠ KEY MISMATCH — company DID document serves a different public key than what we're signing with!`);
         }
       } else {
-        console.warn(`[GaiaX] Could not fetch own DID document at ${didDocUrl}`);
+        console.warn(`[GaiaX] Could not fetch company DID document at ${didDocUrl}`);
       }
     } catch (fetchErr: any) {
       console.warn(`[GaiaX] DID doc self-check failed: ${fetchErr.message}`);

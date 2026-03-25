@@ -139,15 +139,26 @@ export class VPSigner {
   getX5c(): string[] { this.ensureInitialized(); return this.x5c; }
 
   signVC(vcPayload: Record<string, unknown>): string {
+    return this.signVCAs(vcPayload);
+  }
+
+  /**
+   * Sign a VC-JWT on behalf of a specific DID (custodial signing).
+   * Uses the platform's private key but sets iss/kid to the target DID.
+   * If no identity override is provided, defaults to the platform's own DID.
+   */
+  signVCAs(vcPayload: Record<string, unknown>, identity?: { did: string; kid: string }): string {
     this.ensureInitialized();
+    const targetDid = identity?.did || this.did;
+    const targetKid = identity?.kid || this.kid;
     const now = Math.floor(Date.now() / 1000);
     // VC-JOSE-COSE spec: VC claims go at root of JWT payload (not inside a 'vc' wrapper)
     const payload = {
       ...vcPayload,
-      iss: this.did,
+      iss: targetDid,
       sub: vcPayload.credentialSubject
-        ? (vcPayload.credentialSubject as Record<string, unknown>)['id'] || (vcPayload.credentialSubject as Record<string, unknown>)['@id'] || this.did
-        : this.did,
+        ? (vcPayload.credentialSubject as Record<string, unknown>)['id'] || (vcPayload.credentialSubject as Record<string, unknown>)['@id'] || targetDid
+        : targetDid,
       nbf: now,
       exp: now + 365 * 24 * 3600,
       iat: now,
@@ -160,15 +171,26 @@ export class VPSigner {
         alg: 'RS256',
         typ: 'vc+jwt',
         cty: 'vc',
-        kid: this.kid,
-        iss: this.did,
+        kid: targetKid,
+        iss: targetDid,
         x5c: this.x5c,
       } as jwt.JwtHeader & { cty: string; iss: string; x5c: string[] },
     });
   }
 
   signVP(vcJwts: string[], audience?: string): string {
+    return this.signVPAs(vcJwts, undefined, audience);
+  }
+
+  /**
+   * Sign a VP-JWT on behalf of a specific DID (custodial signing).
+   * Uses the platform's private key but sets iss/kid/sub to the target DID.
+   * If no identity override is provided, defaults to the platform's own DID.
+   */
+  signVPAs(vcJwts: string[], identity?: { did: string; kid: string }, audience?: string): string {
     this.ensureInitialized();
+    const targetDid = identity?.did || this.did;
+    const targetKid = identity?.kid || this.kid;
     const now = Math.floor(Date.now() / 1000);
 
     // VC-JOSE-COSE spec: VP claims go at root of JWT payload (not inside a 'vp' wrapper)
@@ -184,11 +206,11 @@ export class VPSigner {
       '@context': ['https://www.w3.org/ns/credentials/v2'],
       type: 'VerifiablePresentation',
       verifiableCredential,
-      issuer: this.did,
+      issuer: targetDid,
       validFrom: new Date(now * 1000).toISOString(),
       validUntil: new Date((now + 3600) * 1000).toISOString(),
-      iss: this.did,
-      sub: this.did,
+      iss: targetDid,
+      sub: targetDid,
       aud: audience || 'https://compliance.lab.gaia-x.eu/development',
       nbf: now,
       exp: now + 3600,
@@ -202,8 +224,8 @@ export class VPSigner {
         alg: 'RS256',
         typ: 'vp+jwt',
         cty: 'vp',
-        kid: this.kid,
-        iss: this.did,
+        kid: targetKid,
+        iss: targetDid,
         x5c: this.x5c,
       } as jwt.JwtHeader & { cty: string; iss: string; x5c: string[] },
     });
