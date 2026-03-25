@@ -236,6 +236,39 @@ export class GaiaXOrchestrator {
       console.log(`[GaiaX] VP-JWT header:`, JSON.stringify(vpHeader));
     } catch { /* ignore parse errors */ }
 
+    // Self-verify: check our own signature before sending to compliance
+    try {
+      const jwtModule = await import('jsonwebtoken');
+      const verified = jwtModule.verify(vpJwt, signer['publicKey'], { algorithms: ['RS256'] });
+      console.log(`[GaiaX] Self-verification: PASSED (VP-JWT signature is valid with our public key)`);
+    } catch (selfVerifyErr: any) {
+      console.error(`[GaiaX] Self-verification: FAILED — ${selfVerifyErr.message}`);
+      console.error(`[GaiaX]   This means the signing key and public key are mismatched!`);
+    }
+
+    // Fetch our own DID document to verify the compliance service will see the right key
+    try {
+      const axios = (await import('axios')).default;
+      const didDocUrl = `https://${(process.env.GAIAX_DID_DOMAIN || 'localhost:8000').replace(/%3A/g, ':')}/${process.env.GAIAX_DID_PATH || 'v1'}/did.json`;
+      const didDocResp = await axios.get(didDocUrl, { timeout: 5000 }).catch(() => null);
+      if (didDocResp) {
+        const servedKey = didDocResp.data?.verificationMethod?.[0]?.publicKeyJwk;
+        const localKey = signer.getPublicKeyJwk();
+        const keysMatch = servedKey?.n === localKey.n && servedKey?.e === localKey.e;
+        console.log(`[GaiaX] DID doc fetch: ${didDocUrl} → ${didDocResp.status}`);
+        console.log(`[GaiaX]   served key n   = ${String(servedKey?.n).slice(0, 20)}...`);
+        console.log(`[GaiaX]   local  key n   = ${String(localKey.n).slice(0, 20)}...`);
+        console.log(`[GaiaX]   keys match     = ${keysMatch}`);
+        if (!keysMatch) {
+          console.error(`[GaiaX]   ⚠ KEY MISMATCH — the DID document serves a different public key than what we're signing with!`);
+        }
+      } else {
+        console.warn(`[GaiaX] Could not fetch own DID document at ${didDocUrl}`);
+      }
+    } catch (fetchErr: any) {
+      console.warn(`[GaiaX] DID doc self-check failed: ${fetchErr.message}`);
+    }
+
     const vcId = `${getVCBaseUrl()}/vc/${org.id}`;
     console.log(`[GaiaX] Submitting to compliance | url=${endpointSet.compliance}/api/credential-offers/standard-compliance?vcid=${vcId}`);
     console.log(`[GaiaX]   VC count in VP = ${vcsForVP.length}`);
