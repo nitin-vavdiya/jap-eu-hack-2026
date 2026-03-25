@@ -513,6 +513,47 @@ async function main() {
   }
   console.log(`Seeded ${orgCredentials.length} org credentials`);
 
+  // Seed EdcProvisioning for seeded companies so their DID documents include a DataService entry
+  const edcProvisionings = [
+    {
+      companyId: 'company-toyota-001',
+      status: 'ready',
+      protocolUrl: 'https://toyota-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
+      managementUrl: 'https://toyota-motor-corporation-controlplane.tx.the-sense.io/management',
+      dataplaneUrl: 'https://toyota-motor-corporation-dataplane.tx.the-sense.io',
+      apiKey: 'toyota-motor-corporation',
+      helmRelease: 'edc-toyota-motor-corporation',
+      argoAppName: 'edc-toyota-motor-corporation',
+      k8sNamespace: 'edc-toyota-motor-corporation',
+      dbName: 'edc_toyota_motor_corporation',
+      dbUser: 'edc_toyota_motor_corporation',
+      provisionedAt: new Date('2024-01-15T09:00:00.000Z'),
+    },
+    {
+      companyId: 'company-tokiomarine-001',
+      status: 'ready',
+      protocolUrl: 'https://toyota-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
+      managementUrl: 'https://tokio-marine-europe-s-a-french-controlplane.tx.the-sense.io/management',
+      dataplaneUrl: 'https://tokio-marine-europe-s-a-french-dataplane.tx.the-sense.io',
+      apiKey: 'tokio-marine-europe-s-a-french',
+      helmRelease: 'edc-tokio-marine-europe-s-a-french',
+      argoAppName: 'edc-tokio-marine-europe-s-a-french',
+      k8sNamespace: 'edc-tokio-marine-europe-s-a-french',
+      dbName: 'edc_tokio_marine_europe_s_a_french',
+      dbUser: 'edc_tokio_marine_europe_s_a_french',
+      provisionedAt: new Date('2024-02-01T09:00:00.000Z'),
+    },
+  ];
+
+  for (const edc of edcProvisionings) {
+    await prisma.edcProvisioning.upsert({
+      where: { companyId: edc.companyId },
+      update: edc,
+      create: edc,
+    });
+  }
+  console.log(`Seeded ${edcProvisionings.length} EDC provisionings`);
+
   console.log('Seeding complete!');
 }
 

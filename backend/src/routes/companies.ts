@@ -97,7 +97,7 @@ router.patch('/:id/edc-provisioning', async (req, res) => {
       const u = t.replace(/-/g, '_');
       derivedConfig = {
         managementUrl: `https://${t}-controlplane.tx.the-sense.io/management`,
-        protocolUrl:   'https://toyota-protocol.tx.the-sense.io/api/v1/dsp',
+        protocolUrl:   'https://toyota-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
         dataplaneUrl:  `https://${t}-dataplane.tx.the-sense.io`,
         apiKey:        t,
         helmRelease:   `edc-${t}`,

@@ -34,7 +34,7 @@ backend:
     ENABLE_EDC_PROVISIONING: "true"
     MAX_COMPANIES: "20"
     GAIAX_DID_DOMAIN: "jeh-api.tx.the-sense.io"
-    GAIAX_DID_PATH: "v13"
+    GAIAX_DID_PATH: "v14"
     EDC_BASE_URL: "https://toyota-controlplane.tx.the-sense.io"
     EDC_API_KEY: "tata-motors"
     BPN_NUMBER: "BPNL00000000024R"

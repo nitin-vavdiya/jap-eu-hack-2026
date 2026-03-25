@@ -85,7 +85,9 @@ export function buildCompanyDidDocument(
     services.push({
       id: `${did}#data-service`,
       type: SERVICE_TYPES.DATA_SERVICE,
-      serviceEndpoint: `${edcProvisioning.protocolUrl}#${company.bpn}`,
+      serviceEndpoint: edcProvisioning.protocolUrl.includes('#')
+        ? edcProvisioning.protocolUrl
+        : `${edcProvisioning.protocolUrl}#${company.bpn}`,
       description: 'IDSA Dataspace Protocol endpoint for sovereign data exchange',
     });
   }
