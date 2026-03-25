@@ -36,7 +36,7 @@ export class DataServiceDiscoveryError extends Error {
   }
 }
 
-const BPNL_PATTERN = /^BPNL[A-Z0-9]{12}$/;
+const BPNL_PATTERN = /^BPNL[A-Z0-9]{12}$/i;
 
 /**
  * Discover provider DSP URL and BPNL from an issuer DID document.

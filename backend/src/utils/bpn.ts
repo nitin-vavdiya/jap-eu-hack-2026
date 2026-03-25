@@ -1,9 +1,9 @@
 import { randomBytes } from 'crypto';
 
-const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 /**
- * Generates a CSPRNG BPN matching ^(BPNL|BPNS)[A-Za-z0-9]{12}$
+ * Generates a CSPRNG BPN matching ^(BPNL|BPNS)[A-Z0-9]{12}$
  */
 export function generateBpn(prefix: 'BPNL' | 'BPNS' = 'BPNL'): string {
   const bytes = randomBytes(12);
