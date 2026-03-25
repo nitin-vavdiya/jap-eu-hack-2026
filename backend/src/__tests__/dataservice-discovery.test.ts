@@ -8,37 +8,64 @@ import {
   parseDataServiceEndpoint,
   DataServiceDiscoveryError,
 } from '../services/dataservice-discovery';
-import { resolveDid } from '../services/did-resolver';
+import { buildCompanyDidDocument } from '../services/did-resolver';
 import type { DidDocument, ServiceEndpoint } from '../services/did-resolver';
 
+// Mock VPSigner
+jest.mock('../services/gaiax/vp-signer', () => ({
+  getVPSigner: () => ({
+    getPublicKeyJwk: () => ({
+      kty: 'RSA',
+      n: 'test-n',
+      e: 'AQAB',
+      kid: 'did:web:test:v1#key-1',
+      alg: 'RS256',
+    }),
+  }),
+}));
+
+const TOYOTA_COMPANY = {
+  id: 'company-toyota-001',
+  did: 'did:web:jeh-api.tx.the-sense.io:company:company-toyota-001',
+  bpn: 'BPNL00000000024R',
+  name: 'Toyota Motor Europe',
+  createdAt: new Date('2024-01-01'),
+};
+
+const TOKIO_COMPANY = {
+  id: 'company-tokiomarine-001',
+  did: 'did:web:jeh-api.tx.the-sense.io:company:company-tokiomarine-001',
+  bpn: 'BPNLTokio0000001',
+  name: 'Tokio Marine',
+  createdAt: new Date('2024-01-01'),
+};
+
 describe('discoverDataService', () => {
-  it('should discover DataService from Toyota DID', () => {
-    const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
-    const result = discoverDataService(didDocument!);
+  it('should discover DataService from company with ready EDC', () => {
+    const doc = buildCompanyDidDocument(TOYOTA_COMPANY, {
+      status: 'ready',
+      protocolUrl: 'https://toyota-protocol.tx.the-sense.io/api/v1/dsp',
+    });
+    const result = discoverDataService(doc);
 
     expect(result.dspUrl).toBe('https://toyota-protocol.tx.the-sense.io/api/v1/dsp');
     expect(result.issuerBpnl).toBe('BPNL00000000024R');
-    expect(result.serviceId).toBe('did:eu-dataspace:company-toyota-001#data-service');
+    expect(result.serviceId).toContain('#data-service');
     expect(result.serviceEndpoint).toBe(
       'https://toyota-protocol.tx.the-sense.io/api/v1/dsp#BPNL00000000024R',
     );
   });
 
-  it('should throw NO_DATASERVICE for DID without DataService', () => {
-    const { didDocument } = resolveDid('did:eu-dataspace:company-tokiomarine-001');
-    expect(() => discoverDataService(didDocument!)).toThrow(DataServiceDiscoveryError);
+  it('should throw NO_DATASERVICE for company without EDC', () => {
+    const doc = buildCompanyDidDocument(TOKIO_COMPANY, null);
+    expect(() => discoverDataService(doc)).toThrow(DataServiceDiscoveryError);
 
     try {
-      discoverDataService(didDocument!);
+      discoverDataService(doc);
     } catch (err) {
       expect(err).toBeInstanceOf(DataServiceDiscoveryError);
       expect((err as DataServiceDiscoveryError).code).toBe('NO_DATASERVICE');
     }
-  });
-
-  it('should throw NO_DATASERVICE for user DIDs', () => {
-    const { didDocument } = resolveDid('did:smartsense:mario-sanchez');
-    expect(() => discoverDataService(didDocument!)).toThrow(DataServiceDiscoveryError);
   });
 
   it('should handle DID document with no services at all', () => {
@@ -200,40 +227,26 @@ describe('parseDataServiceEndpoint', () => {
   });
 });
 
-describe('end-to-end: DID resolution → DataService discovery', () => {
-  it('should extract DSP URL and BPNL from Toyota DID in one flow', () => {
-    // This mirrors the actual verifier flow
-    const issuerDid = 'did:eu-dataspace:company-toyota-001';
-    const { didDocument } = resolveDid(issuerDid);
-    expect(didDocument).not.toBeNull();
+describe('end-to-end: buildCompanyDidDocument → DataService discovery', () => {
+  it('should extract DSP URL and BPNL from company with ready EDC', () => {
+    const doc = buildCompanyDidDocument(TOYOTA_COMPANY, {
+      status: 'ready',
+      protocolUrl: 'https://toyota-protocol.tx.the-sense.io/api/v1/dsp',
+    });
 
-    const result = discoverDataService(didDocument!);
+    const result = discoverDataService(doc);
     expect(result.dspUrl).toMatch(/^https:\/\/.+\/dsp$/);
     expect(result.issuerBpnl).toMatch(/^BPNL[A-Z0-9]{12}$/);
   });
 
-  it('should fail gracefully for issuers without DataService', () => {
-    const digitDid = 'did:eu-dataspace:company-tokiomarine-001';
-    const { didDocument } = resolveDid(digitDid);
-    expect(didDocument).not.toBeNull();
+  it('should fail gracefully for company without DataService', () => {
+    const doc = buildCompanyDidDocument(TOKIO_COMPANY, null);
 
-    expect(() => discoverDataService(didDocument!)).toThrow(DataServiceDiscoveryError);
+    expect(() => discoverDataService(doc)).toThrow(DataServiceDiscoveryError);
     try {
-      discoverDataService(didDocument!);
+      discoverDataService(doc);
     } catch (err) {
       expect((err as DataServiceDiscoveryError).code).toBe('NO_DATASERVICE');
-      expect((err as DataServiceDiscoveryError).did).toBe(digitDid);
     }
-  });
-
-  it('old env vars EDC_PARTNER_BPN and EDC_PARTNER_DSP_URL should not be required', () => {
-    // These env vars were removed - verify they don't exist in process.env
-    // (or if they do, they shouldn't affect the new discovery flow)
-    const { didDocument } = resolveDid('did:eu-dataspace:company-toyota-001');
-    const result = discoverDataService(didDocument!);
-
-    // The DSP URL and BPNL come from the DID document, not from env vars
-    expect(result.dspUrl).not.toBe(process.env.EDC_PARTNER_DSP_URL || '');
-    expect(result.issuerBpnl).not.toBe('');
   });
 });

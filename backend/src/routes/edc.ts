@@ -1,9 +1,33 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { negotiateAndFetchData, EdcStepUpdate, EdcProviderConfig } from '../services/edcConsumerService';
+import { resolveDid } from '../services/did-resolver';
+import { discoverDataService } from '../services/dataservice-discovery';
 import prisma from '../db';
 
 const router = Router();
+
+/**
+ * Resolve the provider DSP URL and BPNL from the car manufacturer's DID document.
+ * Flow: VIN → Car → Company (by make) → DID → DID Document → DataService → dspUrl + bpnl
+ */
+async function resolveProviderFromVin(vin: string): Promise<EdcProviderConfig> {
+  const car = await prisma.car.findUnique({ where: { vin } });
+  if (!car) throw new Error(`Car not found for VIN: ${vin}`);
+
+  const company = await prisma.company.findFirst({
+    where: { name: { contains: car.make, mode: 'insensitive' } },
+  });
+  if (!company?.did) throw new Error(`No company with DID found for manufacturer: ${car.make}`);
+
+  const didResult = await resolveDid(company.did);
+  if (!didResult.didDocument) throw new Error(`DID resolution failed for ${company.did}`);
+
+  const dataService = discoverDataService(didResult.didDocument);
+  console.log(`[EDC Route] Resolved provider from DID ${company.did}: dspUrl=${dataService.dspUrl}, bpnl=${dataService.issuerBpnl}`);
+
+  return { dspUrl: dataService.dspUrl, bpnl: dataService.issuerBpnl };
+}
 
 // Full EDC negotiation with SSE streaming of step progress
 router.post('/negotiate', authenticate, async (req, res) => {
@@ -13,11 +37,18 @@ router.post('/negotiate', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'VIN is required' });
   }
 
-  if (!dspUrl || !bpnl) {
-    return res.status(400).json({ error: 'dspUrl and bpnl are required' });
+  // Resolve provider from manufacturer DID if not explicitly provided
+  let provider: EdcProviderConfig;
+  if (dspUrl && bpnl) {
+    provider = { dspUrl, bpnl };
+  } else {
+    try {
+      provider = await resolveProviderFromVin(vin);
+    } catch (err: any) {
+      return res.status(400).json({ error: `Could not resolve provider from VIN: ${err.message}` });
+    }
   }
 
-  const provider: EdcProviderConfig = { dspUrl, bpnl };
   const requestedBy = (req as any).user?.preferred_username || (req as any).user?.sub || 'unknown';
 
   // If client requests streaming, use SSE

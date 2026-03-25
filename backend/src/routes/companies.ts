@@ -6,6 +6,7 @@ import { requireRole } from '../middleware/auth';
 import { issueCredentialSimple } from '../services/waltid';
 import { generateBpn } from '../utils/bpn';
 import { toTenantCode } from '../utils/tenantCode';
+import { buildCompanyDidWeb } from '../services/did-resolver';
 import { buildLegalParticipantVC } from '../services/gaiax/vc-builder';
 import { getVPSigner } from '../services/gaiax/vp-signer';
 import { OrgCredentialRecord } from '../services/gaiax/types';
@@ -194,9 +195,12 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
   const tenantCode = await allocateTenantCode(name);
   console.log(`[onboarding] Assigned tenantCode "${tenantCode}" for company "${name}"`);
 
+  // Assign a did:web DID — resolvable at /company/<companyId>/did.json
+  const companyDid = inputDid || buildCompanyDidWeb(companyId);
+
   const credentialSubject = {
     companyName: name,
-    companyDid: `did:eu-dataspace:${companyId}`,
+    companyDid,
     registrationNumber: vatId || eoriNumber || resolvedCin || resolvedGst || leiCode || euid,
     vatId, eoriNumber, euid, leiCode,
     cin: resolvedCin, gstNumber: resolvedGst,
@@ -220,11 +224,12 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
       address: resolvedAddress,
       adminName,
       adminEmail: resolvedAdminEmail,
-      did: inputDid || `did:eu-dataspace:${companyId}`,
+      did: companyDid,
       bpn,
       tenantCode,
     },
   });
+  console.log(`[onboarding] Assigned did:web DID "${companyDid}" for company "${name}"`);
 
   // Create Keycloak user and store the mapping
   let userCreated = false;
@@ -258,7 +263,7 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
   issueCredentialSimple({
     type: 'OrgVC',
     issuerDid: 'did:web:eu-dataspace',
-    subjectDid: `did:eu-dataspace:${companyId}`,
+    subjectDid: companyDid,
     credentialSubject,
   }).catch(() => {});
 
@@ -285,7 +290,7 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
     headquartersAddress: hqAddr,
     website: website || undefined,
     contactEmail: resolvedAdminEmail || '',
-    did: inputDid || `did:eu-dataspace:${companyId}`,
+    did: companyDid,
     validFrom: inputValidFrom || now.toISOString(),
     validUntil: inputValidUntil || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
     verificationStatus: 'draft',

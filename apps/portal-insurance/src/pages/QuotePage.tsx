@@ -178,7 +178,7 @@ export default function QuotePage() {
             'Content-Type': 'application/json',
             ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
-          body: JSON.stringify({ vin, stream: true, dspUrl: 'https://toyota-protocol.tx.the-sense.io/api/v1/dsp', bpnl: 'BPNL00000000024R' }),
+          body: JSON.stringify({ vin, stream: true }),
         })
 
         if (!response.ok || !response.body) {
@@ -240,7 +240,7 @@ export default function QuotePage() {
         if (!cancelled) {
           // Fallback to non-streaming if SSE fails
           try {
-            const r = await api.post('/edc/negotiate', { vin, dspUrl: 'https://toyota-protocol.tx.the-sense.io/api/v1/dsp', bpnl: 'BPNL00000000024R' })
+            const r = await api.post('/edc/negotiate', { vin })
             if (!cancelled) { setCar(r.data); setLoading(false); setShowStepper(false) }
           } catch (fallbackErr: any) {
             if (!cancelled) {

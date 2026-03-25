@@ -39,6 +39,7 @@ import verifierRouter from './routes/verifier';
 import walletVPRouter from './routes/wallet-vp';
 import underwritingRouter from './routes/underwriting';
 import { GaiaXClient, getVPSigner } from './services/gaiax';
+import { buildCompanyDidDocument } from './services/did-resolver';
 import prisma from './db';
 import { OrgCredentialRecord } from './services/gaiax/types';
 import { buildLegalParticipantVC, buildTermsAndConditionsVC, buildRegistrationNumberVC, getVCBaseUrl } from './services/gaiax/vc-builder';
@@ -77,6 +78,7 @@ app.get('/.well-known/vehicle-registry', (_req, res) => {
 });
 
 // DID document for did:web resolution (needed by GXDCH compliance)
+// Platform's own DID document (did:web:<domain>:<path>)
 const didJsonHandler = (_req: any, res: any) => {
   const signer = getVPSigner();
   res.json({
@@ -93,6 +95,25 @@ const didJsonHandler = (_req: any, res: any) => {
   });
 };
 app.get('/.well-known/did.json', didJsonHandler);
+
+// Company did:web hosting — serves DID documents for each company
+// Resolves: did:web:<domain>:company:<companyId> → GET /company/<companyId>/did.json
+app.get('/company/:companyId/did.json', async (req, res) => {
+  const { companyId } = req.params;
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    include: { edcProvisioning: true },
+  });
+  if (!company) {
+    return res.status(404).json({ error: 'Company not found' });
+  }
+
+  const didDocument = buildCompanyDidDocument(company, company.edcProvisioning);
+  res.setHeader('Content-Type', 'application/did+ld+json');
+  res.json(didDocument);
+});
+
+// Platform path-based DID resolution (e.g., did:web:<domain>:v1 → /v1/did.json)
 app.get('/:path/did.json', didJsonHandler);
 
 // VC resolution endpoints — makes VC URIs publicly resolvable

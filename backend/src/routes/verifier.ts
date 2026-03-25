@@ -258,8 +258,8 @@ router.post('/decline', async (req, res) => {
  * GET /did/:did
  * Public DID resolution endpoint
  */
-router.get('/did/:did(*)', (req, res) => {
-  const result = resolveDid(req.params.did);
+router.get('/did/:did(*)', async (req, res) => {
+  const result = await resolveDid(req.params.did);
   if (!result.didDocument) {
     return res.status(404).json({ error: 'DID not found', did: req.params.did });
   }
@@ -332,7 +332,7 @@ async function processVPAsync(sessionId: string, vpToken: unknown, request: Pres
     await sleep(600);
     t0 = Date.now();
     const issuerDid = ownershipCred.issuer;
-    const didResult = resolveDid(issuerDid);
+    const didResult = await resolveDid(issuerDid);
 
     if (!didResult.didDocument) {
       throw new Error(`Could not resolve issuer DID: ${issuerDid}`);
