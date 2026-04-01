@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: edc-volkswagen
+  namespace: argocd
+  labels:
+    tenant: "volkswagen"
+    managed-by: edc-provisioning
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/smartSenseSolutions/jap-eu-hack-2026
+    targetRevision: HEAD
+    path: edc/tx-edc-eleven
+    plugin:
+      name: argocd-vault-plugin-helm
+      env:
+        - name: VAULT_SECRET
+          value: vault-secret
+        - name: HELM_VALUES_FILE
+          value: "values.yaml -f values-volkswagen.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: edc-volkswagen
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
