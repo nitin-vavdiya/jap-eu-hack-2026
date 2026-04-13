@@ -36,12 +36,25 @@ model Company {
   @@map("companies")
 }
 
+model Role {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  users       CompanyUser[]
+
+  @@map("roles")
+}
+
 model CompanyUser {
   id         String   @id @default(uuid())
   keycloakId String   @unique
   email      String?
   companyId  String
+  roleId     String?
   company    Company  @relation(fields: [companyId], references: [id])
+  role       Role?    @relation(fields: [roleId], references: [id])
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -134,9 +147,9 @@ model Car {
   color                   String?
   mileage                 Float?
   transmission            String?
-  manufacturerCredentialId String?
-  manufacturerCompanyId   String?
-  manufacturerCompany     Company? @relation(fields: [manufacturerCompanyId], references: [id])
+  credentialId  String?
+  companyId     String?
+  company       Company? @relation(fields: [companyId], references: [id])
 
   purchases        Purchase[]
   insurancePolicies InsurancePolicy[]
