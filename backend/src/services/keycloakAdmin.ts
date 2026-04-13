@@ -30,7 +30,7 @@ export async function createKeycloakUser(
   console.log(`[keycloak] curl equivalent — get admin token:\n  curl -s -X POST '${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token' \\\n    -H 'Content-Type: application/x-www-form-urlencoded' \\\n    -d 'grant_type=client_credentials&client_id=${ADMIN_CLIENT_ID}&client_secret=${ADMIN_SECRET}'`);
   const token = await getAdminToken();
 
-  const userPayload = { email, username: email, firstName: firstName || '', enabled: true, emailVerified: true, credentials: [{ type: 'password', value: password, temporary: false }] };
+  const userPayload = { email, username: email, firstName: firstName || '', enabled: true, emailVerified: true, credentials: [{ type: 'password', value: password, temporary: true }] };
   console.log(`[keycloak] curl equivalent — create user:\n  curl -s -X POST '${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/users' \\\n    -H 'Authorization: Bearer <TOKEN>' \\\n    -H 'Content-Type: application/json' \\\n    -d '${JSON.stringify(userPayload)}'`);
 
   const res = await axios.post(
@@ -50,9 +50,9 @@ export async function createKeycloakUser(
   console.log(`[keycloak] Created user ${email} → ${uuid}`);
 
   // Step 3 — fetch role representation to get role id
-  console.log(`[keycloak] curl equivalent — get role:\n  curl -s -X GET '${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/roles/admin' \\\n    -H 'Authorization: Bearer <TOKEN>'`);
+  console.log(`[keycloak] curl equivalent — get role:\n  curl -s -X GET '${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/roles/company_admin' \\\n    -H 'Authorization: Bearer <TOKEN>'`);
   const roleRes = await axios.get(
-    `${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/roles/admin`,
+    `${KEYCLOAK_URL}/admin/realms/${KEYCLOAK_REALM}/roles/company_admin`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
   const role = { id: roleRes.data.id as string, name: roleRes.data.name as string };
@@ -65,6 +65,6 @@ export async function createKeycloakUser(
     { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } },
   );
 
-  console.log(`[keycloak] Assigned realm role "admin" to user ${email} (${uuid})`);
+  console.log(`[keycloak] Assigned realm role "company_admin" to user ${email} (${uuid})`);
   return uuid;
 }

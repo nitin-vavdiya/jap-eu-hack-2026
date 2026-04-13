@@ -20,9 +20,9 @@ function getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
 function getMockUser(role?: string): Express.Request['user'] {
   // Default mock users based on role for development without Keycloak
   const mockUsers: Record<string, Express.Request['user']> = {
-    admin: { sub: 'mock-admin', preferred_username: 'toyota-admin', email: 'toyota-admin@toyota-global.com', realm_access: { roles: ['admin'] } },
-    customer: { sub: 'mock-customer', preferred_username: 'mario-sanchez', email: 'mario.sanchez@email.com', realm_access: { roles: ['customer'] } },
-    insurance_agent: { sub: 'mock-agent', preferred_username: 'tokiomarine-agent', email: 'agent@tokiomarine.com', realm_access: { roles: ['insurance_agent'] } },
+    admin: { sub: 'mock-admin', preferred_username: 'platform-admin', email: 'admin@dataspace.eu', realm_access: { roles: ['admin'] } },
+    customer: { sub: 'mock-customer', preferred_username: 'demo-customer', email: 'customer@demo.eu', realm_access: { roles: ['customer'] } },
+    insurance_agent: { sub: 'mock-agent', preferred_username: 'demo-agent', email: 'agent@insurance-demo.eu', realm_access: { roles: ['insurance_agent'] } },
     company_admin: { sub: 'mock-company', preferred_username: 'company-admin', email: 'admin@company.eu', realm_access: { roles: ['company_admin'] } },
   };
   return role ? mockUsers[role] || mockUsers.customer : mockUsers.customer;

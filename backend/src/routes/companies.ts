@@ -326,8 +326,13 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
   if (adminUserEmail && adminUserPassword) {
     try {
       const keycloakId = await createKeycloakUser(adminUserEmail, adminUserPassword, adminName);
-      await prisma.companyUser.create({ data: { keycloakId, email: adminUserEmail, companyId } });
-      console.log(`[onboarding] Step 4/7 — Keycloak user created | email=${adminUserEmail} keycloakId=${keycloakId}`);
+      // Look up the seeded company_admin Role to link via roleId
+      const companyAdminRole = await prisma.role.findUnique({ where: { name: 'company_admin' } });
+      if (!companyAdminRole) {
+        console.warn('[onboarding] Step 4/7 — company_admin role not found in DB; CompanyUser created with roleId=null');
+      }
+      await prisma.companyUser.create({ data: { keycloakId, email: adminUserEmail, companyId, roleId: companyAdminRole?.id ?? null } });
+      console.log(`[onboarding] Step 4/7 — Keycloak user created | email=${adminUserEmail} keycloakId=${keycloakId} roleId=${companyAdminRole?.id ?? 'null'}`);
       userCreated = true;
     } catch (err: any) {
       userError = err.response?.data?.errorMessage || err.message;
