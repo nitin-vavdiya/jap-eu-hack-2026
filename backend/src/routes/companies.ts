@@ -21,6 +21,38 @@ const ENABLE_EDC_PROVISIONING = process.env.ENABLE_EDC_PROVISIONING === 'true';
 const MAX_COMPANIES = process.env.MAX_COMPANIES ? parseInt(process.env.MAX_COMPANIES, 10) : null;
 
 /**
+ * Middleware: validate the shared-secret token on internal provisioning callbacks.
+ *
+ * - Development (NODE_ENV !== 'production'): if secret is not set, log a warning and allow through.
+ * - Production/staging: if secret is not set, return 503 (fail-closed — misconfiguration must be explicit).
+ * - If secret is set: require X-Internal-Token header to match exactly; return 401 on mismatch.
+ */
+function validateProvisioningToken(req: any, res: any, next: any) {
+  const secret = process.env.PROVISIONING_CALLBACK_SECRET;
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (!secret) {
+    if (isProduction) {
+      console.error('[edc-callback] PROVISIONING_CALLBACK_SECRET is not set in production — refusing request (fail-closed)');
+      return res.status(503).json({
+        error: 'Service misconfigured',
+        message: 'PROVISIONING_CALLBACK_SECRET must be set in non-development environments',
+      });
+    }
+    // Development bypass: allow through but warn
+    console.warn('[edc-callback] PROVISIONING_CALLBACK_SECRET not set — allowing request in dev mode (set it for security)');
+    return next();
+  }
+
+  const token = req.headers['x-internal-token'];
+  if (token !== secret) {
+    console.warn(`[edc-callback] Invalid X-Internal-Token on provisioning callback for company ${req.params.id}`);
+    return res.status(401).json({ error: 'Invalid internal token' });
+  }
+  next();
+}
+
+/**
  * Derive a unique tenantCode for the company name.
  * Appends "-2", "-3", … if the base slug is already taken.
  */
@@ -77,7 +109,7 @@ router.get('/:id/edc-status', async (req, res) => {
  * tenantCode — so the config is never dependent on the provisioning service being reachable
  * at the exact moment the callback fires.
  */
-router.patch('/:id/edc-provisioning', async (req, res) => {
+router.patch('/:id/edc-provisioning', validateProvisioningToken, async (req, res) => {
   const { id } = req.params;
   const { status, attempts, lastError, vaultPath, provisionedAt } = req.body;
 

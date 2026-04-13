@@ -50,6 +50,8 @@ backend:
     CADDE_PARTNER_EDC_DSP_URL: "https://toyota-protocol.tx.the-sense.io/api/v1/dsp"
     CADDE_PARTNER_EDC_BPN: "BPNL00000000024R"
     PROVISIONING_SERVICE_URL: "http://eu-jap-hack-provisioning:3001"
+    PROVISIONING_CALLBACK_SECRET: "<path:k8s-stack/data/jap-eu-hack#provisioningCallbackSecret>"
+    NODE_ENV: "production"
     WALTID_ISSUER_URL: "http://eu-jap-hack-waltid-issuer:7002"
     WALTID_WALLET_URL: "http://eu-jap-hack-waltid-wallet:7001"
     WALTID_VERIFIER_URL: "http://eu-jap-hack-waltid-verifier:7003"
