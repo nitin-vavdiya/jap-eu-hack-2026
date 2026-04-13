@@ -190,7 +190,7 @@ export function transformDppToJaspar(
   const compliance = (dpp.compliance ?? {}) as Record<string, unknown>;
   const sustainability = (dpp.sustainability ?? {}) as Record<string, unknown>;
   const materials = (dpp.materials ?? {}) as Record<string, unknown>;
-  const mfgCred = (dpp.manufacturerCredential ?? {}) as Record<string, unknown>;
+  const cred = (dpp.credential ?? {}) as Record<string, unknown>;
   const ownershipChain = (dpp.ownershipChain ?? {}) as Record<string, unknown>;
 
   const modelYear = toNum(car.year);
@@ -303,8 +303,8 @@ export function transformDppToJaspar(
   };
 
   // ── Ownership & Provenance ───────────────────────────────────────────────────
-  const hasManufacturerCredential = Object.keys(mfgCred).length > 0;
-  const manufacturerCredentialStatus = String(mfgCred.status || '');
+  const hasManufacturerCredential = Object.keys(cred).length > 0;
+  const manufacturerCredentialStatus = String(cred.status || '');
   const currentOwner = ownershipChain.currentOwner as Record<string, unknown> | undefined;
   const previousOwners = (ownershipChain.previousOwners ?? []) as unknown[];
 
@@ -315,7 +315,7 @@ export function transformDppToJaspar(
     manufacturerVerified: hasManufacturerCredential && manufacturerCredentialStatus === 'active',
     dataProvenance: hasManufacturerCredential ? 'MANUFACTURER_AUTHORITATIVE' : 'SELF_REPORTED',
     dataReceivedVia,
-    legalParticipantId: mfgCred.legalParticipantId ? String(mfgCred.legalParticipantId) : undefined,
+    legalParticipantId: cred.legalParticipantId ? String(cred.legalParticipantId) : undefined,
   };
 
   // ── Data Quality / Completeness ───────────────────────────────────────────────
@@ -389,8 +389,8 @@ export function transformDppToJaspar(
     { sourcePath: 'dpp.emissions.co2GPerKm', sourceValue: emissions.co2GPerKm, targetPath: 'sustainabilityMetrics.co2EmissionsGPerKm', targetValue: sustainabilityMetrics.co2EmissionsGPerKm, transformType: propulsionType === 'BEV' ? 'inferred' : 'rename' },
     { sourcePath: 'dpp.sustainability.recyclabilityPercent', sourceValue: sustainability.recyclabilityPercent, targetPath: 'sustainabilityMetrics.recyclabilityPct', targetValue: sustainabilityMetrics.recyclabilityPct, transformType: 'rename' },
     // Ownership & Provenance
-    { sourcePath: 'dpp.manufacturerCredential', sourceValue: hasManufacturerCredential ? `${Object.keys(mfgCred).length} fields` : null, targetPath: 'ownershipAndProvenance.hasManufacturerCredential', targetValue: ownershipAndProvenance.hasManufacturerCredential, transformType: 'derived' },
-    { sourcePath: 'dpp.manufacturerCredential.status', sourceValue: manufacturerCredentialStatus || null, targetPath: 'ownershipAndProvenance.manufacturerVerified', targetValue: ownershipAndProvenance.manufacturerVerified, transformType: 'derived' },
+    { sourcePath: 'dpp.credential', sourceValue: hasManufacturerCredential ? `${Object.keys(cred).length} fields` : null, targetPath: 'ownershipAndProvenance.hasManufacturerCredential', targetValue: ownershipAndProvenance.hasManufacturerCredential, transformType: 'derived' },
+    { sourcePath: 'dpp.credential.status', sourceValue: manufacturerCredentialStatus || null, targetPath: 'ownershipAndProvenance.manufacturerVerified', targetValue: ownershipAndProvenance.manufacturerVerified, transformType: 'derived' },
     { sourcePath: 'dpp.ownershipChain.previousOwners', sourceValue: previousOwners.length, targetPath: 'ownershipAndProvenance.currentOwnerCount', targetValue: ownershipAndProvenance.currentOwnerCount, transformType: 'derived' },
     { sourcePath: '(dataReceivedVia)', sourceValue: dataReceivedVia, targetPath: 'ownershipAndProvenance.dataReceivedVia', targetValue: ownershipAndProvenance.dataReceivedVia, transformType: 'direct' },
     // Data Quality

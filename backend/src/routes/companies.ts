@@ -205,10 +205,10 @@ router.delete('/:id', async (req, res) => {
   await prisma.edcProvisioning.deleteMany({ where: { companyId: id } });
   await prisma.companyUser.deleteMany({ where: { companyId: id } });
 
-  // Null out the manufacturer FK on cars rather than deleting them (cars have purchases/insurance)
+  // Null out the company FK on cars rather than deleting them (cars have purchases/insurance)
   await prisma.car.updateMany({
-    where: { manufacturerCompanyId: id },
-    data: { manufacturerCompanyId: null },
+    where: { companyId: id },
+    data: { companyId: null },
   });
 
   await prisma.company.delete({ where: { id } });
