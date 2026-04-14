@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import prisma from '../../db';
+import logger from '../../lib/logger';
 
 const KEYS_DIR = path.join(__dirname, '../../../.keys');
 const PRIVATE_KEY_PATH = path.join(KEYS_DIR, 'gaiax-private.pem');
@@ -86,7 +87,7 @@ export class VPSigner {
     const keyFingerprint = crypto.createHash('sha256')
       .update(this.publicKey)
       .digest('hex').slice(0, 16);
-    console.log(`[VPSigner] Initialized | source=${source} | DID: ${this.did} | key=${keyFingerprint}`);
+    logger.info({ component: 'vp-signer', source, did: this.did, keyFingerprint }, 'VPSigner initialized');
   }
 
   /**
@@ -101,9 +102,9 @@ export class VPSigner {
           create: { id: KEYPAIR_ID, privateKey: this.privateKey, publicKey: this.publicKey },
           update: { privateKey: this.privateKey, publicKey: this.publicKey },
         });
-        console.log(`[VPSigner] Keypair saved to database`);
+        logger.info({ component: 'vp-signer' }, 'Keypair saved to database');
       } catch (err: any) {
-        console.warn(`[VPSigner] Could not save keypair to database: ${err.message}`);
+        logger.warn({ component: 'vp-signer', err: err.message }, 'Could not save keypair to database');
       }
     }
 
@@ -113,9 +114,9 @@ export class VPSigner {
         if (!fs.existsSync(KEYS_DIR)) fs.mkdirSync(KEYS_DIR, { recursive: true });
         fs.writeFileSync(PRIVATE_KEY_PATH, this.privateKey, { mode: 0o600 });
         fs.writeFileSync(PUBLIC_KEY_PATH, this.publicKey);
-        console.log(`[VPSigner] Keypair saved to ${KEYS_DIR}`);
+        logger.info({ component: 'vp-signer', keysDir: KEYS_DIR }, 'Keypair saved to filesystem');
       } catch (err: any) {
-        console.warn(`[VPSigner] Could not save keypair to filesystem: ${err.message}`);
+        logger.warn({ component: 'vp-signer', err: err.message }, 'Could not save keypair to filesystem');
       }
     }
   }
@@ -249,7 +250,7 @@ export class VPSigner {
       const pem = `-----BEGIN CERTIFICATE-----\n${lines.join('\n')}\n-----END CERTIFICATE-----`;
       return [pem];
     } catch (e) {
-      console.warn('[VPSigner] Failed to generate self-signed cert:', (e as Error).message);
+      logger.warn({ component: 'vp-signer', err: (e as Error).message }, 'Failed to generate self-signed cert');
       return [];
     }
   }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { useAuthUser, getApiBase } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 
@@ -46,7 +46,8 @@ interface GeneratedVP {
 export default function PresentationRequest() {
   const { requestId } = useParams<{ requestId: string }>()
   const navigate = useNavigate()
-  const { userId } = useAuthUser()
+  const { userId, accessToken } = useAuthUser()
+  const api = createAuthAxios(() => accessToken)
 
   const [screen, setScreen] = useState<Screen>('loading')
   const [errorMessage, setErrorMessage] = useState('')
@@ -87,11 +88,11 @@ export default function PresentationRequest() {
       })
   }, [requestId])
 
-  // Fetch matching credentials once request is loaded
+  // Fetch matching credentials once request is loaded (authenticated — route requires auth)
   useEffect(() => {
     if (!request || !userId) return
 
-    axios
+    api
       .get(`${API_BASE}/wallet-vp/credentials/${userId}/ownership`)
       .then((res) => {
         const creds = res.data as CredentialData[]
@@ -144,7 +145,7 @@ export default function PresentationRequest() {
 
     try {
       // Step 1: Generate VP
-      const generateRes = await axios.post(`${API_BASE}/wallet-vp/generate-vp`, {
+      const generateRes = await api.post(`${API_BASE}/wallet-vp/generate-vp`, {
         userId,
         credentialIds: [selectedCredId],
         challenge: request.nonce,
@@ -155,7 +156,7 @@ export default function PresentationRequest() {
       setGeneratedVP(vpData)
 
       // Step 2: Auto-submit VP
-      await axios.post(`${API_BASE}/wallet-vp/submit-vp`, {
+      await api.post(`${API_BASE}/wallet-vp/submit-vp`, {
         requestId: request.id,
         vpToken: vpData.vp,
       })

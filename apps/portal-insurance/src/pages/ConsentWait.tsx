@@ -1,20 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { getApiBase } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 
 export default function ConsentWait() {
   const { vin, consentId } = useParams<{ vin: string; consentId: string }>()
   const navigate = useNavigate()
+  const { accessToken } = useAuthUser()
+  const api = createAuthAxios(() => accessToken)
   const [status, setStatus] = useState('pending')
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     intervalRef.current = setInterval(async () => {
       try {
-        const r = await axios.get(`${API_BASE}/consent/${consentId}`)
+        const r = await api.get(`${API_BASE}/consent/${consentId}`)
         setStatus(r.data.status)
         if (r.data.status === 'approved') {
           clearInterval(intervalRef.current!)

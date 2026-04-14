@@ -4,6 +4,7 @@ import { negotiateAndFetchData, EdcStepUpdate, EdcProviderConfig } from '../serv
 import { resolveDid } from '../services/did-resolver';
 import { discoverDataService } from '../services/dataservice-discovery';
 import prisma from '../db';
+import logger from '../lib/logger';
 
 const router = Router();
 
@@ -24,7 +25,7 @@ async function resolveProviderFromVin(vin: string): Promise<EdcProviderConfig> {
   if (!didResult.didDocument) throw new Error(`DID resolution failed for ${company.did}`);
 
   const dataService = discoverDataService(didResult.didDocument);
-  console.log(`[EDC Route] Resolved provider from DID ${company.did}: dspUrl=${dataService.dspUrl}, bpnl=${dataService.issuerBpnl}`);
+  logger.info({ component: 'edc', did: company.did, dspUrl: dataService.dspUrl, bpnl: dataService.issuerBpnl }, 'Resolved provider from DID');
 
   return { dspUrl: dataService.dspUrl, bpnl: 'BPNL00000000024R' };
 }
@@ -85,10 +86,10 @@ router.post('/negotiate', authenticate, async (req, res) => {
     const startTime = Date.now();
     const data = await negotiateAndFetchData(vin, provider, undefined, { consentId, requestedBy });
     const duration = Date.now() - startTime;
-    console.log(`[EDC Route] Negotiation complete for VIN: ${vin} (took ${duration}ms)`);
+    req.log.info({ component: 'edc', vin, durationMs: duration }, 'Negotiation complete');
     res.json(data);
   } catch (err: any) {
-    console.error(`[EDC Route] Negotiation failed for VIN ${vin}:`, err.message);
+    req.log.error({ component: 'edc', vin, err: err.message }, 'Negotiation failed');
     res.status(502).json({
       error: 'EDC data negotiation failed',
       details: err.message,
@@ -96,14 +97,14 @@ router.post('/negotiate', authenticate, async (req, res) => {
   }
 });
 
-// Get all EDC transactions (for dashboard)
-router.get('/transactions', async (_req, res) => {
+// Get all EDC transactions (for dashboard) — requires auth
+router.get('/transactions', authenticate, async (_req, res) => {
   const transactions = await prisma.edcTransaction.findMany({ orderBy: { startedAt: 'desc' } });
   res.json(transactions);
 });
 
-// Get a single transaction by ID
-router.get('/transactions/:id', async (req, res) => {
+// Get a single transaction by ID — requires auth
+router.get('/transactions/:id', authenticate, async (req, res) => {
   const tx = await prisma.edcTransaction.findUnique({ where: { id: req.params.id } });
   if (!tx) return res.status(404).json({ error: 'Transaction not found' });
   res.json(tx);

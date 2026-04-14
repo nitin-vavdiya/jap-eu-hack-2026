@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
 
-const AUTH_ENABLED = process.env.AUTH_ENABLED === 'true';
 const KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://localhost:8080';
 const KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'eu-jap-hack';
 const JWKS_URI = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs`;
@@ -15,17 +14,6 @@ function getKey(header: jwt.JwtHeader, callback: jwt.SigningKeyCallback) {
     const signingKey = key?.getPublicKey();
     callback(null, signingKey);
   });
-}
-
-function getMockUser(role?: string): Express.Request['user'] {
-  // Default mock users based on role for development without Keycloak
-  const mockUsers: Record<string, Express.Request['user']> = {
-    admin: { sub: 'mock-admin', preferred_username: 'platform-admin', email: 'admin@dataspace.eu', realm_access: { roles: ['admin'] } },
-    customer: { sub: 'mock-customer', preferred_username: 'demo-customer', email: 'customer@demo.eu', realm_access: { roles: ['customer'] } },
-    insurance_agent: { sub: 'mock-agent', preferred_username: 'demo-agent', email: 'agent@insurance-demo.eu', realm_access: { roles: ['insurance_agent'] } },
-    company_admin: { sub: 'mock-company', preferred_username: 'company-admin', email: 'admin@company.eu', realm_access: { roles: ['company_admin'] } },
-  };
-  return role ? mockUsers[role] || mockUsers.customer : mockUsers.customer;
 }
 
 function verifyToken(token: string): Promise<Express.Request['user']> {
@@ -42,12 +30,10 @@ function verifyToken(token: string): Promise<Express.Request['user']> {
   });
 }
 
+/**
+ * Requires a valid Keycloak Bearer token. Always enforced — no dev bypass.
+ */
 export async function authenticate(req: Request, res: Response, next: NextFunction) {
-  if (!AUTH_ENABLED) {
-    req.user = getMockUser();
-    return next();
-  }
-
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Missing or invalid Authorization header' });
@@ -62,33 +48,31 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   }
 }
 
+/**
+ * Parses the Bearer token if present but does not reject unauthenticated requests.
+ * Use for public endpoints that can optionally enrich responses for authenticated users.
+ */
 export async function optionalAuth(req: Request, res: Response, next: NextFunction) {
-  if (!AUTH_ENABLED) {
-    req.user = getMockUser();
-    return next();
-  }
-
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return next(); // No token, proceed without user
+    return next();
   }
 
   try {
     const token = authHeader.slice(7);
     req.user = await verifyToken(token);
   } catch {
-    // Invalid token, proceed without user
+    // Invalid token — treat as unauthenticated, do not reject
   }
   next();
 }
 
+/**
+ * Requires a valid Keycloak Bearer token AND the specified realm role.
+ * Returns 401 if no/invalid token, 403 if role is missing.
+ */
 export function requireRole(role: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (!AUTH_ENABLED) {
-      req.user = getMockUser(role);
-      return next();
-    }
-
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Missing or invalid Authorization header' });

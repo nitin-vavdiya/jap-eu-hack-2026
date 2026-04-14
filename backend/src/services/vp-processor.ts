@@ -15,6 +15,7 @@ import fs from 'fs';
 import path from 'path';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import logger from '../lib/logger';
 
 // --------------- Types ---------------
 
@@ -154,7 +155,7 @@ function getOrCreateKeyPair(entityId: string): KeyPair {
   if (!fs.existsSync(KEYS_DIR)) fs.mkdirSync(KEYS_DIR, { recursive: true });
   fs.writeFileSync(privPath, privateKey, { mode: 0o600 });
   fs.writeFileSync(pubPath, publicKey);
-  console.log(`[VP-Processor] Generated keypair for ${entityId}`);
+  logger.info({ component: 'vp-processor', entityId }, 'Generated keypair');
 
   return { privateKey, publicKey };
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { getApiBase } from '@eu-jap-hack/auth'
+
+import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 
@@ -40,6 +40,8 @@ interface AccessSession {
 }
 
 export default function VehicleRegistry() {
+  const { accessToken } = useAuthUser()
+  const api = createAuthAxios(() => accessToken)
   const [vehicles, setVehicles] = useState<RegistryVehicle[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -53,7 +55,7 @@ export default function VehicleRegistry() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    axios.get(`${API_BASE}/vehicle-registry/vehicles`).then(r => {
+    api.get(`${API_BASE}/vehicle-registry/vehicles`).then(r => {
       setVehicles(r.data)
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -66,10 +68,10 @@ export default function VehicleRegistry() {
 
     try {
       const [resolveResp, auditResp, sessionsResp, policiesResp] = await Promise.all([
-        axios.get(`${API_BASE}/vehicle-registry/vehicles/${vin}`),
-        axios.get(`${API_BASE}/vehicle-registry/vehicles/${vin}/audit-log`),
-        axios.get(`${API_BASE}/vehicle-registry/vehicles/${vin}/access-sessions`),
-        axios.get(`${API_BASE}/vehicle-registry/vehicles/${vin}/policies`),
+        api.get(`${API_BASE}/vehicle-registry/vehicles/${vin}`),
+        api.get(`${API_BASE}/vehicle-registry/vehicles/${vin}/audit-log`),
+        api.get(`${API_BASE}/vehicle-registry/vehicles/${vin}/access-sessions`),
+        api.get(`${API_BASE}/vehicle-registry/vehicles/${vin}/policies`),
       ])
       setResolution(resolveResp.data)
       setAuditLog(auditResp.data)

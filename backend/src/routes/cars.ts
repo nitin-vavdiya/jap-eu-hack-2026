@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../db';
-import { requireRole } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
 import { createAsset, createContractDefinition } from '../services/edcService';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -8,8 +8,16 @@ const router = Router();
 
 const ENABLE_EDC = process.env.ENABLE_EDC !== 'false';
 
+/**
+ * GET /cars
+ * Public endpoint — returns all cars.
+ * Optional ?companyId= query param to filter by a specific company (used by company admin portal).
+ */
 router.get('/', async (req, res) => {
-  const cars = await prisma.car.findMany();
+  const { companyId } = req.query;
+  const cars = await prisma.car.findMany({
+    where: companyId ? { companyId: String(companyId) } : undefined,
+  });
   res.json(cars);
 });
 
@@ -55,8 +63,16 @@ router.get('/:vin', async (req, res) => {
   res.json({ ...car, dpp });
 });
 
-router.post('/', requireRole('admin'), async (req, res) => {
-  const car = { id: uuidv4(), ...req.body };
+router.post('/', authenticate, requireRole('company_admin'), async (req, res) => {
+  // Enforce companyId from the authenticated user's company — ignore any companyId in request body
+  const companyUser = await prisma.companyUser.findUnique({
+    where: { keycloakId: req.user!.sub },
+    select: { companyId: true },
+  });
+  if (!companyUser) {
+    return res.status(403).json({ error: 'No company linked to this user' });
+  }
+  const car = { id: uuidv4(), ...req.body, companyId: companyUser.companyId };
   const vin = car.vin;
 
   if (ENABLE_EDC) {

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import axios from 'axios'
-import { getApiBase } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
+import { useCompany } from '../context/CompanyContext'
 
 const API_BASE = getApiBase()
 
-interface CompanyOption {
+interface MyCompany {
   id: string
   name: string
+  bpn?: string
+  did?: string
 }
 
 const catenaXGuidelines = [
@@ -188,13 +190,13 @@ function CustomFieldEditor({
 export default function CreateCar() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { accessToken } = useAuthUser()
+  const api = createAuthAxios(() => accessToken)
+  const { company: contextCompany, loading: companyLoading } = useCompany()
+  const myCompany = contextCompany as MyCompany | null
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [showGuidelines, setShowGuidelines] = useState(false)
-  const [companies, setCompanies] = useState<CompanyOption[]>([])
-  const [companiesLoading, setCompaniesLoading] = useState(true)
-  const [companiesError, setCompaniesError] = useState<string | null>(null)
-  const [manufacturerCompanyId, setManufacturerCompanyId] = useState('')
 
   // Step 0: Identification (was Vehicle Identity)
   const [identification, setIdentification] = useState({
@@ -205,9 +207,9 @@ export default function CreateCar() {
 
   // Step 1: Operation (was Manufacturer)
   const [operation, setOperation] = useState({
-    manufacturerBpnl: 'BPNL00000003TOYO', manufacturerName: 'Toyota Motor Corporation',
-    facility: 'Toyota City Manufacturing Plant', manufacturingDate: new Date().toISOString().slice(0, 10),
-    country: 'Japan', importInfo: '', certificationBody: 'JARI'
+    manufacturerBpnl: '', manufacturerName: '',
+    facility: '', manufacturingDate: new Date().toISOString().slice(0, 10),
+    country: '', importInfo: '', certificationBody: ''
   })
 
   // Step 2: Performance (was Powertrain)
@@ -245,7 +247,7 @@ export default function CreateCar() {
   const [stateOfHealth, setStateOfHealth] = useState({
     overallRating: 9.5, exteriorCondition: 9.5, interiorCondition: 9.5, mechanicalCondition: 9.5,
     batteryHealthPercent: 100, inspectionDate: new Date().toISOString().slice(0, 10),
-    inspectedBy: 'Toyota Quality Assurance', notes: 'Factory new condition'
+    inspectedBy: '', notes: 'Factory new condition'
   })
 
   // Step 8: Service & Damage records
@@ -284,7 +286,6 @@ export default function CreateCar() {
     const svcHist = (dpp.serviceHistory ?? {}) as Record<string, unknown>
     const dmgHist = (dpp.damageHistory ?? {}) as Record<string, unknown>
 
-    if (d.manufacturerCompanyId) setManufacturerCompanyId(String(d.manufacturerCompanyId))
     setIdentification({
       manufacturerPartId: String(identType.manufacturerPartId ?? ''),
       nameAtManufacturer: String(identType.nameAtManufacturer ?? ''),
@@ -300,15 +301,15 @@ export default function CreateCar() {
       dataCarrier: '',
       classification: String(ident.classification ?? 'Passenger Vehicle'),
     })
-    setOperation({
-      manufacturerBpnl: String(mfg.bpnl ?? 'BPNL00000003TOYO'),
-      manufacturerName: String(mfg.name ?? 'Toyota Motor Corporation'),
+    setOperation(prev => ({
+      manufacturerBpnl: String(mfg.bpnl ?? prev.manufacturerBpnl),
+      manufacturerName: String(mfg.name ?? prev.manufacturerName),
       facility: String(op.facility ?? ''),
       manufacturingDate: String(op.manufacturingDate ?? new Date().toISOString().slice(0, 10)),
-      country: String(op.country ?? 'Japan'),
+      country: String(op.country ?? ''),
       importInfo: String(op.importInfo ?? ''),
-      certificationBody: String(op.certificationBody ?? 'ARAI'),
-    })
+      certificationBody: String(op.certificationBody ?? ''),
+    }))
     setPerformance({
       motorType: String(perf.motorType ?? 'BEV'),
       batteryCapacityKwh: Number(perf.batteryCapacityKwh) || 40,
@@ -380,18 +381,15 @@ export default function CreateCar() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Pre-fill operation fields once company is available from context
   useEffect(() => {
-    axios.get(`${API_BASE}/companies`)
-      .then(r => {
-        const list: CompanyOption[] = (r.data.companies ?? r.data).map((c: { id: string; name: string }) => ({ id: c.id, name: c.name }))
-        setCompanies(list)
-        setCompaniesLoading(false)
-      })
-      .catch(() => {
-        setCompaniesError('Failed to load companies. Please refresh and try again.')
-        setCompaniesLoading(false)
-      })
-  }, [])
+    if (!contextCompany) return
+    setOperation(prev => ({
+      ...prev,
+      manufacturerName: contextCompany.name,
+      manufacturerBpnl: contextCompany.bpn ?? '',
+    }))
+  }, [contextCompany])
 
   const addService = () => {
     setServices([...services, { date: '', mileageKm: 0, serviceType: 'Regular Service', servicedBy: '', notes: '', cost: 0 }])
@@ -411,17 +409,16 @@ export default function CreateCar() {
 
   const handleSubmit = async () => {
     if (!identification.serial || !identification.model) { alert('VIN (Serial) and Model are required'); return }
-    if (!manufacturerCompanyId) { alert('Please select a Manufacturer Company'); return }
+    if (!myCompany) { alert('Company information not loaded. Please refresh.'); return }
     setSaving(true)
     try {
       const now = new Date().toISOString()
       const passportId = generateUUID()
       const globalAssetId = `urn:uuid:${generateUUID()}`
-
+      // companyId is set server-side from the authenticated user's token
       const car = {
         vin: identification.serial,
         make: identification.make,
-        manufacturerCompanyId,
         model: identification.model,
         variant: identification.variant,
         year: identification.year,
@@ -458,12 +455,12 @@ export default function CreateCar() {
           },
           identification: {
             type: {
-              manufacturerPartId: identification.manufacturerPartId || `TOYO-${identification.model.replace(/\s+/g, '-').toUpperCase()}`,
+              manufacturerPartId: identification.manufacturerPartId || identification.model.replace(/\s+/g, '-').toUpperCase(),
               nameAtManufacturer: identification.nameAtManufacturer || `${identification.make} ${identification.model}`
             },
             serial: identification.serial,
             codes: identification.codes ? identification.codes.split(',').map(s => s.trim()) : [],
-            dataCarrier: identification.dataCarrier || `https://dpp.tata.com/${identification.serial}`,
+            dataCarrier: identification.dataCarrier || `https://dpp.${(myCompany?.name ?? 'company').toLowerCase().replace(/\s+/g, '-')}.com/${identification.serial}`,
             classification: identification.classification,
             color: identification.color,
             bodyType: identification.bodyType
@@ -528,35 +525,30 @@ export default function CreateCar() {
           damageHistory: { totalIncidents: damages.length, incidents: damages },
           ownershipChain: {
             currentOwner: {
-              ownerName: 'Toyota (Inventory)', ownerId: 'toyota-motors',
-              purchaseDate: now, purchasePrice: identification.price, country: 'Japan'
+              ownerName: `${myCompany.name} (Inventory)`, ownerId: myCompany.id,
+              purchaseDate: now, purchasePrice: identification.price, country: operation.country
             },
             previousOwners: [],
             totalOwners: 0
           },
           compliance: compliance,
-          manufacturerCredential: {
-            credentialId: `cred-org-toyota-${generateUUID().slice(0, 8)}`,
+          credential: {
+            credentialId: `cred-org-${myCompany.id.slice(0, 8)}-${generateUUID().slice(0, 8)}`,
             type: 'ManufacturerVC',
             issuer: 'EU APAC Dataspace',
-            issuerDid: 'did:eu-dataspace:toyota-motors-001',
-            holder: 'Toyota Motor Corporation',
-            holderDid: `did:bpn:${operation.manufacturerBpnl}`,
+            issuerDid: myCompany.did ?? `did:web:${myCompany.name.toLowerCase().replace(/\s+/g, '-')}`,
+            holder: myCompany.name,
+            holderDid: operation.manufacturerBpnl ? `did:bpn:${operation.manufacturerBpnl}` : myCompany.did ?? '',
             issuedAt: now,
             status: 'active',
             credentialSubject: {
-              companyName: 'Toyota Motor Corporation',
-              registrationNumber: '0180-01-008846',
-              manufacturingLicense: 'EU-MFG-2024-TOYOTA-001',
-              isoQualityCertification: 'ISO 9001:2015',
-              iatf16949Certified: true,
+              companyName: myCompany.name,
               manufacturingCountry: operation.country,
-              authorizedEUDistributor: true
             }
           }
         }
       }
-      await axios.post(`${API_BASE}/cars`, car)
+      await api.post(`${API_BASE}/cars`, car)
       navigate('/')
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } }
@@ -637,30 +629,14 @@ export default function CreateCar() {
             <p className="text-[11px] text-blue-700">CX-0143 Identification: Defines the product identity per Catena-X Digital Product Passport standard.</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className={labelClass}>Serial (VIN) *</label><input value={identification.serial} onChange={e => setIdentification({...identification, serial: e.target.value.toUpperCase()})} placeholder="TOYO2025BZ4X0021" className={inputClass} /></div>
-            <div><label className={labelClass}>Manufacturer Part ID</label><input value={identification.manufacturerPartId} onChange={e => setIdentification({...identification, manufacturerPartId: e.target.value})} placeholder="TOYO-BZ4X-FWD" className={inputClass} /></div>
-            <div><label className={labelClass}>Name at Manufacturer</label><input value={identification.nameAtManufacturer} onChange={e => setIdentification({...identification, nameAtManufacturer: e.target.value})} placeholder="Toyota bZ4X FWD" className={inputClass} /></div>
+            <div><label className={labelClass}>Serial (VIN) *</label><input value={identification.serial} onChange={e => setIdentification({...identification, serial: e.target.value.toUpperCase()})} placeholder="VIN123456789" className={inputClass} /></div>
+            <div><label className={labelClass}>Manufacturer Part ID</label><input value={identification.manufacturerPartId} onChange={e => setIdentification({...identification, manufacturerPartId: e.target.value})} placeholder="PART-MODEL-VARIANT" className={inputClass} /></div>
+            <div><label className={labelClass}>Name at Manufacturer</label><input value={identification.nameAtManufacturer} onChange={e => setIdentification({...identification, nameAtManufacturer: e.target.value})} placeholder="Model Name" className={inputClass} /></div>
             <div>
-              <label className={labelClass}>Manufacturer Company *</label>
-              {companiesError ? (
-                <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{companiesError}</div>
-              ) : (
-                <select
-                  value={manufacturerCompanyId}
-                  onChange={e => {
-                    const selected = companies.find(c => c.id === e.target.value)
-                    setManufacturerCompanyId(e.target.value)
-                    setIdentification({ ...identification, make: selected?.name ?? '' })
-                  }}
-                  disabled={companiesLoading}
-                  className={inputClass}
-                >
-                  <option value="">{companiesLoading ? 'Loading companies…' : 'Select a company'}</option>
-                  {companies.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              )}
+              <label className={labelClass}>Manufacturer Company</label>
+              <div className={`${inputClass} bg-gray-50 text-gray-500`}>
+                {companyLoading ? 'Loading…' : (myCompany?.name ?? 'Not linked to a company')}
+              </div>
             </div>
             <div><label className={labelClass}>Model *</label><input value={identification.model} onChange={e => setIdentification({...identification, model: e.target.value})} placeholder="bZ4X" className={inputClass} /></div>
             <div><label className={labelClass}>Variant</label><input value={identification.variant} onChange={e => setIdentification({...identification, variant: e.target.value})} placeholder="LR Dark Edition" className={inputClass} /></div>
@@ -673,7 +649,7 @@ export default function CreateCar() {
             </div>
             <div><label className={labelClass}>Price (&euro;)</label><input type="number" value={identification.price} onChange={e => setIdentification({...identification, price: Number(e.target.value)})} className={inputClass} /></div>
             <div><label className={labelClass}>Codes (comma-separated)</label><input value={identification.codes} onChange={e => setIdentification({...identification, codes: e.target.value})} placeholder="GTIN, Batch ID" className={inputClass} /></div>
-            <div><label className={labelClass}>Data Carrier URL</label><input value={identification.dataCarrier} onChange={e => setIdentification({...identification, dataCarrier: e.target.value})} placeholder="https://dpp.tata.com/VIN" className={inputClass} /></div>
+            <div><label className={labelClass}>Data Carrier URL</label><input value={identification.dataCarrier} onChange={e => setIdentification({...identification, dataCarrier: e.target.value})} placeholder="https://dpp.your-company.com/VIN" className={inputClass} /></div>
             <div><label className={labelClass}>Classification</label><input value={identification.classification} onChange={e => setIdentification({...identification, classification: e.target.value})} className={inputClass} /></div>
           </div>
         </div>

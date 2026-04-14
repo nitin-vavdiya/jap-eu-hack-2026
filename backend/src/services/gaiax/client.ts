@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { GaiaXConfig, GaiaXEndpointSet, GaiaXHealthStatus } from './types';
 import { getGaiaXConfig } from './config';
+import logger from '../../lib/logger';
 
 export class GaiaXClient {
   private config: GaiaXConfig;
@@ -66,7 +67,7 @@ export class GaiaXClient {
       if (health.overall) {
         return { endpointSet, health };
       }
-      console.log(`[GaiaX] Endpoint set "${endpointSet.name}" unhealthy, trying next...`);
+      logger.info({ component: 'gaiax', endpointSet: endpointSet.name }, 'Endpoint set unhealthy, trying next');
     }
     return null;
   }
@@ -81,7 +82,7 @@ export class GaiaXClient {
         return response.data;
       } catch (e: unknown) {
         lastError = e as Error;
-        console.log(`[GaiaX] Attempt ${i + 1}/${maxAttempts} failed for ${url}: ${lastError.message}`);
+        logger.info({ component: 'gaiax', attempt: i + 1, maxAttempts, url, err: lastError.message }, 'Request attempt failed');
         if (i < maxAttempts - 1) {
           await new Promise(r => setTimeout(r, this.config.retryDelay * (i + 1)));
         }

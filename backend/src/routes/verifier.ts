@@ -9,6 +9,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../db';
 import { authenticate } from '../middleware/auth';
+import logger from '../lib/logger';
 import {
   parseVP,
   extractCredentials,
@@ -209,7 +210,7 @@ router.post('/callback', async (req, res) => {
 
   // Process VP asynchronously (the insurance portal polls session status)
   processVPAsync(session.id, vpToken, request as any).catch(err => {
-    console.error('[Verifier] VP processing error:', err.message);
+    logger.error({ component: 'verifier', sessionId: session.id, err: err.message }, 'VP processing error');
   });
 
   res.json({ sessionId: session.id, status: 'processing' });
@@ -219,7 +220,7 @@ router.post('/callback', async (req, res) => {
  * GET /session/:id
  * Insurance portal polls this to get step-by-step progress
  */
-router.get('/session/:id', async (req, res) => {
+router.get('/session/:id', authenticate, async (req, res) => {
   const session = await prisma.presentationSession.findUnique({ where: { id: req.params.id } });
   if (!session) return res.status(404).json({ error: 'Session not found' });
   res.json(session);
@@ -229,7 +230,7 @@ router.get('/session/:id', async (req, res) => {
  * GET /session-by-request/:requestId
  * Insurance portal can also look up session by request ID
  */
-router.get('/session-by-request/:requestId', async (req, res) => {
+router.get('/session-by-request/:requestId', authenticate, async (req, res) => {
   const session = await prisma.presentationSession.findFirst({ where: { requestId: req.params.requestId } });
   if (!session) return res.status(404).json({ error: 'Session not found' });
   res.json(session);

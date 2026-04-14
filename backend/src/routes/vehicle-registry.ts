@@ -332,7 +332,7 @@ router.get('/vehicles/:vin/verification-status', async (req, res) => {
 });
 
 // Audit log
-router.get('/vehicles/:vin/audit-log', async (req, res) => {
+router.get('/vehicles/:vin/audit-log', authenticate, async (req, res) => {
   const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
@@ -486,7 +486,7 @@ router.post('/access-sessions', authenticate, async (req, res) => {
 });
 
 // List active sessions for a vehicle
-router.get('/vehicles/:vin/access-sessions', async (req, res) => {
+router.get('/vehicles/:vin/access-sessions', authenticate, async (req, res) => {
   const sessions = await prisma.accessSession.findMany({ where: { vin: req.params.vin } });
   const mapped = sessions.map((s: any) => ({
     ...s,

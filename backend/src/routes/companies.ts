@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import prisma from '../db';
-import { requireRole } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
 import { issueCredentialSimple } from '../services/waltid';
 import { generateBpn } from '../utils/bpn';
 import { toTenantCode } from '../utils/tenantCode';
@@ -13,6 +13,16 @@ import { OrgCredentialRecord } from '../services/gaiax/types';
 import { GaiaXClient } from '../services/gaiax/client';
 import { GaiaXOrchestrator } from '../services/gaiax/orchestrator';
 import { createKeycloakUser } from '../services/keycloakAdmin';
+import logger from '../lib/logger';
+import crypto from 'crypto';
+
+/**
+ * Returns a short SHA-256 hash of an email address for log correlation.
+ * Never log raw email addresses — use this instead.
+ */
+function hashEmail(email: string): string {
+  return crypto.createHash('sha256').update(email.toLowerCase()).digest('hex').slice(0, 12);
+}
 
 const router = Router();
 
@@ -27,26 +37,26 @@ const MAX_COMPANIES = process.env.MAX_COMPANIES ? parseInt(process.env.MAX_COMPA
  * - Production/staging: if secret is not set, return 503 (fail-closed — misconfiguration must be explicit).
  * - If secret is set: require X-Internal-Token header to match exactly; return 401 on mismatch.
  */
-function validateProvisioningToken(req: any, res: any, next: any) {
+function validateProvisioningToken(req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) {
   const secret = process.env.PROVISIONING_CALLBACK_SECRET;
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (!secret) {
     if (isProduction) {
-      console.error('[edc-callback] PROVISIONING_CALLBACK_SECRET is not set in production — refusing request (fail-closed)');
+      logger.error({ component: 'edc-callback' }, 'PROVISIONING_CALLBACK_SECRET is not set in production — refusing request (fail-closed)');
       return res.status(503).json({
         error: 'Service misconfigured',
         message: 'PROVISIONING_CALLBACK_SECRET must be set in non-development environments',
       });
     }
     // Development bypass: allow through but warn
-    console.warn('[edc-callback] PROVISIONING_CALLBACK_SECRET not set — allowing request in dev mode (set it for security)');
+    logger.warn({ component: 'edc-callback' }, 'PROVISIONING_CALLBACK_SECRET not set — allowing request in dev mode (set it for security)');
     return next();
   }
 
   const token = req.headers['x-internal-token'];
   if (token !== secret) {
-    console.warn(`[edc-callback] Invalid X-Internal-Token on provisioning callback for company ${req.params.id}`);
+    logger.warn({ component: 'edc-callback', companyId: req.params.id }, 'Invalid X-Internal-Token on provisioning callback');
     return res.status(401).json({ error: 'Invalid internal token' });
   }
   next();
@@ -70,14 +80,34 @@ async function allocateTenantCode(baseName: string): Promise<string> {
   }
 }
 
-router.get('/', async (req, res) => {
+router.get('/', authenticate, async (req, res) => {
   const companies = await prisma.company.findMany({
     include: { edcProvisioning: true, orgCredentials: true },
   });
   res.json(companies);
 });
 
-router.get('/:id', async (req, res) => {
+/**
+ * GET /companies/me
+ * Returns the company associated with the authenticated user via CompanyUser.keycloakId.
+ * Must be registered before /:id to avoid route shadowing.
+ */
+router.get('/me', requireRole('company_admin'), async (req, res) => {
+  const companyUser = await prisma.companyUser.findUnique({
+    where: { keycloakId: req.user!.sub },
+    include: {
+      company: {
+        include: { edcProvisioning: true, orgCredentials: true, credentials: true },
+      },
+      role: true,
+    },
+  });
+
+  if (!companyUser) return res.status(404).json({ error: 'No company found for this user' });
+  res.json({ company: companyUser.company, role: companyUser.role });
+});
+
+router.get('/:id', authenticate, async (req, res) => {
   const company = await prisma.company.findUnique({
     where: { id: req.params.id },
     include: { edcProvisioning: true, orgCredentials: true },
@@ -91,8 +121,8 @@ router.get('/:id', async (req, res) => {
  * Returns the EDC provisioning status for the company.
  * UI polls this endpoint (every ~5 s) to display provisioning progress.
  */
-router.get('/:id/edc-status', async (req, res) => {
-  console.log(`[companies] EDC status requested for company ${req.params.id}`);
+router.get('/:id/edc-status', authenticate, async (req, res) => {
+  req.log.info({ component: 'companies', companyId: req.params.id }, 'EDC status requested');
   const prov = await prisma.edcProvisioning.findUnique({
     where: { companyId: req.params.id },
   });
@@ -113,7 +143,7 @@ router.patch('/:id/edc-provisioning', validateProvisioningToken, async (req, res
   const { id } = req.params;
   const { status, attempts, lastError, vaultPath, provisionedAt } = req.body;
 
-  console.log(`[edc-callback] ──── EDC provisioning callback for company ${id} | status=${status} ────`);
+  req.log.info({ component: 'edc-callback', companyId: id, status }, 'EDC provisioning callback received');
 
   // Derive all EDC config from tenantCode when provisioning succeeds.
   // This makes the config resilient — even if this callback had failed and been
@@ -138,18 +168,13 @@ router.patch('/:id/edc-provisioning', validateProvisioningToken, async (req, res
         dbName:        `edc_${u}`,
         dbUser:        `edc_${u}`,
       };
-      console.log(`[edc-callback] EDC config derived for tenantCode=${t}`);
-      console.log(`[edc-callback]   protocolUrl  = ${derivedConfig.protocolUrl}`);
-      console.log(`[edc-callback]   managementUrl= ${derivedConfig.managementUrl}`);
-      console.log(`[edc-callback]   dataplaneUrl = ${derivedConfig.dataplaneUrl}`);
-      console.log(`[edc-callback] DID document updated — DataService endpoint now live in did:web`);
-      console.log(`[edc-callback]   did          = ${company.did}`);
-      console.log(`[edc-callback]   serviceEndpoint = ${derivedConfig.protocolUrl}#${company.bpn}`);
+      req.log.info({ component: 'edc-callback', tenantCode: t, protocolUrl: derivedConfig.protocolUrl, managementUrl: derivedConfig.managementUrl, dataplaneUrl: derivedConfig.dataplaneUrl }, 'EDC config derived');
+      req.log.info({ component: 'edc-callback', did: company.did, serviceEndpoint: `${derivedConfig.protocolUrl}#${company.bpn}` }, 'DID document updated — DataService endpoint now live in did:web');
     }
   } else if (status === 'failed') {
-    console.error(`[edc-callback] EDC provisioning FAILED for company ${id} | error="${lastError}" attempts=${attempts}`);
+    req.log.error({ component: 'edc-callback', companyId: id, lastError, attempts }, 'EDC provisioning FAILED');
   } else {
-    console.log(`[edc-callback] EDC provisioning status update for company ${id} | status=${status} attempts=${attempts || 0}`);
+    req.log.info({ component: 'edc-callback', companyId: id, status, attempts: attempts || 0 }, 'EDC provisioning status update');
   }
 
   const data = {
@@ -167,10 +192,10 @@ router.patch('/:id/edc-provisioning', validateProvisioningToken, async (req, res
       create: { companyId: id, ...data },
       update: data,
     });
-    console.log(`[edc-callback] ──── EDC callback complete for company ${id} | status=${status} ────`);
+    req.log.info({ component: 'edc-callback', companyId: id, status }, 'EDC callback complete');
     res.json({ ok: true });
   } catch (err: any) {
-    console.error(`[edc-callback] FAILED to update provisioning record for ${id} | error="${err.message}"`);
+    logger.error({ component: 'edc-callback', companyId: id, err: err.message }, 'FAILED to update provisioning record');
     res.status(500).json({ error: 'Failed to update provisioning record' });
   }
 });
@@ -189,7 +214,7 @@ router.patch('/:id/edc-provisioning', validateProvisioningToken, async (req, res
  *   WalletCredential → Credential → OrgCredential → EdcProvisioning
  *   → CompanyUser → Car (null FK) → Company
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticate, requireRole('admin'), async (req, res) => {
   const { id } = req.params;
 
   const company = await prisma.company.findUnique({
@@ -202,24 +227,24 @@ router.delete('/:id', async (req, res) => {
 
   // Step 1: Deprovision external resources (Vault + Postgres EDC DB + git)
   if (ENABLE_EDC_PROVISIONING && tenantCode) {
-    console.log(`[offboard] Calling provisioning service to deprovision tenant "${tenantCode}"`);
+    req.log.info({ component: 'offboard', tenantCode }, 'Calling provisioning service to deprovision tenant');
     try {
       await axios.delete(`${PROVISIONING_SERVICE_URL}/deprovision`, {
         data: { companyId: id, tenantCode },
         timeout: 120_000, // git push + vault + postgres can take time
       });
-      console.log(`[offboard] Provisioning service deprovisioned tenant "${tenantCode}"`);
+      req.log.info({ component: 'offboard', tenantCode }, 'Provisioning service deprovisioned tenant');
     } catch (err: any) {
       const detail = err.response?.data?.error || err.message;
-      console.error(`[offboard] Provisioning service deprovision FAILED for "${tenantCode}": ${detail}`);
+      req.log.error({ component: 'offboard', tenantCode, detail }, 'Provisioning service deprovision FAILED');
       return res.status(502).json({ error: `Deprovisioning failed: ${detail}` });
     }
   } else {
-    console.log(`[offboard] EDC provisioning disabled or no tenantCode — skipping external resource cleanup`);
+    req.log.info({ component: 'offboard' }, 'EDC provisioning disabled or no tenantCode — skipping external resource cleanup');
   }
 
   // Step 2: Delete database records in dependency order
-  console.log(`[offboard] Deleting database records for company ${id}`);
+  req.log.info({ component: 'offboard', companyId: id }, 'Deleting database records for company');
 
   // WalletCredential rows that reference this company's credentials
   const companyCredentialIds = await prisma.credential.findMany({
@@ -245,7 +270,7 @@ router.delete('/:id', async (req, res) => {
 
   await prisma.company.delete({ where: { id } });
 
-  console.log(`[offboard] Company "${company.name}" (${id}) fully deleted`);
+  req.log.info({ component: 'offboard', companyId: id, companyName: company.name }, 'Company fully deleted');
   res.json({ ok: true, deleted: { companyId: id, tenantCode } });
 });
 
@@ -288,12 +313,13 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
   const resolvedCountry    = countryCode   || countryOld;
   const resolvedAdminEmail = contactEmail  || adminEmailOld;
 
-  console.log(`[onboarding] ──── START company onboarding for "${name}" ────`);
+  const log = req.log;
+  log.info({ component: 'onboarding', companyName: name }, 'START company onboarding');
 
   if (MAX_COMPANIES !== null) {
     const companyCount = await prisma.company.count();
     if (companyCount >= MAX_COMPANIES) {
-      console.warn(`[onboarding] REJECTED — onboarding limit reached (${companyCount}/${MAX_COMPANIES})`);
+      log.warn({ component: 'onboarding', companyCount, maxCompanies: MAX_COMPANIES }, 'REJECTED — onboarding limit reached');
       return res.status(403).json({
         error: 'ONBOARDING_LIMIT_REACHED',
         message: 'Demo capacity reached. This is a hackathon demo environment with a limited number of companies. Please contact the administrator.',
@@ -306,17 +332,44 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
     return res.status(400).json({ error: 'At least one of VAT ID, EORI, EUID, CIN, GST/Tax ID, LEI Code is required' });
   }
 
+  // ── Duplicate guard — both checks run before any DB writes to avoid partial state ──
+  // Company name: case-sensitive match for MVP (note for future: add case-insensitive index).
+  const existingCompany = await prisma.company.findFirst({ where: { name } });
+  if (existingCompany) {
+    log.warn({ component: 'onboarding', companyName: name }, 'REJECTED — company name already registered');
+    return res.status(409).json({
+      error: 'COMPANY_NAME_EXISTS',
+      message: `A company with the name "${name}" is already registered`,
+    });
+  }
+
+  // User email: only check when adminUserEmail is provided — CompanyUser.email is nullable,
+  // so querying with undefined would match null rows unexpectedly.
+  if (adminUserEmail) {
+    const existingUser = await prisma.companyUser.findFirst({ where: { email: adminUserEmail } });
+    if (existingUser) {
+      // Note: this 409 reveals whether an email is registered to any company_admin caller.
+      // Acceptable for MVP (closed participant set); production should use a generic 409 or
+      // restrict to platform-operator role only.
+      log.warn({ component: 'onboarding', emailHash: hashEmail(adminUserEmail) }, 'REJECTED — user email already registered');
+      return res.status(409).json({
+        error: 'USER_EMAIL_EXISTS',
+        message: 'A user with this email is already registered',
+      });
+    }
+  }
+
   // ── Step 1: Generate identifiers (companyId, BPN, tenantCode) ──
   const companyId = uuidv4();
   const credentialId = uuidv4();
 
   const bpn = generateBpn('BPNL');
   const tenantCode = await allocateTenantCode(name);
-  console.log(`[onboarding] Step 1/7 — Identifiers generated | companyId=${companyId} bpn=${bpn} tenantCode=${tenantCode}`);
+  log.info({ component: 'onboarding', step: 1, totalSteps: 7, companyId, bpn, tenantCode }, 'Identifiers generated');
 
   // ── Step 2: Assign did:web DID ──
   const companyDid = buildCompanyDidWeb(companyId);
-  console.log(`[onboarding] Step 2/7 — did:web assigned | did=${companyDid} | resolvable at /company/${companyId}/did.json`);
+  log.info({ component: 'onboarding', step: 2, totalSteps: 7, did: companyDid, companyId }, 'did:web assigned');
 
   // ── Step 3: Create company record in database ──
   const credentialSubject = {
@@ -350,7 +403,7 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
       tenantCode,
     },
   });
-  console.log(`[onboarding] Step 3/7 — Company record created in database | id=${companyId} name="${name}"`);
+  log.info({ component: 'onboarding', step: 3, totalSteps: 7, companyId, companyName: name }, 'Company record created in database');
 
   // ── Step 4: Create Keycloak admin user ──
   let userCreated = false;
@@ -361,17 +414,32 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
       // Look up the seeded company_admin Role to link via roleId
       const companyAdminRole = await prisma.role.findUnique({ where: { name: 'company_admin' } });
       if (!companyAdminRole) {
-        console.warn('[onboarding] Step 4/7 — company_admin role not found in DB; CompanyUser created with roleId=null');
+        log.warn({ component: 'onboarding', step: 4, totalSteps: 7 }, 'company_admin role not found in DB; CompanyUser created with roleId=null');
       }
       await prisma.companyUser.create({ data: { keycloakId, email: adminUserEmail, companyId, roleId: companyAdminRole?.id ?? null } });
-      console.log(`[onboarding] Step 4/7 — Keycloak user created | email=${adminUserEmail} keycloakId=${keycloakId} roleId=${companyAdminRole?.id ?? 'null'}`);
+      log.info({ component: 'onboarding', step: 4, totalSteps: 7, emailHash: hashEmail(adminUserEmail), keycloakId, roleId: companyAdminRole?.id ?? null }, 'Keycloak user created');
       userCreated = true;
     } catch (err: any) {
       userError = err.response?.data?.errorMessage || err.message;
-      console.error(`[onboarding] Step 4/7 — Keycloak user creation FAILED | email=${adminUserEmail} error="${userError}"`);
+      log.error({ component: 'onboarding', step: 4, totalSteps: 7, emailHash: hashEmail(adminUserEmail), err: userError }, 'Keycloak user creation FAILED');
     }
   } else {
-    console.log(`[onboarding] Step 4/7 — Keycloak user skipped (no credentials provided)`);
+    log.info({ component: 'onboarding', step: 4, totalSteps: 7 }, 'Keycloak user skipped (no credentials provided)');
+  }
+
+  // ── Sequential gate: if user creation was attempted but FAILED, skip steps 5-7 ──
+  // Distinction: "failed" (adminUserEmail provided, Keycloak call threw) is different from
+  // "skipped" (no adminUserEmail provided). Only a failure blocks the remaining steps.
+  // A skipped user creation still proceeds — company credentials and Gaia-X are independent.
+  if (!userCreated && adminUserEmail) {
+    const elapsed = Date.now() - onboardingStart;
+    log.warn({ component: 'onboarding', companyId, companyName: name, elapsedMs: elapsed, keycloak: `failed: ${userError}` }, 'PARTIAL onboarding — steps 5-7 skipped due to user creation failure');
+    return res.status(201).json({
+      company,
+      edcEnabled: ENABLE_EDC_PROVISIONING,
+      userCreated: false,
+      userError,
+    });
   }
 
   // ── Step 5: Issue OrgVC credential ──
@@ -387,7 +455,7 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
       credentialSubject,
     },
   });
-  console.log(`[onboarding] Step 5/7 — OrgVC credential issued | credentialId=${credentialId}`);
+  log.info({ component: 'onboarding', step: 5, totalSteps: 7, credentialId }, 'OrgVC credential issued');
 
   // Issue via walt.id OID4VCI (non-blocking)
   issueCredentialSimple({
@@ -457,16 +525,16 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
       issuedVCs: orgCredRecord.issuedVCs as any,
     },
   });
-  console.log(`[onboarding] Step 6/7 — OrgCredential created | orgCredId=${orgCredId} | Gaia-X verification triggered (async)`);
+  log.info({ component: 'onboarding', step: 6, totalSteps: 7, orgCredId }, 'OrgCredential created — Gaia-X verification triggered (async)');
 
   // ── Step 7: Create EDC provisioning record (waiting for Gaia-X to complete) ──
   if (ENABLE_EDC_PROVISIONING) {
     await prisma.edcProvisioning.create({
       data: { companyId, status: 'pending' },
     });
-    console.log(`[onboarding] Step 7/7 — EDC provisioning record created | companyId=${companyId} status=pending (waiting for Gaia-X)`);
+    log.info({ component: 'onboarding', step: 7, totalSteps: 7, companyId, edcStatus: 'pending' }, 'EDC provisioning record created (waiting for Gaia-X)');
   } else {
-    console.log(`[onboarding] Step 7/7 — EDC provisioning skipped (ENABLE_EDC_PROVISIONING is not set)`);
+    log.info({ component: 'onboarding', step: 7, totalSteps: 7 }, 'EDC provisioning skipped (ENABLE_EDC_PROVISIONING is not set)');
   }
 
   // Auto-trigger Gaia-X verification (fire-and-forget — does not block registration response)
@@ -474,7 +542,7 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
   const orchestrator = new GaiaXOrchestrator(new GaiaXClient());
   prisma.orgCredential.update({ where: { id: orgCredId }, data: { verificationStatus: 'verifying' } })
     .then(() => {
-      console.log(`[onboarding:gaia-x] Submitting OrgCredential ${orgCredId} to Gaia-X compliance service...`);
+      log.info({ component: 'onboarding:gaia-x', orgCredId }, 'Submitting OrgCredential to Gaia-X compliance service');
       return orchestrator.verify(orgCredRecord);
     })
     .then(async (result) => {
@@ -496,10 +564,9 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
           verificationAttempts: result.attempts as any,
         },
       });
-      console.log(`[onboarding:gaia-x] Verification complete for OrgCredential ${orgCredId} | status=${isVerified ? 'VERIFIED' : 'FAILED'} notary=${result.notaryResult.status} compliance=${result.complianceResult.status}`);
+      log.info({ component: 'onboarding:gaia-x', orgCredId, status: isVerified ? 'VERIFIED' : 'FAILED', notary: result.notaryResult.status, compliance: result.complianceResult.status }, 'Gaia-X verification complete');
       if (result.complianceResult.status !== 'compliant') {
-        console.error(`[onboarding:gaia-x] Compliance errors:`, JSON.stringify(result.complianceResult.errors || []));
-        console.error(`[onboarding:gaia-x] Compliance raw response:`, JSON.stringify(result.complianceResult.raw));
+        log.error({ component: 'onboarding:gaia-x', orgCredId, errors: result.complianceResult.errors || [], raw: result.complianceResult.raw }, 'Compliance errors');
       }
 
       if (!isVerified) {
@@ -509,26 +576,26 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
             where: { companyId },
             data: { status: 'failed', lastError: 'Gaia-X compliance verification failed; EDC provisioning aborted' },
           }).catch((dbErr) =>
-            console.error(`[onboarding:edc] Failed to update EDC status to failed for ${companyId} | error="${dbErr.message}"`),
+            log.error({ component: 'onboarding:edc', companyId, err: dbErr.message }, 'Failed to update EDC status to failed'),
           );
-          console.error(`[onboarding:edc] EDC provisioning aborted for ${companyId} — Gaia-X not verified`);
+          log.error({ component: 'onboarding:edc', companyId }, 'EDC provisioning aborted — Gaia-X not verified');
         }
         return;
       }
 
       // Gaia-X verified — now trigger EDC provisioning
       if (ENABLE_EDC_PROVISIONING) {
-        console.log(`[onboarding:edc] Gaia-X verified — triggering EDC provisioning for tenantCode=${tenantCode}`);
+        log.info({ component: 'onboarding:edc', tenantCode }, 'Gaia-X verified — triggering EDC provisioning');
         axios
           .post(`${PROVISIONING_SERVICE_URL}/provision`, { companyId, tenantCode, bpn })
-          .then(() => console.log(`[onboarding:edc] Provisioning request sent to ${PROVISIONING_SERVICE_URL} for tenantCode=${tenantCode}`))
+          .then(() => log.info({ component: 'onboarding:edc', tenantCode, provisioningServiceUrl: PROVISIONING_SERVICE_URL }, 'Provisioning request sent'))
           .catch(async (err) => {
-            console.error(`[onboarding:edc] Provisioning request FAILED for tenantCode=${tenantCode} | error="${err.message}"`);
+            log.error({ component: 'onboarding:edc', tenantCode, err: err.message }, 'Provisioning request FAILED');
             await prisma.edcProvisioning.update({
               where: { companyId },
               data: { status: 'failed', lastError: `Provisioning service unreachable: ${err.message}` },
             }).catch((dbErr) =>
-              console.error(`[onboarding:edc] Failed to update EDC status to failed for ${companyId} | error="${dbErr.message}"`),
+              log.error({ component: 'onboarding:edc', companyId, err: dbErr.message }, 'Failed to update EDC status to failed'),
             );
           });
       }
@@ -538,7 +605,7 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
         where: { id: orgCredId },
         data: { verificationStatus: 'failed' },
       }).catch(() => {});
-      console.error(`[onboarding:gaia-x] Verification FAILED for OrgCredential ${orgCredId} | error="${err.message}"`);
+      log.error({ component: 'onboarding:gaia-x', orgCredId, err: err.message }, 'Gaia-X verification FAILED');
 
       // Gaia-X threw — mark EDC provisioning as failed too
       if (ENABLE_EDC_PROVISIONING) {
@@ -546,21 +613,24 @@ router.post('/', requireRole('company_admin'), async (req, res) => {
           where: { companyId },
           data: { status: 'failed', lastError: `Gaia-X verification error: ${err.message}` },
         }).catch((dbErr) =>
-          console.error(`[onboarding:edc] Failed to update EDC status to failed for ${companyId} | error="${dbErr.message}"`),
+          log.error({ component: 'onboarding:edc', companyId, err: dbErr.message }, 'Failed to update EDC status to failed'),
         );
-        console.error(`[onboarding:edc] EDC provisioning aborted for ${companyId} — Gaia-X threw an error`);
+        log.error({ component: 'onboarding:edc', companyId }, 'EDC provisioning aborted — Gaia-X threw an error');
       }
     });
 
   const elapsed = Date.now() - onboardingStart;
-  console.log(`[onboarding] ──── COMPLETE company onboarding for "${name}" (${elapsed}ms) ────`);
-  console.log(`[onboarding]   companyId    = ${companyId}`);
-  console.log(`[onboarding]   did          = ${companyDid}`);
-  console.log(`[onboarding]   bpn          = ${bpn}`);
-  console.log(`[onboarding]   tenantCode   = ${tenantCode}`);
-  console.log(`[onboarding]   keycloak     = ${userCreated ? 'created' : userError ? `failed: ${userError}` : 'skipped'}`);
-  console.log(`[onboarding]   edcEnabled   = ${ENABLE_EDC_PROVISIONING}`);
-  console.log(`[onboarding]   gaia-x       = verifying (async)`);
+  log.info({
+    component: 'onboarding',
+    companyId,
+    did: companyDid,
+    bpn,
+    tenantCode,
+    keycloak: userCreated ? 'created' : userError ? `failed: ${userError}` : 'skipped',
+    edcEnabled: ENABLE_EDC_PROVISIONING,
+    gaiax: 'verifying (async)',
+    elapsedMs: elapsed,
+  }, 'COMPLETE company onboarding');
 
   res.status(201).json({ company, credential, orgCredential, edcEnabled: ENABLE_EDC_PROVISIONING, userCreated, userError });
 });

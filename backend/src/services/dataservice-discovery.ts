@@ -12,6 +12,7 @@
  */
 
 import type { DidDocument, ServiceEndpoint } from './did-resolver';
+import logger from '../lib/logger';
 
 export interface DataServiceDiscoveryResult {
   dspUrl: string;
@@ -60,9 +61,7 @@ export function discoverDataService(
   }
 
   if (services.length > 1) {
-    console.warn(
-      `[DataService Discovery] Multiple DataService entries found in DID ${didDocument.id}. Using first entry: ${services[0].id}`,
-    );
+    logger.warn({ component: 'dataservice-discovery', did: didDocument.id, firstEntryId: services[0].id }, 'Multiple DataService entries found in DID; using first');
   }
 
   const service = services[0];

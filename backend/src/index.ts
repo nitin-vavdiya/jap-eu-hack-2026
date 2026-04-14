@@ -1,26 +1,34 @@
 import 'dotenv/config';
+import { validateEnv } from './utils/validateEnv';
 import { execSync } from 'child_process';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
+import logger from './lib/logger';
+import { requestIdMiddleware } from './middleware/requestId';
+
+// Validate required env vars before any async work (migrations, DB, external services).
+// This must be the first executable statement after dotenv loads — a missing DATABASE_URL
+// would otherwise produce a cryptic Prisma error instead of a clear startup message.
+validateEnv();
 
 const schemaPath = process.env.PRISMA_SCHEMA_PATH || path.resolve(__dirname, '..', 'prisma', 'schema.prisma');
 
-console.log('Running pending migrations...');
+logger.info({ schema: schemaPath }, 'Running pending migrations');
 try {
   execSync(`npx prisma migrate deploy --schema=${schemaPath}`, { stdio: 'inherit' });
-  console.log('Migrations applied.');
+  logger.info('Migrations applied');
 } catch (e) {
-  console.error('Migration failed:', e);
+  logger.error({ err: e }, 'Migration failed');
   process.exit(1);
 }
 
-console.log('Generating Prisma client...');
+logger.info('Generating Prisma client');
 try {
   execSync(`npx prisma generate --schema=${schemaPath}`, { stdio: 'inherit' });
-  console.log('Prisma client generated.');
+  logger.info('Prisma client generated');
 } catch (e) {
-  console.error('Prisma generate failed:', e);
+  logger.error({ err: e }, 'Prisma generate failed');
   process.exit(1);
 }
 import carsRouter from './routes/cars';
@@ -38,9 +46,11 @@ import vehicleRegistryRouter from './routes/vehicle-registry';
 import verifierRouter from './routes/verifier';
 import walletVPRouter from './routes/wallet-vp';
 import underwritingRouter from './routes/underwriting';
+import usersRouter from './routes/users';
 import { GaiaXClient, getVPSigner, getVPSignerAsync } from './services/gaiax';
 import { buildCompanyDidDocument } from './services/did-resolver';
 import prisma from './db';
+import { requireRole } from './middleware/auth';
 import { OrgCredentialRecord } from './services/gaiax/types';
 import { buildLegalParticipantVC, buildTermsAndConditionsVC, buildRegistrationNumberVC, getVCBaseUrl } from './services/gaiax/vc-builder';
 
@@ -49,11 +59,10 @@ const PORT = 8000;
 
 app.use(cors());
 app.use(express.json());
-
-const AUTH_ENABLED = process.env.AUTH_ENABLED === 'true';
+app.use(requestIdMiddleware);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), authEnabled: AUTH_ENABLED });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.use('/api/cars', carsRouter);
@@ -71,6 +80,7 @@ app.use('/api/vehicle-registry', vehicleRegistryRouter);
 app.use('/api/verifier', verifierRouter);
 app.use('/api/wallet-vp', walletVPRouter);
 app.use('/api/underwriting', underwritingRouter);
+app.use('/api/users', usersRouter);
 
 // Well-known endpoint for vehicle registry discovery
 app.get('/.well-known/vehicle-registry', (_req, res) => {
@@ -177,6 +187,19 @@ app.get('/api/gaiax/health', async (_req, res) => {
   }
 });
 
+// Dynamic log-level endpoint — allows changing log level at runtime without restart
+const VALID_LOG_LEVELS = new Set(['trace', 'debug', 'info', 'warn', 'error', 'fatal']);
+app.post('/api/admin/log-level', requireRole('admin'), (req, res) => {
+  const { level } = req.body as { level: string };
+  if (!level || !VALID_LOG_LEVELS.has(level)) {
+    return res.status(400).json({ error: 'Invalid log level' });
+  }
+  const previousLevel = logger.level;
+  logger.level = level;
+  logger.info({ component: 'admin', changedBy: req.user?.preferred_username, previousLevel, newLevel: level }, 'Log level changed');
+  res.json({ ok: true, level });
+});
+
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   await prisma.$disconnect();
@@ -187,10 +210,10 @@ process.on('SIGTERM', async () => {
 getVPSignerAsync()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Backend running at http://localhost:${PORT} (auth: ${AUTH_ENABLED ? 'ON' : 'OFF'})`);
+      logger.info({ port: PORT }, 'Backend server started');
     });
   })
   .catch((err) => {
-    console.error('Failed to initialize VPSigner:', err);
+    logger.error({ err }, 'Failed to initialize VPSigner');
     process.exit(1);
   });

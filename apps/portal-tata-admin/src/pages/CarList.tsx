@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { getApiBase } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
+import { useCompany } from '../context/CompanyContext'
 
 const API_BASE = getApiBase()
 
@@ -24,6 +24,8 @@ interface Car {
 }
 
 export default function CarList() {
+  const { accessToken } = useAuthUser()
+  const { company, loading: companyLoading } = useCompany()
   const [cars, setCars] = useState<Car[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -31,11 +33,12 @@ export default function CarList() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    axios.get(`${API_BASE}/cars`).then(r => {
-      setCars(r.data)
-      setLoading(false)
-    }).catch(() => setLoading(false))
-  }, [])
+    if (companyLoading || !company) return
+    const api = createAuthAxios(() => accessToken)
+    api.get(`${API_BASE}/cars?companyId=${company.id}`)
+      .then(r => { setCars(r.data); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [accessToken, company, companyLoading])
 
   const filtered = cars.filter(c => {
     const matchSearch = !search ||

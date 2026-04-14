@@ -18,7 +18,6 @@ const companyTheme: PortalTheme = {
     'Verify company registration details (VAT, EORI, CIN, GST)',
     'Cross-reference organizational credentials for supply chain trust',
   ],
-  loginHint: 'Login as company-admin / company',
 }
 
 export default function App() {

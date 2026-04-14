@@ -137,7 +137,7 @@ export default function CarDetail() {
     {
       label: 'Verifiable Credential',
       sections: [
-        { title: 'Manufacturer Credential', key: 'manufacturerCredential' },
+        { title: 'Manufacturer Credential', key: 'credential' },
       ],
     },
   ]
@@ -237,7 +237,7 @@ export default function CarDetail() {
                 const globalIdx = allSections.findIndex(s => s.key === section.key)
                 const content = dpp?.[section.key]
                 if (!content) return null
-                const isVC = section.key === 'manufacturerCredential'
+                const isVC = section.key === 'credential'
                 return (
                   <div key={section.key} className={`border ${isVC ? 'border-indigo-200 bg-indigo-50/20' : 'border-gray-100'} rounded-xl overflow-hidden mb-1`}>
                     <button

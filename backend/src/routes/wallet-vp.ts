@@ -6,6 +6,7 @@
 
 import { Router } from 'express';
 import prisma from '../db';
+import { authenticate } from '../middleware/auth';
 import {
   createVerifiablePresentation,
   VerifiableCredential,
@@ -16,9 +17,14 @@ const router = Router();
 
 /**
  * GET /credentials/:userId/ownership
- * Get all OwnershipVCs held by a user, formatted as W3C VCs
+ * Get all OwnershipVCs held by a user, formatted as W3C VCs.
+ * Requires auth. Users may only access their own credentials (ownership check via preferred_username).
  */
-router.get('/credentials/:userId/ownership', async (req, res) => {
+router.get('/credentials/:userId/ownership', authenticate, async (req, res) => {
+  // Ownership check: wallet records are keyed by preferred_username, not sub UUID
+  if (req.user?.preferred_username !== req.params.userId) {
+    return res.status(403).json({ error: 'Access denied: you may only access your own credentials' });
+  }
   const wallet = await prisma.wallet.findUnique({
     where: { userId: req.params.userId },
     include: { credentials: { include: { credential: true } } },
@@ -35,13 +41,18 @@ router.get('/credentials/:userId/ownership', async (req, res) => {
 
 /**
  * POST /generate-vp
- * Generate a Verifiable Presentation wrapping specified credentials
+ * Generate a Verifiable Presentation wrapping specified credentials. Requires auth.
  */
-router.post('/generate-vp', async (req, res) => {
+router.post('/generate-vp', authenticate, async (req, res) => {
   const { userId, credentialIds, challenge, domain } = req.body;
 
   if (!userId || !credentialIds || !Array.isArray(credentialIds) || credentialIds.length === 0) {
     return res.status(400).json({ error: 'userId and credentialIds[] are required' });
+  }
+
+  // Ownership check: users may only generate presentations for their own credentials
+  if (req.user?.preferred_username !== userId) {
+    return res.status(403).json({ error: 'Access denied: you may only generate VPs for your own credentials' });
   }
 
   const holderDid = `did:smartsense:${userId}`;
@@ -89,10 +100,10 @@ router.post('/generate-vp', async (req, res) => {
 
 /**
  * POST /submit-vp
- * Wallet submits VP directly to the verifier callback
+ * Wallet submits VP directly to the verifier callback. Requires auth.
  * (convenience endpoint that proxies to the verifier)
  */
-router.post('/submit-vp', async (req, res) => {
+router.post('/submit-vp', authenticate, async (req, res) => {
   const { requestId, vpToken } = req.body;
 
   if (!requestId || !vpToken) {

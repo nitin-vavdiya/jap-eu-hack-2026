@@ -227,57 +227,6 @@
   ],
   "users": [
     {
-      "username": "toyota-admin",
-      "enabled": true,
-      "email": "toyota-admin@toyota-global.com",
-      "firstName": "Toyota",
-      "lastName": "Admin",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "toyota-admin",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "admin"
-      ]
-    },
-    {
-      "username": "mario-sanchez",
-      "enabled": true,
-      "email": "mario.sanchez@email.com",
-      "firstName": "Mario",
-      "lastName": "Sanchez",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "mario",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "customer"
-      ]
-    },
-    {
-      "username": "tokiomarine-agent",
-      "enabled": true,
-      "email": "agent@tokiomarine.com",
-      "firstName": "Tokio Marine",
-      "lastName": "Agent",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "tokiomarine",
-          "temporary": false
-        }
-      ],
-      "realmRoles": [
-        "insurance_agent"
-      ]
-    },
-    {
       "username": "company-admin",
       "enabled": true,
       "email": "admin@company.eu",

@@ -1,46 +1,33 @@
-import { useState, useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
-import { ProtectedRoute, useAuthUser, createAuthAxios, ROLES, PortalTheme, getApiBase, getPortalDataspaceUrl, HackathonBanner } from '@eu-jap-hack/auth'
+import { ProtectedRoute, useAuthUser, ROLES, PortalTheme, getPortalDataspaceUrl, HackathonBanner } from '@eu-jap-hack/auth'
 import CarList from './pages/CarList'
 import CarDPP from './pages/CarDPP'
 import CreateCar from './pages/CreateCar'
 import VehicleRegistry from './pages/VehicleRegistry'
 import CaddePage from './pages/CaddePage'
-
-const API = getApiBase()
+import CompanyProfile from './pages/CompanyProfile'
+import { CompanyProvider, useCompany } from './context/CompanyContext'
 
 const adminTheme: PortalTheme = {
-  portalName: 'Toyota Admin',
+  portalName: 'Company Admin',
   subtitle: 'Fleet & DPP Management Console',
   primaryColor: 'bg-[#4285F4]',
   primaryHover: 'hover:bg-[#3367D6]',
   accentGradient: 'bg-gradient-to-br from-[#4285F4] via-[#3367D6] to-[#1a47a0]',
-  iconText: 'TY',
+  iconText: 'CA',
   iconBg: 'bg-[#4285F4]',
-  description: 'Manage your vehicle fleet, create and edit Digital Product Passports, and oversee the full lifecycle of every car in the Toyota ecosystem.',
+  description: 'Manage your company fleet, create and edit Digital Product Passports, and oversee the full lifecycle of every asset in the dataspace.',
   features: [
     'Create and manage Digital Product Passports for every vehicle',
     'Full 10-section DPP hierarchy: identity, powertrain, emissions, materials',
     'Track service history, damage records, and condition ratings',
     'Issue verifiable credentials for vehicle provenance',
   ],
-  loginHint: 'Login as toyota-admin / toyota',
 }
 
 function OrgVerificationBanner() {
-  const { accessToken } = useAuthUser()
-  const api = createAuthAxios(() => accessToken)
-  const [status, setStatus] = useState<'loading' | 'verified' | 'unverified' | 'error'>('loading')
-
-  useEffect(() => {
-    api.get(`${API}/org-credentials`).then(r => {
-      const creds = r.data as { verificationStatus: string; complianceResult?: { status: string; issuedCredential?: unknown } }[]
-      const hasCompliant = creds.some(c => c.verificationStatus === 'verified' && c.complianceResult?.status === 'compliant' && c.complianceResult?.issuedCredential)
-      setStatus(hasCompliant ? 'verified' : 'unverified')
-    }).catch(() => setStatus('error'))
-  }, [])
-
-  if (status === 'loading' || status === 'verified') return null
+  const { isGaiaxVerified, loading } = useCompany()
+  if (loading || isGaiaxVerified) return null
 
   return (
     <div className="bg-[#FEF7E0] border-b border-[#FBBC05]/30">
@@ -57,8 +44,14 @@ function OrgVerificationBanner() {
   )
 }
 
-export default function App() {
+function AppShell() {
   const { fullName, logout } = useAuthUser()
+  const { company } = useCompany()
+
+  const companyName = company?.name ?? ''
+  const initials = companyName
+    ? companyName.split(/\s+/).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase()
+    : 'CA'
 
   return (
     <div className="min-h-screen bg-[#F8FAFD]">
@@ -67,14 +60,17 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
             <div className="w-8 h-8 bg-[#4285F4] rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">TY</span>
+              <span className="text-white font-bold text-xs">{initials}</span>
             </div>
             <div>
-              <span className="font-semibold text-[#1F1F1F] text-sm">Toyota Admin</span>
+              <span className="font-semibold text-[#1F1F1F] text-sm">{companyName || 'Company Admin'}</span>
               <span className="text-[#9AA0A6] text-xs ml-2">DPP Management</span>
             </div>
           </a>
           <div className="flex items-center gap-4">
+            <a href="/company" className="text-xs text-[#5F6368] hover:text-[#1F1F1F] font-medium transition-colors">
+              Company Profile
+            </a>
             <a href="/cadde" className="text-xs text-[#5F6368] hover:text-[#1F1F1F] font-medium transition-colors">
               CADDE
             </a>
@@ -95,15 +91,24 @@ export default function App() {
         </div>
       </nav>
       <OrgVerificationBanner />
-      <ProtectedRoute role={ROLES.ADMIN} theme={adminTheme}>
-        <Routes>
-          <Route path="/" element={<CarList />} />
-          <Route path="/car/:vin" element={<CarDPP />} />
-          <Route path="/create" element={<CreateCar />} />
-          <Route path="/registry" element={<VehicleRegistry />} />
-          <Route path="/cadde" element={<CaddePage />} />
-        </Routes>
-      </ProtectedRoute>
+      <Routes>
+        <Route path="/" element={<CarList />} />
+        <Route path="/car/:vin" element={<CarDPP />} />
+        <Route path="/create" element={<CreateCar />} />
+        <Route path="/registry" element={<VehicleRegistry />} />
+        <Route path="/cadde" element={<CaddePage />} />
+        <Route path="/company" element={<CompanyProfile />} />
+      </Routes>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <ProtectedRoute role={ROLES.COMPANY_ADMIN} theme={adminTheme}>
+      <CompanyProvider>
+        <AppShell />
+      </CompanyProvider>
+    </ProtectedRoute>
   )
 }

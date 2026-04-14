@@ -33,7 +33,7 @@ const sectionGroups = [
   {
     label: 'Verifiable Credential',
     sections: [
-      { key: 'manufacturerCredential', title: 'Manufacturer Credential', icon: 'VC' },
+      { key: 'credential', title: 'Manufacturer Credential', icon: 'VC' },
     ],
   },
 ]
@@ -92,7 +92,7 @@ export default function DPPViewer() {
   const navigate = useNavigate()
   const [car, setCar] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['identification', 'manufacturerCredential']))
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['identification', 'credential']))
 
   useEffect(() => {
     axios.get(`${API_BASE}/cars/${vin}`).then(r => { setCar(r.data); setLoading(false) }).catch(() => setLoading(false))
@@ -171,7 +171,7 @@ export default function DPPViewer() {
               const data = dpp?.[section.key]
               if (!data) return null
               const isOpen = openSections.has(section.key)
-              const isVC = section.key === 'manufacturerCredential'
+              const isVC = section.key === 'credential'
 
               return (
                 <div key={section.key} className={`border ${isVC ? 'border-indigo-200 bg-indigo-50/30' : 'border-gray-100'} rounded-xl overflow-hidden mb-2`}>
