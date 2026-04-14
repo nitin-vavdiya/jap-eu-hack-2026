@@ -73,10 +73,39 @@ From the conversation and git changes, identify:
 
 **Update rules:**
 - ⬜ Not Started → 🔄 In Progress (if partially done)
-- 🔄 In Progress → ✅ Completed (if fully done, add date)
+- 🔄 In Progress → ✅ Completed (if fully done, add date as a deep link — see below)
 - Update `Last Updated` field to today's date
 - Increment `Hours Logged` by an estimated amount based on session length
 - Update `Overall Progress` count
+
+**Date Done deep-link format:**
+
+When marking a task ✅ Completed, set the Date Done cell to a Markdown link that points directly to the exact session heading where the task was covered:
+
+```
+[YYYY-MM-DD](sessions/YYYY-MM-DD.md#anchor)
+```
+
+To generate the anchor from a session heading, apply GitHub Markdown anchor rules:
+1. Lowercase the heading text
+2. Remove any character that is not a letter, number, space, or hyphen (em dash `—`, colon `:`, parentheses, etc. are all removed)
+3. Replace spaces with hyphens
+
+Examples:
+| Heading | Anchor |
+|---------|--------|
+| `## Session 1 — 10:13` | `#session-1--1013` |
+| `## Session 2 — 15:43` | `#session-2--1543` |
+| `## Session 0 — Anthropic Academy Course` | `#session-0--anthropic-academy-course` |
+| `## Task 12 Retroactive Completion — 15:57` | `#task-12-retroactive-completion--1557` |
+| `## Addendum — Task 1 Completion` | `#addendum--task-1-completion` |
+
+Use the session heading where the task appears in the **Milestones & Tasks Covered** table. If the same task appears in multiple sessions, link to the session where it was marked **Completed** (not Partial).
+
+Also update the **Session History** table — make the Date cell link to the session file (without anchor, since it covers the full day):
+```
+[YYYY-MM-DD](sessions/YYYY-MM-DD.md)
+```
 
 ## Step 6: MASTER_TRACKER.md Template
 

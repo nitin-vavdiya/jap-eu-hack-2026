@@ -14,10 +14,10 @@
 
 | # | Task | Hours | Status | Date Done |
 |---|------|-------|--------|-----------|
-| 1 | Watch & Read: Claude Code vs Cursor | 1.5h | ✅ Completed | 2026-04-03 |
-| 2 | Setup: Install and First Session on Real Project | 1.5h | ✅ Completed | 2026-04-03 |
-| 3 | Study: Context Window, Plan Mode, Approval Flow | 3h | ✅ Completed | 2026-04-03 |
-| 4 | Study: Advanced Prompting for Architects | 4h | ✅ Completed | 2026-04-13 |
+| 1 | Watch & Read: Claude Code vs Cursor | 1.5h | ✅ Completed | [2026-04-03](sessions/2026-04-03.md#addendum--task-1-completion) |
+| 2 | Setup: Install and First Session on Real Project | 1.5h | ✅ Completed | [2026-04-03](sessions/2026-04-03.md#session-1--1446) |
+| 3 | Study: Context Window, Plan Mode, Approval Flow | 3h | ✅ Completed | [2026-04-03](sessions/2026-04-03.md#addendum--task-3-completion) |
+| 4 | Study: Advanced Prompting for Architects | 4h | ✅ Completed | [2026-04-13](sessions/2026-04-13.md#session-2--1543) |
 
 ---
 
@@ -26,10 +26,10 @@
 
 | # | Task | Hours | Status | Date Done |
 |---|------|-------|--------|-----------|
-| 5 | Study: CLAUDE.md for Architects — Beyond Basic Context | 2h | ✅ Completed | 2026-04-07 |
-| 6 | Exercise: Build CLAUDE.md for Primary Architecture Project | 3h | ✅ Completed | 2026-04-03 |
-| 7 | Exercise: Test and Refine Your CLAUDE.md | 2h | ✅ Completed | 2026-04-07 |
-| 8 | Exercise: Build CLAUDE.md for Secondary Projects and Global Preferences | 3h | ✅ Completed | 2026-04-06 |
+| 5 | Study: CLAUDE.md for Architects — Beyond Basic Context | 2h | ✅ Completed | [2026-04-07](sessions/2026-04-07.md#session-1--1553) |
+| 6 | Exercise: Build CLAUDE.md for Primary Architecture Project | 3h | ✅ Completed | [2026-04-03](sessions/2026-04-03.md#session-1--1446) |
+| 7 | Exercise: Test and Refine Your CLAUDE.md | 2h | ✅ Completed | [2026-04-07](sessions/2026-04-07.md#session-1--1553) |
+| 8 | Exercise: Build CLAUDE.md for Secondary Projects and Global Preferences | 3h | ✅ Completed | [2026-04-06](sessions/2026-04-06.md#session-1--1145) |
 
 ---
 
@@ -38,10 +38,10 @@
 
 | # | Task | Hours | Status | Date Done |
 |---|------|-------|--------|-----------|
-| 9 | Study: The Complete Anthropic Academy Course | 4h | ✅ Completed | 2026-04-07 |
-| 10 | Identify Your First Real Task | 2h | ✅ Completed | 2026-04-06 |
-| 11 | Exercise: Complete Your First Real Architecture Task | 4h | ✅ Completed | 2026-04-06 |
-| 12 | Study: Advanced Workflows and Common Patterns | 6h | ✅ Completed | 2026-04-14 |
+| 9 | Study: The Complete Anthropic Academy Course | 4h | ✅ Completed | [2026-04-07](sessions/2026-04-07.md#session-0--anthropic-academy-course) |
+| 10 | Identify Your First Real Task | 2h | ✅ Completed | [2026-04-06](sessions/2026-04-06.md#session-1--1145) |
+| 11 | Exercise: Complete Your First Real Architecture Task | 4h | ✅ Completed | [2026-04-06](sessions/2026-04-06.md#session-1--1145) |
+| 12 | Study: Advanced Workflows and Common Patterns | 6h | ✅ Completed | [2026-04-14](sessions/2026-04-14.md#task-12-retroactive-completion--1557) |
 
 ---
 
@@ -51,9 +51,9 @@
 | # | Task | Hours | Status | Date Done |
 |---|------|-------|--------|-----------|
 | 13 | Exercise: Complete Microservice Scaffolding Workflow | 4h | ⬜ Not Started | — |
-| 14 | Exercise: Spring Security and Keycloak Integration Workflows | 4h | ✅ Completed | 2026-04-13 |
+| 14 | Exercise: Spring Security and Keycloak Integration Workflows | 4h | ✅ Completed | [2026-04-13](sessions/2026-04-13.md#session-3--2000) |
 | 15 | Exercise: SSI/DID and Blockchain Credentialing Workflows | 5h | 🔄 In Progress | — |
-| 16 | Exercise: Multi-Service Refactoring and Cross-Cutting Changes | 5h | ✅ Completed | 2026-04-13 |
+| 16 | Exercise: Multi-Service Refactoring and Cross-Cutting Changes | 5h | ✅ Completed | [2026-04-13](sessions/2026-04-13.md#session-1--1152) |
 
 ---
 
@@ -62,10 +62,10 @@
 
 | # | Task | Hours | Status | Date Done |
 |---|------|-------|--------|-----------|
-| 17 | Exercise: Architecture Decision Records (ADR) Generation | 3h | ✅ Completed | 2026-04-07 |
+| 17 | Exercise: Architecture Decision Records (ADR) Generation | 3h | ✅ Completed | [2026-04-07](sessions/2026-04-07.md#session-2--1600) |
 | 18 | Exercise: System Architecture Documentation Generation | 3h | ⬜ Not Started | — |
 | 19 | Exercise: API Contract Documentation and Review | 4h | ⬜ Not Started | — |
-| 20 | Exercise: Technical Specification and RFC Generation | 4h | ✅ Completed | 2026-04-14 |
+| 20 | Exercise: Technical Specification and RFC Generation | 4h | ✅ Completed | [2026-04-14](sessions/2026-04-14.md#session-2--1025) |
 
 ---
 
@@ -86,10 +86,10 @@
 
 | # | Task | Hours | Status | Date Done |
 |---|------|-------|--------|-----------|
-| 25 | Exercise: AI-Augmented Code Review | 3h | ✅ Completed | 2026-04-14 |
+| 25 | Exercise: AI-Augmented Code Review | 3h | ✅ Completed | [2026-04-14](sessions/2026-04-14.md#session-1--1013) |
 | 26 | Exercise: Junior Developer Mentoring Acceleration | 3h | ⬜ Not Started | — |
-| 27 | Exercise: Error Recovery and the 3-Strike Rule | 4h | ✅ Completed | 2026-04-13 |
-| 28 | Exercise: Multi-Session Architecture Projects | 4h | ✅ Completed | 2026-04-14 |
+| 27 | Exercise: Error Recovery and the 3-Strike Rule | 4h | ✅ Completed | [2026-04-13](sessions/2026-04-13.md#session-1--1152) |
+| 28 | Exercise: Multi-Session Architecture Projects | 4h | ✅ Completed | [2026-04-14](sessions/2026-04-14.md#session-1--1013) |
 
 ---
 
@@ -100,8 +100,8 @@
 |---|------|-------|--------|-----------|
 | 29 | Exercise: Build Your Custom Slash Command Library | 4h | 🔄 In Progress | — |
 | 30 | Exercise: MCP Server Integration | 4h | ⬜ Not Started | — |
-| 31 | Exercise: Security and Compliance Review Workflows | 4h | ✅ Completed | 2026-04-14 |
-| 32 | Exercise: Open Source Contribution Acceleration (Tractus-X) | 4h | ✅ Completed | 2026-04-13 |
+| 31 | Exercise: Security and Compliance Review Workflows | 4h | ✅ Completed | [2026-04-14](sessions/2026-04-14.md#session-1--1013) |
+| 32 | Exercise: Open Source Contribution Acceleration (Tractus-X) | 4h | ✅ Completed | [2026-04-13](sessions/2026-04-13.md#session-1--1152) |
 
 ---
 
@@ -133,8 +133,8 @@
 
 | Date | Sessions | Tasks Touched | Hours |
 |------|----------|---------------|-------|
-| 2026-04-03 | 3 | Tasks 2, 6, 7, 29 | ~2h |
-| 2026-04-06 | 1 | Tasks 7, 8, 10, 11, 27 | ~3h |
-| 2026-04-07 | 3 | Tasks 5, 6, 7, 9, 17, 20, 31 | ~7h |
-| 2026-04-13 | 3 | Tasks 4, 14, 15, 16, 20, 21, 25, 27, 28, 32 | ~12h |
-| 2026-04-14 | 3 | Tasks 7, 12, 15, 16, 20, 25, 28, 29, 31, 33 | ~9h |
+| [2026-04-03](sessions/2026-04-03.md) | 3 | Tasks 2, 6, 7, 29 | ~2h |
+| [2026-04-06](sessions/2026-04-06.md) | 1 | Tasks 7, 8, 10, 11, 27 | ~3h |
+| [2026-04-07](sessions/2026-04-07.md) | 3 | Tasks 5, 6, 7, 9, 17, 20, 31 | ~7h |
+| [2026-04-13](sessions/2026-04-13.md) | 3 | Tasks 4, 14, 15, 16, 20, 21, 25, 27, 28, 32 | ~12h |
+| [2026-04-14](sessions/2026-04-14.md) | 3 | Tasks 7, 12, 15, 16, 20, 25, 28, 29, 31, 33 | ~9h |
