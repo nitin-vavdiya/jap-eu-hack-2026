@@ -5,7 +5,7 @@
 **Started:** 2026-04-03  
 **Last Updated:** 2026-04-14  
 **Hours Logged:** ~37 of 160  
-**Overall Progress:** 19/40 tasks complete  
+**Overall Progress:** 20/40 tasks complete  
 
 ---
 
@@ -41,7 +41,7 @@
 | 9 | Study: The Complete Anthropic Academy Course | 4h | ✅ Completed | 2026-04-07 |
 | 10 | Identify Your First Real Task | 2h | ✅ Completed | 2026-04-06 |
 | 11 | Exercise: Complete Your First Real Architecture Task | 4h | ✅ Completed | 2026-04-06 |
-| 12 | Study: Advanced Workflows and Common Patterns | 6h | ⬜ Not Started | — |
+| 12 | Study: Advanced Workflows and Common Patterns | 6h | ✅ Completed | 2026-04-14 |
 
 ---
 
@@ -137,4 +137,4 @@
 | 2026-04-06 | 1 | Tasks 7, 8, 10, 11, 27 | ~3h |
 | 2026-04-07 | 3 | Tasks 5, 6, 7, 9, 17, 20, 31 | ~7h |
 | 2026-04-13 | 3 | Tasks 4, 14, 15, 16, 20, 21, 25, 27, 28, 32 | ~12h |
-| 2026-04-14 | 3 | Tasks 7, 15, 16, 20, 25, 28, 29, 31, 33 | ~9h |
+| 2026-04-14 | 3 | Tasks 7, 12, 15, 16, 20, 25, 28, 29, 31, 33 | ~9h |
