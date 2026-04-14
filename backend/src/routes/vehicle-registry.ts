@@ -27,9 +27,9 @@ function buildResolutionDocument(car: any, orgCred: any) {
     vin,
     status: car.status,
     manufacturer: {
-      id: car.manufacturerCompanyId || null,
-      name: car.manufacturerCompany?.name || car.make,
-      did: car.manufacturerCompany?.did || null,
+      id: car.companyId || null,
+      name: car.company?.name || car.make,
+      did: car.company?.did || null,
       registryEndpoint: `${REGISTRY_BASE}/api/vehicle-registry`,
       verificationStatus: orgCred?.verificationStatus || 'unverified',
       orgCredentialId: orgCred?.id || null,
@@ -52,7 +52,7 @@ function buildResolutionDocument(car: any, orgCred: any) {
     },
     vcReference: {
       ownershipVC: isSold ? `${carId}/credentials` : null,
-      manufacturerVC: car.manufacturerCredentialId,
+      credentialId: car.credentialId,
       accessLevel: isSold ? 'consent_required' : 'not_applicable',
     },
     serviceEndpoints: {
@@ -99,9 +99,9 @@ function buildPublicSummary(car: any) {
     color: car.color,
     status: car.status,
     manufacturer: {
-      name: car.manufacturerCompany?.name || car.make,
-      country: car.manufacturerCompany?.country || null,
-      did: car.manufacturerCompany?.did || null,
+      name: car.company?.name || car.make,
+      country: car.company?.country || null,
+      did: car.company?.did || null,
     },
     sustainability: {
       energyType: car.fuelType === 'Electric' ? 'Battery Electric Vehicle (BEV)' : car.fuelType,
@@ -111,9 +111,9 @@ function buildPublicSummary(car: any) {
     },
     trustIndicators: {
       hasDPP: true,
-      hasManufacturerVC: !!car.manufacturerCredentialId,
+      hasCredential: !!car.credentialId,
       isOwnershipTracked: !!car.ownerId,
-      manufacturerVerified: true,
+      credentialVerified: true,
     },
     protectedDataAvailable: [
       'Full Digital Product Passport',
@@ -255,7 +255,7 @@ router.get('/well-known', async (_req, res) => {
 
 // List all vehicles in registry
 router.get('/vehicles', async (_req, res) => {
-  const cars = await prisma.car.findMany({ include: { manufacturerCompany: true } });
+  const cars = await prisma.car.findMany({ include: { company: true } });
   res.json(cars.map((c: any) => ({
     carId: buildCarId(c.vin),
     vin: c.vin,
@@ -266,17 +266,17 @@ router.get('/vehicles', async (_req, res) => {
     fuelType: c.fuelType,
     status: c.status,
     isSold: !!c.ownerId,
-    manufacturerVerified: !!c.manufacturerCompany,
+    credentialVerified: !!c.company,
   })));
 });
 
 // Resolve Car ID — the core resolution endpoint
 router.get('/vehicles/:vin', async (req, res) => {
-  const car = await prisma.car.findUnique({ where: { vin: req.params.vin }, include: { manufacturerCompany: true } });
+  const car = await prisma.car.findUnique({ where: { vin: req.params.vin }, include: { company: true } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
-  const orgCred = car.manufacturerCompanyId
-    ? await prisma.orgCredential.findFirst({ where: { companyId: car.manufacturerCompanyId } })
+  const orgCred = car.companyId
+    ? await prisma.orgCredential.findFirst({ where: { companyId: car.companyId } })
     : null;
   const doc = buildResolutionDocument(car, orgCred);
 
@@ -286,7 +286,7 @@ router.get('/vehicles/:vin', async (req, res) => {
 
 // Public summary — no auth needed
 router.get('/vehicles/:vin/public-summary', async (req, res) => {
-  const car = await prisma.car.findUnique({ where: { vin: req.params.vin }, include: { manufacturerCompany: true } });
+  const car = await prisma.car.findUnique({ where: { vin: req.params.vin }, include: { company: true } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
   await logAudit(car.vin, 'public_summary_viewed', req.query.requester as string || 'anonymous');
@@ -303,14 +303,14 @@ router.get('/vehicles/:vin/policies', async (req, res) => {
 
 // Verification status
 router.get('/vehicles/:vin/verification-status', async (req, res) => {
-  const car = await prisma.car.findUnique({ where: { vin: req.params.vin }, include: { manufacturerCompany: true } });
+  const car = await prisma.car.findUnique({ where: { vin: req.params.vin }, include: { company: true } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
-  const orgCred = car.manufacturerCompanyId
-    ? await prisma.orgCredential.findFirst({ where: { companyId: car.manufacturerCompanyId } })
+  const orgCred = car.companyId
+    ? await prisma.orgCredential.findFirst({ where: { companyId: car.companyId } })
     : null;
-  const manufacturerCred = car.manufacturerCredentialId
-    ? await prisma.credential.findUnique({ where: { id: car.manufacturerCredentialId } })
+  const cred = car.credentialId
+    ? await prisma.credential.findUnique({ where: { id: car.credentialId } })
     : null;
 
   const complianceResult = orgCred?.complianceResult as Record<string, any> | null;
@@ -318,13 +318,13 @@ router.get('/vehicles/:vin/verification-status', async (req, res) => {
     carId: buildCarId(car.vin),
     vin: car.vin,
     manufacturer: {
-      name: car.manufacturerCompany?.name || car.make,
+      name: car.company?.name || car.make,
       orgCredentialStatus: orgCred?.verificationStatus || 'unverified',
       gaiaxCompliant: complianceResult?.status === 'compliant',
       credentialId: orgCred?.id,
     },
     vehicleCredentials: {
-      manufacturerVC: manufacturerCred ? { id: manufacturerCred.id, status: manufacturerCred.status } : null,
+      credentialVC: cred ? { id: cred.id, status: cred.status } : null,
       ownershipVC: car.ownerId ? 'issued' : 'not_applicable',
     },
     dppStatus: car.dpp ? 'available' : 'not_available',
@@ -332,7 +332,7 @@ router.get('/vehicles/:vin/verification-status', async (req, res) => {
 });
 
 // Audit log
-router.get('/vehicles/:vin/audit-log', async (req, res) => {
+router.get('/vehicles/:vin/audit-log', authenticate, async (req, res) => {
   const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
   if (!car) return res.status(404).json({ error: 'Vehicle not found in registry' });
 
@@ -392,11 +392,11 @@ router.get('/vehicles/:vin/credentials', requireAccessGrant, async (req, res) =>
 
   const creds: any[] = [];
 
-  // Manufacturer VC
-  const mfgCred = car.manufacturerCredentialId
-    ? await prisma.credential.findUnique({ where: { id: car.manufacturerCredentialId } })
+  // Asset Credential VC
+  const cred = car.credentialId
+    ? await prisma.credential.findUnique({ where: { id: car.credentialId } })
     : null;
-  if (mfgCred) creds.push({ ...mfgCred, role: 'manufacturer' });
+  if (cred) creds.push({ ...cred, role: 'credential' });
 
   // Ownership VC
   if (car.ownerId) {
@@ -486,7 +486,7 @@ router.post('/access-sessions', authenticate, async (req, res) => {
 });
 
 // List active sessions for a vehicle
-router.get('/vehicles/:vin/access-sessions', async (req, res) => {
+router.get('/vehicles/:vin/access-sessions', authenticate, async (req, res) => {
   const sessions = await prisma.accessSession.findMany({ where: { vin: req.params.vin } });
   const mapped = sessions.map((s: any) => ({
     ...s,

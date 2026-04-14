@@ -19,26 +19,38 @@ router.get('/check', async (req, res) => {
   return res.json({ exists: false });
 });
 
-// Get pending consents for a user
-router.get('/pending/:userId', async (req, res) => {
+// Get pending consents for a user (requires auth + ownership check)
+router.get('/pending/:userId', authenticate, async (req, res) => {
+  // Ownership check: users may only view their own pending consents
+  if (req.user?.preferred_username !== req.params.userId) {
+    return res.status(403).json({ error: 'Access denied: you may only view your own consents' });
+  }
   const pending = await prisma.consent.findMany({
     where: { userId: req.params.userId, status: 'pending' },
   });
   res.json(pending);
 });
 
-// Get consent history for a user
-router.get('/history/:userId', async (req, res) => {
+// Get consent history for a user (requires auth + ownership check)
+router.get('/history/:userId', authenticate, async (req, res) => {
+  // Ownership check: users may only view their own consent history
+  if (req.user?.preferred_username !== req.params.userId) {
+    return res.status(403).json({ error: 'Access denied: you may only view your own consents' });
+  }
   const history = await prisma.consent.findMany({
     where: { userId: req.params.userId },
   });
   res.json(history);
 });
 
-// Get specific consent by ID
-router.get('/:id', async (req, res) => {
+// Get specific consent by ID (requires auth; record must belong to the requesting user)
+router.get('/:id', authenticate, async (req, res) => {
   const consent = await prisma.consent.findUnique({ where: { id: req.params.id } });
   if (!consent) return res.status(404).json({ error: 'Consent not found' });
+  // Ownership check: ensure the consent record belongs to the authenticated user
+  if (req.user?.preferred_username !== consent.userId) {
+    return res.status(403).json({ error: 'Access denied: this consent record does not belong to you' });
+  }
   res.json(consent);
 });
 
@@ -76,6 +88,10 @@ router.post('/request', authenticate, async (req, res) => {
 router.put('/:id/approve', authenticate, async (req, res) => {
   const consent = await prisma.consent.findUnique({ where: { id: req.params.id } });
   if (!consent) return res.status(404).json({ error: 'Consent not found' });
+  // Ownership check: only the consent owner may approve their own consent
+  if (req.user?.preferred_username !== consent.userId) {
+    return res.status(403).json({ error: 'Access denied: this consent record does not belong to you' });
+  }
 
   const updated = await prisma.consent.update({
     where: { id: req.params.id },
@@ -113,6 +129,10 @@ router.put('/:id/approve', authenticate, async (req, res) => {
 router.put('/:id/deny', authenticate, async (req, res) => {
   const consent = await prisma.consent.findUnique({ where: { id: req.params.id } });
   if (!consent) return res.status(404).json({ error: 'Consent not found' });
+  // Ownership check: only the consent owner may deny their own consent
+  if (req.user?.preferred_username !== consent.userId) {
+    return res.status(403).json({ error: 'Access denied: this consent record does not belong to you' });
+  }
 
   const updated = await prisma.consent.update({
     where: { id: req.params.id },

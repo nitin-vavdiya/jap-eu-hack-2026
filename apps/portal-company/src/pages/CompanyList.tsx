@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { getApiBase, getPortalDataspaceUrl } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase, getPortalDataspaceUrl } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 
@@ -23,23 +22,87 @@ interface Company {
   edcProvisioning?: { status: 'pending' | 'provisioning' | 'ready' | 'failed' }
 }
 
+function VcStatusBadge({ status }: { status?: string }) {
+  if (status === 'verified') return <span className="text-[10px] text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">Verified</span>
+  if (status === 'failed') return <span className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded font-medium">Failed</span>
+  return <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">Pending</span>
+}
+
+const EDC_BADGE: Record<string, { label: string; cls: string }> = {
+  pending:      { label: 'EDC Pending',      cls: 'text-gray-400 bg-gray-50' },
+  provisioning: { label: 'EDC Setting up…',  cls: 'text-blue-500 bg-blue-50' },
+  ready:        { label: 'EDC Ready',         cls: 'text-green-600 bg-green-50' },
+  failed:       { label: 'EDC Failed',        cls: 'text-red-500 bg-red-50' },
+}
+
+function CompanyCard({ company, onClick, highlight }: { company: Company; onClick: () => void; highlight?: boolean }) {
+  const vcStatus = company.orgCredentials?.[0]?.verificationStatus
+  const edcStatus = company.edcProvisioning?.status
+  return (
+    <div
+      onClick={onClick}
+      className={`border rounded-lg p-5 cursor-pointer transition-all ${
+        highlight
+          ? 'border-slate-300 bg-slate-50 hover:border-slate-400'
+          : 'border-gray-100 hover:border-gray-200'
+      }`}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <p className="text-[10px] text-gray-400 uppercase tracking-wide">{company.country}</p>
+        <VcStatusBadge status={vcStatus} />
+      </div>
+      <h3 className="font-medium text-gray-900 mb-1">{company.name}</h3>
+      <p className="text-xs text-gray-400 mb-3">{company.city ? `${company.city}, ` : ''}{company.country}</p>
+
+      {company.did && (
+        <p className="font-mono text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded mb-3 truncate">{company.did}</p>
+      )}
+
+      <div className="flex flex-wrap gap-1 mb-3">
+        {company.vatId && <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">VAT</span>}
+        {company.eoriNumber && <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">EORI</span>}
+        {company.cin && <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">CIN</span>}
+        {company.gstNumber && <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">GST</span>}
+        {edcStatus && (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${EDC_BADGE[edcStatus].cls}`}>
+            {EDC_BADGE[edcStatus].label}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between text-[10px] text-gray-400 mt-3 pt-3 border-t border-gray-50">
+        <span>{company.adminName || 'N/A'}</span>
+        <span className="text-gray-400">View &rarr;</span>
+      </div>
+    </div>
+  )
+}
+
 export default function CompanyList() {
+  const { accessToken } = useAuthUser()
   const [companies, setCompanies] = useState<Company[]>([])
+  const [myCompany, setMyCompany] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
-    axios.get(`${API_BASE}/companies`).then(r => {
-      setCompanies(r.data.companies || r.data)
-      setLoading(false)
-    }).catch(() => setLoading(false))
-  }, [])
+    const api = createAuthAxios(() => accessToken)
+    api.get(`${API_BASE}/companies`)
+      .then(r => {
+        setCompanies(r.data.companies || r.data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+    api.get(`${API_BASE}/companies/me`)
+      .then(r => setMyCompany(r.data.company || null))
+      .catch(() => {})
+  }, [accessToken])
 
   const filtered = companies.filter(c =>
     !search ||
     c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.country.toLowerCase().includes(search.toLowerCase())
+    (c.country || '').toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -51,6 +114,20 @@ export default function CompanyList() {
           <span className="border border-gray-200 text-gray-500 px-2.5 py-1 rounded-full">{companies.length} Organizations</span>
         </div>
       </div>
+
+      {/* My Organization highlight */}
+      {myCompany && (
+        <div className="mb-8">
+          <p className="text-xs font-medium text-gray-500 mb-3">My Organization</p>
+          <div className="max-w-sm">
+            <CompanyCard
+              company={myCompany}
+              onClick={() => navigate(`/company/${myCompany.id}`)}
+              highlight
+            />
+          </div>
+        </div>
+      )}
 
       <div className="mb-6">
         <input
@@ -76,59 +153,13 @@ export default function CompanyList() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map(company => {
-            const vcStatus = company.orgCredentials?.[0]?.verificationStatus
-            const edcStatus = company.edcProvisioning?.status
-            const edcBadge: Record<string, { label: string; cls: string }> = {
-              pending:      { label: 'EDC Pending',      cls: 'text-gray-400 bg-gray-50' },
-              provisioning: { label: 'EDC Setting up…',  cls: 'text-blue-500 bg-blue-50' },
-              ready:        { label: 'EDC Ready',         cls: 'text-green-600 bg-green-50' },
-              failed:       { label: 'EDC Failed',        cls: 'text-red-500 bg-red-50' },
-            }
-            return (
-              <div
-                key={company.id}
-                onClick={() => navigate(`/company/${company.id}`)}
-                className="border border-gray-100 rounded-lg p-5 cursor-pointer hover:border-gray-200 transition-all"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">{company.country}</p>
-                  {vcStatus === 'verified' && (
-                    <span className="text-[10px] text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">Verified</span>
-                  )}
-                  {vcStatus === 'failed' && (
-                    <span className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded font-medium">Failed</span>
-                  )}
-                  {(vcStatus === 'pending' || !vcStatus) && (
-                    <span className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">Pending</span>
-                  )}
-                </div>
-                <h3 className="font-medium text-gray-900 mb-1">{company.name}</h3>
-                <p className="text-xs text-gray-400 mb-3">{company.city ? `${company.city}, ` : ''}{company.country}</p>
-
-                {company.did && (
-                  <p className="font-mono text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded mb-3 truncate">{company.did}</p>
-                )}
-
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {company.vatId && <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">VAT</span>}
-                  {company.eoriNumber && <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">EORI</span>}
-                  {company.cin && <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">CIN</span>}
-                  {company.gstNumber && <span className="text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded">GST</span>}
-                  {edcStatus && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${edcBadge[edcStatus].cls}`}>
-                      {edcBadge[edcStatus].label}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-gray-400 mt-3 pt-3 border-t border-gray-50">
-                  <span>{company.adminName || 'N/A'}</span>
-                  <span className="text-gray-400">View &rarr;</span>
-                </div>
-              </div>
-            )
-          })}
+          {filtered.map(company => (
+            <CompanyCard
+              key={company.id}
+              company={company}
+              onClick={() => navigate(`/company/${company.id}`)}
+            />
+          ))}
         </div>
       )}
     </div>

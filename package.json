@@ -20,8 +20,7 @@
     "build": "npm run build --workspaces --if-present",
     "test": "jest",
     "test:gaiax": "jest --testPathPattern=tests/gaiax",
-    "verify:gaiax": "npx ts-node scripts/verify-gaiax.ts",
-    "seed:org": "npx ts-node scripts/seed-org-credential.ts"
+    "verify:gaiax": "npx ts-node scripts/verify-gaiax.ts"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

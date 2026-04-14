@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import axios from 'axios';
+import logger from '../lib/logger';
 
 const router = Router();
 
@@ -49,16 +50,15 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
   const assetId = CADDE_ASSET_ID;
   const globalStart = Date.now();
 
-  console.log(`[CADDE] Starting data transfer — asset: ${assetId}, partner DSP: ${provider.dspUrl}, partner BPN: ${provider.bpnl}`);
+  logger.info({ component: 'cadde', assetId, dspUrl: provider.dspUrl, bpnl: provider.bpnl }, 'Starting data transfer');
 
   const emit = (step: number, status: StepUpdate['status'], durationMs?: number, details?: Record<string, unknown>) => {
-    const logDetails = details ? ` | ${JSON.stringify(details)}` : '';
     if (status === 'running') {
-      console.log(`[CADDE] Step ${step}/7: ${STEP_NAMES[step - 1]} — STARTED`);
+      logger.info({ component: 'cadde', step, totalSteps: 7, stepName: STEP_NAMES[step - 1] }, 'Step STARTED');
     } else if (status === 'completed') {
-      console.log(`[CADDE] Step ${step}/7: ${STEP_NAMES[step - 1]} — COMPLETED (${durationMs}ms)${logDetails}`);
+      logger.info({ component: 'cadde', step, totalSteps: 7, stepName: STEP_NAMES[step - 1], durationMs, ...details }, 'Step COMPLETED');
     } else {
-      console.error(`[CADDE] Step ${step}/7: ${STEP_NAMES[step - 1]} — FAILED (${durationMs}ms)${logDetails}`);
+      logger.error({ component: 'cadde', step, totalSteps: 7, stepName: STEP_NAMES[step - 1], durationMs, ...details }, 'Step FAILED');
     }
     if (onProgress) onProgress({ step, totalSteps: 7, name: STEP_NAMES[step - 1], status, durationMs, details });
   };
@@ -83,16 +83,16 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
     },
   };
 
-  console.log(`[CADDE] Querying catalog at ${EDC_MGMT_URL}/v3/catalog/request`);
+  logger.info({ component: 'cadde', url: `${EDC_MGMT_URL}/v3/catalog/request` }, 'Querying catalog');
   const catalogRes = await axios.post(`${EDC_MGMT_URL}/v3/catalog/request`, catalogPayload, { headers, timeout: 15000 });
   const datasets = catalogRes.data['dcat:dataset'];
   const datasetList = Array.isArray(datasets) ? datasets : datasets ? [datasets] : [];
-  console.log(`[CADDE] Catalog returned ${datasetList.length} assets`);
+  logger.info({ component: 'cadde', assetCount: datasetList.length }, 'Catalog returned assets');
   const match = datasetList.find((ds: any) => ds['@id'] === assetId || ds.id === assetId);
 
   if (!match) {
     const availableIds = datasetList.map((ds: any) => ds['@id'] || ds.id).join(', ');
-    console.error(`[CADDE] Asset ${assetId} not found. Available: ${availableIds}`);
+    logger.error({ component: 'cadde', assetId, availableIds }, 'Asset not found in catalog');
     emit(1, 'failed', Date.now() - t0, { error: `Asset ${assetId} not found in catalog` });
     throw new Error(`Asset ${assetId} not found in partner catalog`);
   }
@@ -123,7 +123,7 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
     },
   };
 
-  console.log(`[CADDE] Initiating negotiation with offer: ${offerId}`);
+  logger.info({ component: 'cadde', offerId }, 'Initiating negotiation');
   const negRes = await axios.post(`${EDC_MGMT_URL}/v3/contractnegotiations`, negotiationPayload, { headers, timeout: 10000 });
   const negotiationId = negRes.data['@id'];
   emit(2, 'completed', Date.now() - t0, { negotiationId });
@@ -131,24 +131,24 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
   // Step 3: Wait for agreement finalization
   emit(3, 'running');
   t0 = Date.now();
-  console.log(`[CADDE] Waiting ${NEGOTIATION_INITIAL_DELAY}ms before polling agreement status...`);
+  logger.info({ component: 'cadde', delayMs: NEGOTIATION_INITIAL_DELAY }, 'Waiting before polling agreement status');
   await sleep(NEGOTIATION_INITIAL_DELAY);
 
   let contractAgreementId: string | undefined;
   for (let attempt = 1; attempt <= NEGOTIATION_MAX_RETRIES; attempt++) {
-    console.log(`[CADDE] Polling agreement status — attempt ${attempt}/${NEGOTIATION_MAX_RETRIES}`);
+    logger.info({ component: 'cadde', attempt, maxRetries: NEGOTIATION_MAX_RETRIES }, 'Polling agreement status');
     const statusRes = await axios.get(`${EDC_MGMT_URL}/v3/contractnegotiations/${negotiationId}`, {
       headers: { 'x-api-key': EDC_API_KEY },
       timeout: 10000,
     });
     const state = statusRes.data.state;
-    console.log(`[CADDE] Negotiation state: ${state}`);
+    logger.info({ component: 'cadde', state }, 'Negotiation state');
     if (state === 'FINALIZED') {
       contractAgreementId = statusRes.data.contractAgreementId;
       break;
     }
     if (attempt < NEGOTIATION_MAX_RETRIES) {
-      console.log(`[CADDE] Not finalized yet, waiting ${NEGOTIATION_POLL_INTERVAL}ms...`);
+      logger.info({ component: 'cadde', waitMs: NEGOTIATION_POLL_INTERVAL }, 'Not finalized yet, waiting before retry');
       await sleep(NEGOTIATION_POLL_INTERVAL);
     }
   }
@@ -173,7 +173,7 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
     transferType: 'HttpData-PULL',
   };
 
-  console.log(`[CADDE] Initiating HttpData-PULL transfer for contract: ${contractAgreementId}`);
+  logger.info({ component: 'cadde', contractAgreementId }, 'Initiating HttpData-PULL transfer');
   const transferRes = await axios.post(`${EDC_MGMT_URL}/v3/transferprocesses`, transferPayload, { headers, timeout: 10000 });
   const transferId = transferRes.data['@id'];
   emit(4, 'completed', Date.now() - t0, { transferId });
@@ -181,7 +181,7 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
   // Step 5: Get transfer process (EDR)
   emit(5, 'running');
   t0 = Date.now();
-  console.log(`[CADDE] Waiting 2s before polling EDR...`);
+  logger.info({ component: 'cadde' }, 'Waiting 2s before polling EDR');
   await sleep(2000);
   const edrPayload = {
     '@context': { '@vocab': 'https://w3id.org/edc/v0.0.1/ns/' },
@@ -195,15 +195,15 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
 
   let edrTransferId: string | undefined;
   for (let attempt = 1; attempt <= NEGOTIATION_MAX_RETRIES; attempt++) {
-    console.log(`[CADDE] EDR poll attempt ${attempt}/${NEGOTIATION_MAX_RETRIES}`);
+    logger.info({ component: 'cadde', attempt, maxRetries: NEGOTIATION_MAX_RETRIES }, 'EDR poll attempt');
     const edrRes = await axios.post(`${EDC_MGMT_URL}/v3/edrs/request`, edrPayload, { headers, timeout: 10000 });
-    console.log(`[CADDE] EDR response entries: ${edrRes.data?.length || 0}`);
+    logger.info({ component: 'cadde', edrEntries: edrRes.data?.length || 0 }, 'EDR response received');
     if (edrRes.data && edrRes.data.length > 0) {
       edrTransferId = edrRes.data[0].transferProcessId || edrRes.data[0]['@id'];
       break;
     }
     if (attempt < NEGOTIATION_MAX_RETRIES) {
-      console.log(`[CADDE] No EDR yet, waiting ${NEGOTIATION_POLL_INTERVAL}ms...`);
+      logger.info({ component: 'cadde', waitMs: NEGOTIATION_POLL_INTERVAL }, 'No EDR yet, waiting before retry');
       await sleep(NEGOTIATION_POLL_INTERVAL);
     }
   }
@@ -217,7 +217,7 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
   // Step 6: Get auth code
   emit(6, 'running');
   t0 = Date.now();
-  console.log(`[CADDE] Fetching data address for transfer: ${edrTransferId}`);
+  logger.info({ component: 'cadde', transferId: edrTransferId }, 'Fetching data address for transfer');
   const authRes = await axios.get(
     `${EDC_MGMT_URL}/v2/edrs/${edrTransferId}/dataaddress?auto_refresh=true`,
     { headers: { 'x-api-key': EDC_API_KEY }, timeout: 10000 },
@@ -226,27 +226,27 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
   const endpoint = authRes.data.endpoint;
   const authorization = authRes.data.authorization;
   if (!endpoint || !authorization) {
-    console.error(`[CADDE] Missing endpoint or authorization in data address response`);
+    logger.error({ component: 'cadde' }, 'Missing endpoint or authorization in data address response');
     emit(6, 'failed', Date.now() - t0, { error: 'Missing endpoint or authorization' });
     throw new Error('Missing endpoint or authorization in data address response');
   }
-  console.log(`[CADDE] Data plane endpoint: ${endpoint}`);
+  logger.info({ component: 'cadde', dataPlaneEndpoint: endpoint }, 'Data plane endpoint resolved');
   emit(6, 'completed', Date.now() - t0, { dataPlaneEndpoint: endpoint });
 
   // Step 7: Fetch asset data
   emit(7, 'running');
   t0 = Date.now();
-  console.log(`[CADDE] Fetching data from data plane: ${endpoint}`);
+  logger.info({ component: 'cadde', dataPlaneEndpoint: endpoint }, 'Fetching data from data plane');
   const dataRes = await axios.get(endpoint, {
     headers: { Authorization: authorization },
     timeout: 30000,
   });
   const recordCount = Array.isArray(dataRes.data) ? dataRes.data.length : 1;
-  console.log(`[CADDE] Data fetched — ${recordCount} records`);
+  logger.info({ component: 'cadde', recordCount }, 'Data fetched');
   emit(7, 'completed', Date.now() - t0, { records: recordCount });
 
   const totalDuration = Date.now() - globalStart;
-  console.log(`[CADDE] Transfer complete — total duration: ${totalDuration}ms, records: ${recordCount}`);
+  logger.info({ component: 'cadde', totalDurationMs: totalDuration, recordCount }, 'Transfer complete');
 
   return dataRes.data;
 }
@@ -255,14 +255,10 @@ async function caddeTransfer(onProgress?: ProgressCallback): Promise<unknown> {
 router.post('/transfer', authenticate, async (req, res) => {
   const { stream } = req.body;
 
-  console.log(`[CADDE Route] POST /transfer — stream: ${!!stream}`);
+  req.log.info({ component: 'cadde', stream: !!stream }, 'POST /transfer');
 
   if (!CADDE_ASSET_ID || !CADDE_PARTNER_EDC_DSP_URL || !CADDE_PARTNER_EDC_BPN) {
-    console.error('[CADDE Route] Missing environment variables:', {
-      CADDE_ASSET_ID: !!CADDE_ASSET_ID,
-      CADDE_PARTNER_EDC_DSP_URL: !!CADDE_PARTNER_EDC_DSP_URL,
-      CADDE_PARTNER_EDC_BPN: !!CADDE_PARTNER_EDC_BPN,
-    });
+    req.log.error({ component: 'cadde', hasCaddeAssetId: !!CADDE_ASSET_ID, hasDspUrl: !!CADDE_PARTNER_EDC_DSP_URL, hasBpn: !!CADDE_PARTNER_EDC_BPN }, 'Missing CADDE environment variables');
     return res.status(500).json({ error: 'CADDE environment variables not configured' });
   }
 
@@ -283,7 +279,7 @@ router.post('/transfer', authenticate, async (req, res) => {
       sendEvent('complete', data);
       res.end();
     } catch (err: any) {
-      console.error(`[CADDE Route] Transfer failed:`, err.message);
+      req.log.error({ component: 'cadde', err: err.message }, 'Streaming transfer failed');
       sendEvent('error', { error: err.message });
       res.end();
     }
@@ -294,7 +290,7 @@ router.post('/transfer', authenticate, async (req, res) => {
     const data = await caddeTransfer();
     res.json(data);
   } catch (err: any) {
-    console.error(`[CADDE Route] Transfer failed:`, err.message);
+    req.log.error({ component: 'cadde', err: err.message }, 'Transfer failed');
     res.status(502).json({ error: 'CADDE data transfer failed', details: err.message });
   }
 });

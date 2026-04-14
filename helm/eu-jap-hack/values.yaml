@@ -44,6 +44,7 @@ backend:
     CADDE_PARTNER_EDC_DSP_URL: ""
     CADDE_PARTNER_EDC_BPN: ""
     PROVISIONING_SERVICE_URL: ""  # e.g. http://eu-jap-hack-provisioning:3001
+    PROVISIONING_CALLBACK_SECRET: ""  # Shared secret for provisioning service → backend callback (X-Internal-Token header)
   resources:
     requests:
       cpu: 100m

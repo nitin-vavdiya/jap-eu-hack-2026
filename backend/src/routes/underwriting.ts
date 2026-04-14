@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../db';
+import { authenticate, requireRole } from '../middleware/auth';
 import { transformDppToJaspar } from '../services/underwriting/dpp-to-jaspar-transformer';
 import { calculateInsuranceScore } from '../services/underwriting/insurance-scoring-engine';
 import { recommendPackage } from '../services/underwriting/package-recommendation-engine';
@@ -16,7 +17,7 @@ const router = Router();
  *
  * Does NOT persist until /confirm is called.
  */
-router.post('/transform-and-score', async (req, res) => {
+router.post('/transform-and-score', requireRole('insurance_agent'), async (req, res) => {
   const { vin, sourceData } = req.body;
 
   if (!vin || !sourceData) {
@@ -75,7 +76,7 @@ router.post('/transform-and-score', async (req, res) => {
  * Marks a pending transformation run as confirmed (insurer accepted).
  * Call this only after the user has reviewed and accepted the recommendation.
  */
-router.post('/confirm', async (req, res) => {
+router.post('/confirm', authenticate, async (req, res) => {
   const { runId } = req.body;
 
   if (!runId) {
@@ -99,7 +100,7 @@ router.post('/confirm', async (req, res) => {
  *
  * Returns the latest confirmed underwriting run for a VIN.
  */
-router.get('/:vin', async (req, res) => {
+router.get('/:vin', authenticate, async (req, res) => {
   const run = await prisma.underwritingTransformationRun.findFirst({
     where: { vin: req.params.vin, status: 'confirmed' },
     orderBy: { createdAt: 'desc' },

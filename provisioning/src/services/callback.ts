@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
+const PROVISIONING_CALLBACK_SECRET = process.env.PROVISIONING_CALLBACK_SECRET || '';
 
 // Retry config for terminal status callbacks (ready / failed).
 // Override via environment variables.
@@ -39,10 +40,16 @@ export async function notifyBackend(
   const url = `${BACKEND_URL}/companies/${companyId}/edc-provisioning`;
   const isTerminal = payload.status === 'ready' || payload.status === 'failed' || payload.status === 'deprovisioned';
 
+  // Build headers — include X-Internal-Token for service-to-service auth if secret is configured
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (PROVISIONING_CALLBACK_SECRET) {
+    headers['X-Internal-Token'] = PROVISIONING_CALLBACK_SECRET;
+  }
+
   if (!isTerminal) {
     // Fire-and-forget for intermediate status updates
     axios
-      .patch(url, payload, { headers: { 'Content-Type': 'application/json' }, timeout: RETRY_CONFIG.timeoutMs })
+      .patch(url, payload, { headers, timeout: RETRY_CONFIG.timeoutMs })
       .then(() => console.log(`[callback] Backend notified (${payload.status}) for ${companyId}`))
       .catch(err => console.warn(`[callback] Could not notify backend (${payload.status}) for ${companyId}: ${err.message}`));
     return;
@@ -55,7 +62,7 @@ export async function notifyBackend(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       await axios.patch(url, payload, {
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         timeout: timeoutMs,
       });
       console.log(`[callback] Backend confirmed "${payload.status}" for ${companyId} (attempt ${attempt}/${maxRetries})`);

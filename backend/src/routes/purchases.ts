@@ -18,7 +18,7 @@ router.post('/', requireRole('customer'), async (req, res) => {
 
   const car = await prisma.car.findUnique({
     where: { vin },
-    include: { manufacturerCompany: true },
+    include: { company: true },
   });
   if (!car) return res.status(404).json({ error: 'Car not found' });
   if (car.status === 'sold') return res.status(400).json({ error: 'Car already sold' });
@@ -26,19 +26,19 @@ router.post('/', requireRole('customer'), async (req, res) => {
   const credentialId = uuidv4();
   const purchaseId = uuidv4();
   const purchaseDate = new Date();
-  const ownerName = userInfo?.name || [req.user?.given_name, req.user?.family_name].filter(Boolean).join(' ') || 'Mario Sanchez';
+  const ownerName = userInfo?.name || [req.user?.given_name, req.user?.family_name].filter(Boolean).join(' ') || 'Car Owner';
 
-  // Resolve issuer from the car's manufacturer company and their OrgCredential
+  // Resolve issuer from the car's company and their OrgCredential
   const baseUrl = getVCBaseUrl();
-  const mfgCompany = car.manufacturerCompany;
-  const mfgOrgCred = mfgCompany
-    ? await prisma.orgCredential.findFirst({ where: { companyId: mfgCompany.id } })
+  const company = car.company;
+  const orgCred = company
+    ? await prisma.orgCredential.findFirst({ where: { companyId: company.id } })
     : null;
 
-  const issuerName = mfgOrgCred?.legalName ?? mfgCompany?.name ?? car.make;
-  const issuerDid = mfgOrgCred?.did ?? mfgCompany?.did ?? `did:web:${car.make.toLowerCase().replace(/\s+/g, '-')}`;
-  const issuerCredentialUrl = mfgOrgCred
-    ? `${baseUrl}/api/org-credentials/${mfgOrgCred.id}`
+  const issuerName = orgCred?.legalName ?? company?.name ?? car.make;
+  const issuerDid = orgCred?.did ?? company?.did ?? `did:web:${car.make.toLowerCase().replace(/\s+/g, '-')}`;
+  const issuerCredentialUrl = orgCred
+    ? `${baseUrl}/api/org-credentials/${orgCred.id}`
     : `${baseUrl}/api/org-credentials/make-${car.make.toLowerCase()}`;
 
   const credentialSubject = {

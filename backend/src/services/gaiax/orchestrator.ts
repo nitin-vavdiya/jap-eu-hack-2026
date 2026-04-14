@@ -17,6 +17,7 @@ import {
   issueCredentialOID4VCI,
   storeCredentialInWallet,
 } from '../waltid';
+import logger from '../../lib/logger';
 
 export class GaiaXOrchestrator {
   private client: GaiaXClient;
@@ -128,19 +129,12 @@ export class GaiaXOrchestrator {
     const keyFingerprint = crypto.createHash('sha256')
       .update(JSON.stringify({ n: publicKeyJwk.n, e: publicKeyJwk.e }))
       .digest('hex').slice(0, 16);
-    console.log(`[GaiaX] ──── Compliance submission for org ${org.id} ────`);
-    console.log(`[GaiaX]   company DID    = ${companyDid}`);
-    console.log(`[GaiaX]   company kid    = ${companyKid}`);
-    console.log(`[GaiaX]   key fingerprint= ${keyFingerprint}`);
-    console.log(`[GaiaX]   DID doc URL    = https://${(process.env.GAIAX_DID_DOMAIN || 'localhost:8000').replace(/%3A/g, ':')}/company/${org.companyId}/did.json`);
-    console.log(`[GaiaX]   endpoint set   = ${endpointSet.name}`);
-    console.log(`[GaiaX]   compliance URL = ${endpointSet.compliance}`);
-    console.log(`[GaiaX]   has x5c cert   = ${(signer.getX5c()?.length || 0) > 0}`);
+    logger.info({ component: 'gaiax', orgId: org.id, companyDid, companyKid, keyFingerprint, didDocUrl: `https://${(process.env.GAIAX_DID_DOMAIN || 'localhost:8000').replace(/%3A/g, ':')}/company/${org.companyId}/did.json`, endpointSet: endpointSet.name, complianceUrl: endpointSet.compliance, hasX5c: (signer.getX5c()?.length || 0) > 0 }, 'Compliance submission starting');
 
     // ── Step 2: Sign the LegalParticipant VC as JWT using company DID (custodial) ──
     this.emitProgress(org.id, 'preparing', 'in-progress');
     const vcJwt = signer.signVCAs(vc as unknown as Record<string, unknown>, companyIdentity);
-    console.log(`[GaiaX] Signed LegalParticipant VC-JWT as ${companyDid} (${vcJwt.length} chars)`);
+    logger.info({ component: 'gaiax', companyDid, jwtLength: vcJwt.length }, 'Signed LegalParticipant VC-JWT');
 
     // Try to issue via walt.id as well for proper OID4VCI credential offer
     const waltIdOffer = await this.tryWaltIdIssuance(org, vc, companyDid);
@@ -159,7 +153,7 @@ export class GaiaXOrchestrator {
       const stored = await storeCredentialInWallet(waltIdOffer);
       if (stored) {
         issuedVCs[issuedVCs.length - 1].storedInWallet = true;
-        console.log('[GaiaX] LegalParticipant VC stored in walt.id wallet');
+        logger.info({ component: 'gaiax' }, 'LegalParticipant VC stored in walt.id wallet');
       }
     }
     this.emitProgress(org.id, 'preparing', 'completed');
@@ -171,7 +165,7 @@ export class GaiaXOrchestrator {
 
     const regEntry = this.liveClient.getNotaryType(org.legalRegistrationNumber);
     if (regEntry) {
-      console.log(`[GaiaX] Calling notary: ${regEntry.type} = ${regEntry.value}`);
+      logger.info({ component: 'gaiax', notaryType: regEntry.type, notaryValue: regEntry.value }, 'Calling notary');
       notaryResult = await this.liveClient.verifyRegistrationNumber(
         endpointSet.notary,
         regEntry.type,
@@ -215,7 +209,7 @@ export class GaiaXOrchestrator {
     this.emitProgress(org.id, 'registry', 'in-progress');
     try {
       const registryResult = await this.liveClient.checkTrustAnchor(endpointSet.registry);
-      console.log(`[GaiaX] Registry check:`, registryResult.alive ? 'reachable' : 'unreachable');
+      logger.info({ component: 'gaiax', registryAlive: registryResult.alive }, 'Registry check');
     } catch { /* Registry is informational */ }
     this.emitProgress(org.id, 'registry', 'completed');
 
@@ -227,30 +221,29 @@ export class GaiaXOrchestrator {
     // 1. LegalPerson VC, 2. Registration Number VC, 3. T&C (gx:Issuer) VC
     const lrnPayload = buildRegistrationNumberVC(companyDid, org.id, org.legalRegistrationNumber, org.legalAddress.countryCode);
     const lrnJwt = signer.signVCAs(lrnPayload, companyIdentity);
-    console.log(`[GaiaX] Signed Registration Number VC-JWT (${(lrnPayload.type as string[])[1]}) as ${companyDid}`);
+    logger.info({ component: 'gaiax', vcType: (lrnPayload.type as string[])[1], companyDid }, 'Signed Registration Number VC-JWT');
 
     const tandcPayload = buildTermsAndConditionsVC(companyDid, org.id);
     const tandcJwt = signer.signVCAs(tandcPayload, companyIdentity);
     const vcsForVP = [vcJwt, lrnJwt, tandcJwt];
-    console.log(`[GaiaX] Signed T&C VC-JWT for compliance as ${companyDid}`);
+    logger.info({ component: 'gaiax', companyDid }, 'Signed T&C VC-JWT for compliance');
 
     const vpJwt = signer.signVPAs(vcsForVP, companyIdentity, endpointSet.compliance);
-    console.log(`[GaiaX] Signed VP-JWT (${vpJwt.length} chars) for compliance submission as ${companyDid}`);
+    logger.info({ component: 'gaiax', vpJwtLength: vpJwt.length, companyDid }, 'Signed VP-JWT for compliance submission');
 
     // Log VP-JWT header for debugging signature verification failures
     try {
       const vpHeader = JSON.parse(Buffer.from(vpJwt.split('.')[0], 'base64url').toString());
-      console.log(`[GaiaX] VP-JWT header:`, JSON.stringify(vpHeader));
+      logger.debug({ component: 'gaiax', vpJwtHeader: vpHeader }, 'VP-JWT header');
     } catch { /* ignore parse errors */ }
 
     // Self-verify: check our own signature before sending to compliance
     try {
       const jwtModule = await import('jsonwebtoken');
       const verified = jwtModule.verify(vpJwt, signer['publicKey'], { algorithms: ['RS256'] });
-      console.log(`[GaiaX] Self-verification: PASSED (VP-JWT signature is valid with our public key)`);
+      logger.info({ component: 'gaiax' }, 'Self-verification: PASSED (VP-JWT signature is valid)');
     } catch (selfVerifyErr: any) {
-      console.error(`[GaiaX] Self-verification: FAILED — ${selfVerifyErr.message}`);
-      console.error(`[GaiaX]   This means the signing key and public key are mismatched!`);
+      logger.error({ component: 'gaiax', err: selfVerifyErr.message }, 'Self-verification: FAILED — signing key and public key are mismatched');
     }
 
     // Fetch company DID document to verify the compliance service will see the right key
@@ -263,24 +256,19 @@ export class GaiaXOrchestrator {
         const servedKey = didDocResp.data?.verificationMethod?.[0]?.publicKeyJwk;
         const localKey = signer.getPublicKeyJwk();
         const keysMatch = servedKey?.n === localKey.n && servedKey?.e === localKey.e;
-        console.log(`[GaiaX] DID doc fetch: ${didDocUrl} → ${didDocResp.status}`);
-        console.log(`[GaiaX]   served key n   = ${String(servedKey?.n).slice(0, 20)}...`);
-        console.log(`[GaiaX]   local  key n   = ${String(localKey.n).slice(0, 20)}...`);
-        console.log(`[GaiaX]   keys match     = ${keysMatch}`);
+        logger.info({ component: 'gaiax', didDocUrl, httpStatus: didDocResp.status, servedKeyN: String(servedKey?.n).slice(0, 20), localKeyN: String(localKey.n).slice(0, 20), keysMatch }, 'DID doc fetch result');
         if (!keysMatch) {
-          console.error(`[GaiaX]   ⚠ KEY MISMATCH — company DID document serves a different public key than what we're signing with!`);
+          logger.error({ component: 'gaiax', didDocUrl }, 'KEY MISMATCH — company DID document serves a different public key than what we\'re signing with');
         }
       } else {
-        console.warn(`[GaiaX] Could not fetch company DID document at ${didDocUrl}`);
+        logger.warn({ component: 'gaiax', didDocUrl }, 'Could not fetch company DID document');
       }
     } catch (fetchErr: any) {
-      console.warn(`[GaiaX] DID doc self-check failed: ${fetchErr.message}`);
+      logger.warn({ component: 'gaiax', err: fetchErr.message }, 'DID doc self-check failed');
     }
 
     const vcId = `${getVCBaseUrl()}/vc/${org.id}`;
-    console.log(`[GaiaX] Submitting to compliance | url=${endpointSet.compliance}/api/credential-offers/standard-compliance?vcid=${vcId}`);
-    console.log(`[GaiaX]   VC count in VP = ${vcsForVP.length}`);
-    console.log(`[GaiaX]   VC issuers     = ${vcsForVP.map(j => { try { return JSON.parse(Buffer.from(j.split('.')[1], 'base64url').toString()).iss; } catch { return '?'; } }).join(', ')}`);
+    logger.info({ component: 'gaiax', complianceUrl: `${endpointSet.compliance}/api/credential-offers/standard-compliance`, vcId, vcCountInVP: vcsForVP.length }, 'Submitting to compliance');
 
     const complianceResult = await this.liveClient.submitCompliance(
       endpointSet.compliance,
@@ -347,11 +335,11 @@ export class GaiaXOrchestrator {
         },
       });
       if (offerUri) {
-        console.log(`[GaiaX] walt.id credential offer created: ${offerUri.slice(0, 80)}...`);
+        logger.info({ component: 'gaiax', offerUriPreview: offerUri.slice(0, 80) }, 'walt.id credential offer created');
       }
       return offerUri;
     } catch (e) {
-      console.warn('[GaiaX] walt.id issuance skipped:', (e as Error).message);
+      logger.warn({ component: 'gaiax', err: (e as Error).message }, 'walt.id issuance skipped');
       return null;
     }
   }

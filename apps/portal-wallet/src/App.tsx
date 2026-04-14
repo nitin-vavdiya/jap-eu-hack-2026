@@ -17,7 +17,7 @@ function WalletHome() {
   const [loading, setLoading] = useState(true)
   const [selectedCred, setSelectedCred] = useState<Record<string, unknown> | null>(null)
   const [consentHistory, setConsentHistory] = useState<Record<string, unknown>[]>([])
-  const { pendingConsent, clearConsent } = useConsentPolling(userId)
+  const { pendingConsent, clearConsent } = useConsentPolling(userId, accessToken)
   const navigate = useNavigate()
 
   // VP Generation state
@@ -40,7 +40,7 @@ function WalletHome() {
     if (!vpFormCredId) return
     setVpGenerating(vpFormCredId)
     try {
-      const resp = await axios.post(`${API_BASE}/wallet-vp/generate-vp`, {
+      const resp = await api.post(`${API_BASE}/wallet-vp/generate-vp`, {
         userId,
         credentialIds: [vpFormCredId],
         challenge: vpChallenge || undefined,

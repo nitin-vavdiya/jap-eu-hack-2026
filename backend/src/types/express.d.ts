@@ -10,5 +10,7 @@ declare namespace Express {
         roles: string[];
       };
     };
+    requestId: string;
+    log: import('pino').Logger;
   }
 }

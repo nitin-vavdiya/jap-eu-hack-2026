@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { getApiBase } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 // VC endpoints live at /vc/:id (no /api prefix)
@@ -10,6 +10,9 @@ const VC_BASE = API_BASE.replace(/\/api$/, '')
 interface OrgCredential {
   id: string
   verificationStatus?: string
+  notaryResult?: Record<string, unknown>
+  complianceResult?: Record<string, unknown>
+  credentialSubject?: Record<string, unknown>
 }
 
 interface Credential {
@@ -137,18 +140,29 @@ function EdcStatusBadge({ status }: { status: EdcProvisioning['status'] }) {
   )
 }
 
+type Tab = 'overview' | 'certificates' | 'edc' | 'did'
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'overview',      label: 'Overview' },
+  { id: 'certificates',  label: 'Certificates' },
+  { id: 'edc',           label: 'EDC Infrastructure' },
+  { id: 'did',           label: 'DID Document' },
+]
+
 export default function CompanyDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { accessToken } = useAuthUser()
+  const api = createAuthAxios(() => accessToken)
   const [company, setCompany] = useState<Company | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedCred, setSelectedCred] = useState<Credential | null>(null)
   const [edc, setEdc] = useState<EdcProvisioning | null>(null)
   const [didDoc, setDidDoc] = useState<DidDocument | null>(null)
-  const [didDocExpanded, setDidDocExpanded] = useState(false)
+  const [activeTab, setActiveTab] = useState<Tab>('overview')
 
   useEffect(() => {
-    axios.get(`${API_BASE}/companies/${id}`).then(r => {
+    // Use authenticated API instance — GET /companies is now protected
+    api.get(`${API_BASE}/companies/${id}`).then(r => {
       setCompany(r.data.company || r.data)
       setLoading(false)
     }).catch(() => setLoading(false))
@@ -156,13 +170,14 @@ export default function CompanyDetail() {
 
   useEffect(() => {
     if (!id) return
-    axios.get(`${API_BASE}/companies/${id}/edc-status`)
+    api.get(`${API_BASE}/companies/${id}/edc-status`)
       .then(r => setEdc(r.data))
       .catch(() => {})
   }, [id])
 
   useEffect(() => {
     if (!id) return
+    // DID document endpoint is intentionally public — no auth header needed
     axios.get(`${VC_BASE}/company/${id}/did.json`)
       .then(r => setDidDoc(r.data))
       .catch(() => {})
@@ -180,7 +195,6 @@ export default function CompanyDetail() {
     </div>
   )
 
-  const orgVC = company.credentials?.find(c => c.type === 'OrgVC')
   const orgCredential = company.orgCredentials?.[0]
   const vcStatus = orgCredential?.verificationStatus
 
@@ -202,7 +216,7 @@ export default function CompanyDetail() {
       <button onClick={() => navigate('/')} className="text-sm text-gray-400 hover:text-gray-600 mb-8 inline-block">&larr; Back to Directory</button>
 
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">{company.name}</h1>
@@ -227,90 +241,145 @@ export default function CompanyDetail() {
         )}
       </div>
 
-      {/* Registration + Admin */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="border border-gray-100 rounded-lg p-5">
-          <p className="text-xs text-gray-400 mb-3">Registration Identifiers</p>
-          {idFields.length > 0 ? (
-            <div className="space-y-2">
-              {idFields.map((f, i) => (
-                <div key={i} className="flex justify-between">
-                  <span className="text-xs text-gray-400">{f.label}</span>
-                  <span className="text-xs font-mono text-gray-600">{f.value}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-300">None recorded</p>
-          )}
-        </div>
-
-        <div className="border border-gray-100 rounded-lg p-5">
-          <p className="text-xs text-gray-400 mb-3">Admin Contact</p>
-          <div className="space-y-2">
-            <div>
-              <p className="text-[10px] text-gray-400">Name</p>
-              <p className="text-sm text-gray-700">{company.adminName || '—'}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-400">Email</p>
-              <p className="text-sm text-gray-600">{company.adminEmail || '—'}</p>
-            </div>
-            {company.createdAt && (
-              <div>
-                <p className="text-[10px] text-gray-400">Registered</p>
-                <p className="text-xs text-gray-500">{new Date(company.createdAt).toLocaleDateString()}</p>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Tab bar */}
+      <div className="border-b border-gray-100 mb-6">
+        <nav className="flex gap-1" aria-label="Company detail tabs">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2.5 text-xs font-medium border-b-2 transition-colors -mb-px ${
+                activeTab === tab.id
+                  ? 'border-slate-700 text-slate-700'
+                  : 'border-transparent text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* Credentials + EDC side by side */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-
-        {/* Gaia-X Verifiable Credentials */}
-        <div className="border border-gray-100 rounded-lg p-5 flex flex-col">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-xs font-medium text-gray-700">Gaia-X Verifiable Credentials</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">Compliant credential endpoints</p>
-            </div>
-            {orgCredential ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Issued
-              </span>
+      {/* Tab: Overview */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="border border-gray-100 rounded-lg p-5">
+            <p className="text-xs text-gray-400 mb-3">Registration Identifiers</p>
+            {idFields.length > 0 ? (
+              <div className="space-y-2">
+                {idFields.map((f, i) => (
+                  <div key={i} className="flex justify-between">
+                    <span className="text-xs text-gray-400">{f.label}</span>
+                    <span className="text-xs font-mono text-gray-600">{f.value}</span>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-full">Not issued</span>
+              <p className="text-xs text-gray-300">None recorded</p>
             )}
           </div>
 
-          {vcUrls.length > 0 ? (
-            <div className="flex-1 space-y-0">
-              {vcUrls.map(vc => (
-                <UrlRow key={vc.url} label={vc.label} url={vc.url} icon={vc.icon} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
-              <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-3">
-                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+          <div className="border border-gray-100 rounded-lg p-5">
+            <p className="text-xs text-gray-400 mb-3">Admin Contact</p>
+            <div className="space-y-2">
+              <div>
+                <p className="text-[10px] text-gray-400">Name</p>
+                <p className="text-sm text-gray-700">{company.adminName || '—'}</p>
               </div>
-              <p className="text-xs text-gray-300">No credentials issued yet</p>
-              <p className="text-[10px] text-gray-200 mt-1">Credentials appear after Gaia-X verification</p>
+              <div>
+                <p className="text-[10px] text-gray-400">Email</p>
+                <p className="text-sm text-gray-600">{company.adminEmail || '—'}</p>
+              </div>
+              {company.createdAt && (
+                <div>
+                  <p className="text-[10px] text-gray-400">Registered</p>
+                  <p className="text-xs text-gray-500">{new Date(company.createdAt).toLocaleDateString()}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Certificates */}
+      {activeTab === 'certificates' && (
+        <div className="space-y-4">
+          {/* Gaia-X VC links */}
+          <div className="border border-gray-100 rounded-lg p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-xs font-medium text-gray-700">Gaia-X Verifiable Credentials</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">Compliant credential endpoints</p>
+              </div>
+              {orgCredential ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Issued
+                </span>
+              ) : (
+                <span className="text-[10px] text-gray-400 bg-gray-50 px-2 py-1 rounded-full">Not issued</span>
+              )}
+            </div>
+            {vcUrls.length > 0 ? (
+              <div className="space-y-0">
+                {vcUrls.map(vc => (
+                  <UrlRow key={vc.url} label={vc.label} url={vc.url} icon={vc.icon} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-300 py-4 text-center">No credentials issued yet — appears after Gaia-X verification</p>
+            )}
+          </div>
+
+          {/* Gaia-X compliance status */}
+          {orgCredential && (
+            <div className="border border-gray-100 rounded-lg p-5">
+              <p className="text-xs font-medium text-gray-700 mb-3">Gaia-X Compliance Status</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-gray-50 rounded p-3">
+                  <p className="text-[10px] text-gray-400 mb-1">Notary Result</p>
+                  <p className="text-xs text-gray-700 capitalize">
+                    {orgCredential.notaryResult
+                      ? String((orgCredential.notaryResult as Record<string, unknown>).status ?? 'pending')
+                      : 'Pending'}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded p-3">
+                  <p className="text-[10px] text-gray-400 mb-1">Compliance Result</p>
+                  <p className="text-xs text-gray-700 capitalize">
+                    {orgCredential.complianceResult
+                      ? String((orgCredential.complianceResult as Record<string, unknown>).status ?? 'pending')
+                      : 'Pending'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* OrgVC credential subject */}
+          {orgCredential?.credentialSubject && (
+            <div className="border border-gray-100 rounded-lg p-5">
+              <p className="text-xs text-gray-400 mb-4">Organization Credential Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(orgCredential.credentialSubject).map(([k, v]) => (
+                  <div key={k} className="bg-gray-50 rounded p-3">
+                    <p className="text-[10px] text-gray-400 capitalize mb-0.5">{k.replace(/([A-Z])/g, ' $1').trim()}</p>
+                    <p className="text-xs text-gray-700 truncate">{String(v)}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
+      )}
 
-        {/* EDC Setup URLs */}
-        <div className="border border-gray-100 rounded-lg p-5 flex flex-col">
+      {/* Tab: EDC Infrastructure */}
+      {activeTab === 'edc' && (
+        <div className="border border-gray-100 rounded-lg p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium text-gray-700">Automatic real-time EDC Setup URLs</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">Live-deployed Eclipse Dataspace Connector</p>
+              <p className="text-xs font-medium text-gray-700">Eclipse Dataspace Connector</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Live-deployed EDC instance for this participant</p>
             </div>
             {edc ? <EdcStatusBadge status={edc.status} /> : (
               <span className="text-[10px] text-gray-300 bg-gray-50 px-2 py-1 rounded-full">Not configured</span>
@@ -318,72 +387,78 @@ export default function CompanyDetail() {
           </div>
 
           {!edc && (
-            <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
-              <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-3">
-                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </div>
-              <p className="text-xs text-gray-300">No real-time EDC instance provisioned</p>
-            </div>
+            <p className="text-xs text-gray-300 py-8 text-center">No EDC instance provisioned yet</p>
           )}
 
           {edc && (edc.status === 'pending' || edc.status === 'provisioning') && (
-            <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+            <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-xs text-gray-500 font-medium">Deploying real-time EDC instance…</p>
+              <p className="text-xs text-gray-500 font-medium">Deploying EDC instance…</p>
               <p className="text-[10px] text-gray-300 mt-1">URLs will appear automatically once deployed</p>
             </div>
           )}
 
           {edc?.status === 'failed' && (
-            <div className="flex-1 bg-red-50 rounded-lg p-4">
+            <div className="bg-red-50 rounded-lg p-4">
               <p className="text-xs font-medium text-red-600 mb-1">Provisioning failed</p>
               <p className="text-xs text-red-400">{edc.lastError || 'An unexpected error occurred.'}</p>
             </div>
           )}
 
           {edc?.status === 'ready' && (
-            <div className="flex-1 space-y-0">
+            <div className="space-y-0">
               {edc.managementUrl && <UrlRow label="DSP Protocol URL"   url={edc.managementUrl.replace('-controlplane.', '-protocol.').replace('/management', '/api/v1/dsp')} icon="🔗" />}
               {edc.managementUrl && <UrlRow label="Management API URL" url={edc.managementUrl} icon="⚙️" />}
               {edc.dataplaneUrl  && <UrlRow label="Dataplane URL"      url={edc.dataplaneUrl} icon="📡" />}
             </div>
           )}
-        </div>
-      </div>
 
-      {/* OrgVC details */}
-      {orgVC?.credentialSubject && (
-        <div className="border border-gray-100 rounded-lg p-5">
-          <p className="text-xs text-gray-400 mb-4">Organization Credential Details</p>
-          <div className="grid grid-cols-2 gap-3">
-            {Object.entries(orgVC.credentialSubject).map(([k, v]) => (
-              <div key={k} className="bg-gray-50 rounded p-3">
-                <p className="text-[10px] text-gray-400 capitalize mb-0.5">{k.replace(/([A-Z])/g, ' $1').trim()}</p>
-                <p className="text-xs text-gray-700 truncate">{String(v)}</p>
-              </div>
-            ))}
-          </div>
+          {edc && (
+            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-3 text-xs">
+              {edc.k8sNamespace && (
+                <div>
+                  <p className="text-[10px] text-gray-400">K8s Namespace</p>
+                  <p className="font-mono text-gray-600">{edc.k8sNamespace}</p>
+                </div>
+              )}
+              {edc.argoAppName && (
+                <div>
+                  <p className="text-[10px] text-gray-400">Argo CD App</p>
+                  <p className="font-mono text-gray-600">{edc.argoAppName}</p>
+                </div>
+              )}
+              {edc.dbName && (
+                <div>
+                  <p className="text-[10px] text-gray-400">Database</p>
+                  <p className="font-mono text-gray-600">{edc.dbName}</p>
+                </div>
+              )}
+              {edc.provisionedAt && (
+                <div>
+                  <p className="text-[10px] text-gray-400">Provisioned At</p>
+                  <p className="text-gray-600">{new Date(edc.provisionedAt).toLocaleString()}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
-      {/* DID Document */}
-      {didDoc && (
-        <div className="border border-gray-100 rounded-lg p-5 mt-4">
-          <button
-            className="w-full flex items-center justify-between"
-            onClick={() => setDidDocExpanded(v => !v)}
-          >
-            <div>
-              <p className="text-xs font-medium text-gray-700 text-left">DID Document</p>
-              <p className="text-[10px] text-gray-400 mt-0.5 text-left font-mono truncate max-w-xs">{didDoc.id}</p>
-            </div>
-            <span className="text-gray-300 text-sm">{didDocExpanded ? '▲' : '▼'}</span>
-          </button>
+      {/* Tab: DID Document */}
+      {activeTab === 'did' && (
+        <div className="border border-gray-100 rounded-lg p-5">
+          {!didDoc ? (
+            <p className="text-xs text-gray-300 py-8 text-center">DID document not available</p>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] text-gray-400 mb-1">Document ID</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-mono text-xs text-gray-600 break-all flex-1">{didDoc.id}</p>
+                  <CopyButton value={didDoc.id} />
+                </div>
+              </div>
 
-          {didDocExpanded && (
-            <div className="mt-4 space-y-4">
               {/* Verification Methods */}
               {didDoc.verificationMethod && didDoc.verificationMethod.length > 0 && (
                 <div>
@@ -464,33 +539,6 @@ export default function CompanyDetail() {
               </details>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Credential Detail Modal */}
-      {selectedCred && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCred(null)}>
-          <div className="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-auto shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-start">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">{selectedCred.type}</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{selectedCred.issuerName || 'Verifiable Credential'}</p>
-              </div>
-              <button onClick={() => setSelectedCred(null)} className="text-gray-300 hover:text-gray-500 text-lg">&times;</button>
-            </div>
-            <div className="px-6 py-5">
-              {selectedCred.credentialSubject && (
-                <div className="space-y-0">
-                  {Object.entries(selectedCred.credentialSubject).map(([k, v]) => (
-                    <div key={k} className="flex justify-between py-2.5 border-b border-gray-50 last:border-0">
-                      <span className="text-xs text-gray-400 capitalize">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
-                      <span className="text-xs text-gray-700 font-medium text-right max-w-[200px]">{String(v)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       )}
     </div>

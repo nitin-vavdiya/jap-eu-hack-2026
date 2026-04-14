@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../db';
-import { requireRole } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
 import { createAsset, createContractDefinition } from '../services/edcService';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -8,8 +8,16 @@ const router = Router();
 
 const ENABLE_EDC = process.env.ENABLE_EDC !== 'false';
 
+/**
+ * GET /cars
+ * Public endpoint — returns all cars.
+ * Optional ?companyId= query param to filter by a specific company (used by company admin portal).
+ */
 router.get('/', async (req, res) => {
-  const cars = await prisma.car.findMany();
+  const { companyId } = req.query;
+  const cars = await prisma.car.findMany({
+    where: companyId ? { companyId: String(companyId) } : undefined,
+  });
   res.json(cars);
 });
 
@@ -17,12 +25,12 @@ router.get('/:vin', async (req, res) => {
   const car = await prisma.car.findUnique({ where: { vin: req.params.vin } });
   if (!car) return res.status(404).json({ error: 'Car not found' });
 
-  // Backfill manufacturerCredential (or its legalParticipantId) from DB if missing
+  // Backfill credential (or its legalParticipantId) from DB if missing
   const dpp = (car.dpp ?? {}) as Record<string, unknown>;
-  const mfgCred = dpp.manufacturerCredential as Record<string, unknown> | undefined;
-  if (!mfgCred?.legalParticipantId) {
-    const company = car.manufacturerCompanyId
-      ? await prisma.company.findUnique({ where: { id: car.manufacturerCompanyId } })
+  const existingCred = dpp.credential as Record<string, unknown> | undefined;
+  if (!existingCred?.legalParticipantId) {
+    const company = car.companyId
+      ? await prisma.company.findUnique({ where: { id: car.companyId } })
       : await prisma.company.findFirst({ where: { name: { contains: car.make, mode: 'insensitive' } } });
     if (company) {
       const orgCredential = await prisma.orgCredential.findFirst({
@@ -32,8 +40,8 @@ router.get('/:vin', async (req, res) => {
         where: { companyId: company.id },
       });
       if (orgCredential) {
-        dpp.manufacturerCredential = {
-          ...mfgCred,  // preserve any fields already set by the frontend
+        dpp.credential = {
+          ...existingCred,  // preserve any fields already set by the frontend
           credentialId: credential?.id || orgCredential.id,
           legalParticipantId: orgCredential.id,
           issuer: credential?.issuerName || 'EU APAC Dataspace',
@@ -55,8 +63,16 @@ router.get('/:vin', async (req, res) => {
   res.json({ ...car, dpp });
 });
 
-router.post('/', requireRole('admin'), async (req, res) => {
-  const car = { id: uuidv4(), ...req.body };
+router.post('/', authenticate, requireRole('company_admin'), async (req, res) => {
+  // Enforce companyId from the authenticated user's company — ignore any companyId in request body
+  const companyUser = await prisma.companyUser.findUnique({
+    where: { keycloakId: req.user!.sub },
+    select: { companyId: true },
+  });
+  if (!companyUser) {
+    return res.status(403).json({ error: 'No company linked to this user' });
+  }
+  const car = { id: uuidv4(), ...req.body, companyId: companyUser.companyId };
   const vin = car.vin;
 
   if (ENABLE_EDC) {
@@ -76,12 +92,12 @@ router.post('/', requireRole('admin'), async (req, res) => {
     }
   }
 
-  // Auto-attach manufacturer credential from DB (ensures legalParticipantId is always set)
+  // Auto-attach credential from DB (ensures legalParticipantId is always set)
   const dpp = (car.dpp ?? {}) as Record<string, unknown>;
-  const existingMfgCred = dpp.manufacturerCredential as Record<string, unknown> | undefined;
-  if (!existingMfgCred?.legalParticipantId) {
-    const company = car.manufacturerCompanyId
-      ? await prisma.company.findUnique({ where: { id: car.manufacturerCompanyId } })
+  const existingCred = dpp.credential as Record<string, unknown> | undefined;
+  if (!existingCred?.legalParticipantId) {
+    const company = car.companyId
+      ? await prisma.company.findUnique({ where: { id: car.companyId } })
       : await prisma.company.findFirst({ where: { name: { contains: car.make, mode: 'insensitive' } } });
     if (company) {
       const orgCredential = await prisma.orgCredential.findFirst({
@@ -91,8 +107,8 @@ router.post('/', requireRole('admin'), async (req, res) => {
         where: { companyId: company.id },
       });
       if (orgCredential) {
-        dpp.manufacturerCredential = {
-          ...existingMfgCred,
+        dpp.credential = {
+          ...existingCred,
           credentialId: credential?.id || orgCredential.id,
           legalParticipantId: orgCredential.id,
           issuer: credential?.issuerName || 'EU APAC Dataspace',
@@ -117,7 +133,7 @@ router.post('/', requireRole('admin'), async (req, res) => {
       status: car.status || 'available',
       ownerId: car.ownerId,
       dpp: dpp as any,
-      manufacturerCompanyId: car.manufacturerCompanyId || null,
+      companyId: car.companyId || null,
     },
   });
   res.status(201).json(created);

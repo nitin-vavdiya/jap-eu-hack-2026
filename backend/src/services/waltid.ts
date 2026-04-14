@@ -1,4 +1,5 @@
 import axios from 'axios';
+import logger from '../lib/logger';
 
 const WALTID_ISSUER_URL = process.env.WALTID_ISSUER_URL || 'http://localhost:7002';
 const WALTID_WALLET_URL = process.env.WALTID_WALLET_URL || 'http://localhost:7001';
@@ -26,7 +27,7 @@ export async function issueCredentialOID4VCI(params: {
     });
     return response.data; // credential offer URI
   } catch (error) {
-    console.warn('[walt.id] OID4VCI issuance failed:', (error as Error).message);
+    logger.warn({ component: 'waltid', err: (error as Error).message }, 'OID4VCI issuance failed');
     return null;
   }
 }
@@ -59,7 +60,7 @@ export async function issueCredentialDirect(params: {
     });
     return response.data; // credential offer URI
   } catch (error) {
-    console.warn('[walt.id] Direct issuance failed:', (error as Error).message);
+    logger.warn({ component: 'waltid', err: (error as Error).message }, 'Direct issuance failed');
     return null;
   }
 }
@@ -93,7 +94,7 @@ export async function issueCredentialSimple(params: {
     });
     return response.data;
   } catch (error) {
-    console.warn('[walt.id] Simple issuance failed:', (error as Error).message);
+    logger.warn({ component: 'waltid', err: (error as Error).message }, 'Simple issuance failed');
     return null;
   }
 }
@@ -136,7 +137,7 @@ export async function ensureWalletAccount(): Promise<{ token: string; accountId:
       _walletAccountId = loginResp.data.id || 'default';
       return { token: _walletToken!, accountId: _walletAccountId! };
     } catch (error) {
-      console.warn('[walt.id] Wallet account creation failed:', (error as Error).message);
+      logger.warn({ component: 'waltid', err: (error as Error).message }, 'Wallet account creation failed');
       return null;
     }
   }
@@ -155,7 +156,7 @@ export async function getWallets(): Promise<Record<string, unknown>[] | null> {
     });
     return response.data.wallets || response.data;
   } catch (error) {
-    console.warn('[walt.id] Failed to get wallets:', (error as Error).message);
+    logger.warn({ component: 'waltid', err: (error as Error).message }, 'Failed to get wallets');
     return null;
   }
 }
@@ -177,7 +178,7 @@ export async function storeCredentialInWallet(credentialOfferUri: string): Promi
     });
     return true;
   } catch (error) {
-    console.warn('[walt.id] Failed to store credential in wallet:', (error as Error).message);
+    logger.warn({ component: 'waltid', err: (error as Error).message }, 'Failed to store credential in wallet');
     return false;
   }
 }
@@ -198,7 +199,7 @@ export async function listWalletCredentials(): Promise<Record<string, unknown>[]
     });
     return response.data;
   } catch (error) {
-    console.warn('[walt.id] Failed to list wallet credentials:', (error as Error).message);
+    logger.warn({ component: 'waltid', err: (error as Error).message }, 'Failed to list wallet credentials');
     return null;
   }
 }
@@ -214,7 +215,7 @@ export async function verifyPresentationOID4VP(request: {
     }, { timeout: 10000 });
     return response.data;
   } catch (error) {
-    console.warn('[walt.id] OID4VP verification failed:', (error as Error).message);
+    logger.warn({ component: 'waltid', err: (error as Error).message }, 'OID4VP verification failed');
     return null;
   }
 }

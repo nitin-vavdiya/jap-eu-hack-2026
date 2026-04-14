@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { getApiBase } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 
@@ -161,9 +160,7 @@ interface FormData {
   // Step 4 – Domain & Contact
   website: string
   contactEmail: string
-  // Step 5 – Compliance
-  did: string
-  // Step 6 – Validity
+  // Step 5 – Validity
   validFrom: string
   validUntil: string
   acceptTerms: boolean
@@ -176,7 +173,7 @@ const initial: FormData = {
   streetAddress: 'Bodakdev, SG Highway', locality: 'Ahmedabad', postalCode: '380054', countryCode: 'DE', countrySubdivisionCode: 'DE-BY',
   sameAsLegal: true,
   hqStreetAddress: '', hqLocality: '', hqPostalCode: '', hqCountryCode: '', hqCountrySubdivisionCode: '',
-  website: 'https://www.smartsensesolutions.com', contactEmail: 'info@smartsensesolutions.com', did: '',
+  website: 'https://www.smartsensesolutions.com', contactEmail: 'info@smartsensesolutions.com',
   validFrom: new Date().toISOString().split('T')[0],
   validUntil: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
   acceptTerms: false,
@@ -193,6 +190,8 @@ const sections = [
 
 export default function CompanyRegistration() {
   const navigate = useNavigate()
+  const { accessToken } = useAuthUser()
+  const api = createAuthAxios(() => accessToken)
   const [form, setForm] = useState<FormData>(initial)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [section, setSection] = useState(0)
@@ -210,9 +209,11 @@ export default function CompanyRegistration() {
 
   const startEdcPolling = (companyId: string) => {
     setProgress(p => p ? { ...p, edc: 'running', edcDetail: 'Provisioning EDC connector…' } : p)
+    // Clear any existing interval before starting a new one to prevent timer leaks
+    if (edcTimer.current) { clearInterval(edcTimer.current); edcTimer.current = null; }
     edcTimer.current = setInterval(async () => {
       try {
-        const r = await axios.get(`${API_BASE}/companies/${companyId}/edc-status`)
+        const r = await api.get(`${API_BASE}/companies/${companyId}/edc-status`)
         const status: string = r.data.status
         if (status === 'ready') {
           clearInterval(edcTimer.current!)
@@ -229,9 +230,11 @@ export default function CompanyRegistration() {
 
   const startPolling = (companyId: string, orgCredentialId: string, edcEnabled: boolean) => {
     // Poll Gaia-X first — EDC starts only after Gaia-X completes
+    // Clear any existing interval before starting a new one to prevent timer leaks
+    if (gaiaxTimer.current) { clearInterval(gaiaxTimer.current); gaiaxTimer.current = null; }
     gaiaxTimer.current = setInterval(async () => {
       try {
-        const r = await axios.get(`${API_BASE}/org-credentials/${orgCredentialId}/status`)
+        const r = await api.get(`${API_BASE}/org-credentials/${orgCredentialId}/status`)
         const status: string = r.data.verificationStatus
         if (status === 'verified' || status === 'failed') {
           clearInterval(gaiaxTimer.current!)
@@ -343,7 +346,7 @@ export default function CompanyRegistration() {
     }
     setLoading(true); setSubmitError('')
     try {
-      const r = await axios.post(`${API_BASE}/companies`, {
+      const r = await api.post(`${API_BASE}/companies`, {
         legalName: form.legalName,
         adminName: form.adminName,
         adminUserEmail: form.adminUserEmail,
@@ -367,18 +370,18 @@ export default function CompanyRegistration() {
         hqCountrySubdivisionCode: form.sameAsLegal ? undefined : form.hqCountrySubdivisionCode,
         website: form.website || undefined,
         contactEmail: form.contactEmail,
-        did: form.did || undefined,
         validFrom: new Date(form.validFrom).toISOString(),
         validUntil: new Date(form.validUntil).toISOString(),
       })
+      // orgCredential is optional — it is absent when user creation fails (steps 5-7 are skipped)
       const { company, orgCredential, edcEnabled, userCreated, userError } = r.data as {
-        company: { id: string; name: string }; orgCredential: { id: string }
+        company: { id: string; name: string }; orgCredential?: { id: string }
         edcEnabled: boolean; userCreated: boolean; userError?: string
       }
       const userFailed = !userCreated
       const initialProgress: ProgressState = {
         companyId: company.id,
-        orgCredentialId: orgCredential.id,
+        orgCredentialId: orgCredential?.id ?? '',
         companyName: company.name,
         register: 'done',
         userAccount: userCreated ? 'done' : 'failed',
@@ -391,7 +394,7 @@ export default function CompanyRegistration() {
         edcDetail: userFailed ? 'Skipped — user account creation failed' : edcEnabled ? 'Waiting for Gaia-X verification…' : 'EDC provisioning is disabled',
       }
       setProgress(initialProgress)
-      if (!userFailed) {
+      if (!userFailed && orgCredential) {
         startPolling(company.id, orgCredential.id, edcEnabled)
       }
     } catch (err: unknown) {
@@ -582,11 +585,6 @@ export default function CompanyRegistration() {
         {section === 4 && (
           <div className="space-y-5">
             <h2 className="text-base font-semibold text-[#1F1F1F] pb-3 border-b border-[#E5EAF0]">Compliance Metadata</h2>
-            <div>
-              <label className="block text-xs font-medium text-[#5F6368] mb-1.5">Organization DID</label>
-              <input value={form.did} onChange={e => set('did', e.target.value)} placeholder="did:web:participant.gxdch.io:your-org" className={ic('did')} />
-              <p className="text-[10px] text-[#9AA0A6] mt-0.5">Leave empty to auto-generate</p>
-            </div>
             <div className="bg-[#E8F0FE] border border-[#4285F4]/20 rounded-lg p-4">
               <p className="text-xs text-[#4285F4] font-medium mb-1">Gaia-X Loire Trust Framework</p>
               <p className="text-[11px] text-[#5F6368]">Your organization credential will be structured as a Gaia-X LegalParticipant VC and can be verified against Gaia-X Digital Clearing Houses.</p>

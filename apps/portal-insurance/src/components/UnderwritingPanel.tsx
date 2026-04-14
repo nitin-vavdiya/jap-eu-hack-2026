@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import axios from 'axios'
-import { getApiBase } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 
@@ -673,6 +672,8 @@ function HeaderStrip({ status }: { status: 'ready' | 'transformed' }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function UnderwritingPanel({ vin, car, issuerDid, onAccept, onBack }: Props) {
+  const { accessToken } = useAuthUser()
+  const api = createAuthAxios(() => accessToken)
   const [stage, setStage] = useState<'source' | 'loading' | 'result'>('source')
   const [currentStep, setCurrentStep] = useState<ProgressStep | null>(null)
   const [result, setResult] = useState<UnderwritingResult | null>(null)
@@ -691,7 +692,7 @@ export default function UnderwritingPanel({ vin, car, issuerDid, onAccept, onBac
       setCurrentStep('validating')
       await delay(500)
       setCurrentStep('scoring')
-      const resp = await axios.post(`${API_BASE}/underwriting/transform-and-score`, { vin, sourceData: car })
+      const resp = await api.post(`${API_BASE}/underwriting/transform-and-score`, { vin, sourceData: car })
       await delay(400)
       setCurrentStep('packaging')
       await delay(300)
@@ -711,7 +712,7 @@ export default function UnderwritingPanel({ vin, car, issuerDid, onAccept, onBac
     if (!result) return
     setConfirming(true)
     try {
-      await axios.post(`${API_BASE}/underwriting/confirm`, { runId: result.runId })
+      await api.post(`${API_BASE}/underwriting/confirm`, { runId: result.runId })
       onAccept(result)
     } catch {
       onAccept(result)

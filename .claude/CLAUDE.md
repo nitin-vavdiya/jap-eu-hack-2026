@@ -82,11 +82,11 @@ Insurance Portal
 - **`provisioning/`** — Microservice for per-tenant EDC provisioning (Postgres, Vault, Helm, Argo CD)
 - **`apps/`** — 6 Vite + React portals (each a separate workspace):
   - `portal-dataspace` (3001) — Organization registration & Gaia-X onboarding
-  - `portal-tata-admin` (3002) — Manufacturer fleet/vehicle management
+  - `portal-tata-admin` (3002) — **Company Admin Portal**: fleet/DPP management for any onboarded dataspace participant (renamed from Toyota-specific; role: `company_admin`)
   - `portal-tata-public` (3003) — Public vehicle marketplace/showroom
   - `portal-wallet` (3004) — Credential holder wallet (consent, VCs)
   - `portal-insurance` (3005) — Insurance underwriting portal
-  - `portal-company` (3006) — Company directory & admin
+  - `portal-company` (3006) — Company registry (lists all registered dataspace participants; may be deprecated)
 - **`packages/`** — Shared libraries: `auth` (Keycloak OIDC), `shared-types`, `ui-tokens`
 - **`edc/tx-edc-eleven/`** — Helm chart for Tractus-X EDC connector instances (per-tenant values files)
 - **`gitops/`** — Argo CD GitOps manifests for EDC tenant deployments
@@ -118,10 +118,25 @@ Insurance Portal
 
 
 ### Authentication
-- All APIs will be secured by token authentication using OAuth flow leveraging Keycloak.
-- We have integrated Keycloak SDK in the UI and OAuth based token verification in the backend services
-- For inter-process communication (backend -> provisioning), we are using `client_credentials` flow
-- Raise a flag if you find any security issues
+- All APIs are secured by Keycloak JWT Bearer token. **Auth is always on — there is no `AUTH_ENABLED` toggle or dev bypass.**
+- Keycloak must be running locally (via docker-compose) for any authenticated endpoint to work.
+- `authenticate` middleware — validates token, populates `req.user` from JWT claims. Use for endpoints that need identity but no role check.
+- `requireRole('role_name')` middleware — validates token AND checks `realm_access.roles`. Use this for all role-restricted endpoints.
+- `optionalAuth` — parses token if present; does not reject unauthenticated requests. Use only for public endpoints that can optionally enrich responses.
+- For inter-process communication (backend → provisioning), we use `client_credentials` flow.
+- User identity in the backend is always resolved via `req.user!.sub` (Keycloak subject UUID) mapped to `CompanyUser.keycloakId` in the database.
+- **Anti-pattern to avoid:** never add an `AUTH_ENABLED=false` bypass, mock user injection, or `findFirst()` fallback. These hide real auth bugs and create security holes.
+
+#### Frontend auth pattern — shared company data via context
+- `portal-tata-admin` fetches `GET /api/companies/me` **once** at app startup via `CompanyProvider` (`src/context/CompanyContext.tsx`).
+- All pages consume the result via `useCompany()` — they must **not** call `/companies/me` themselves.
+- This prevents N redundant API calls (one per page mount) and gives a single source of truth.
+- **Anti-pattern to avoid:** calling `/api/companies/me` inside individual page `useEffect` hooks.
+
+#### Data ownership rule
+- `GET /companies/me` and `POST /cars` enforce data ownership server-side by looking up `CompanyUser` by `req.user!.sub`.
+- The frontend never passes `companyId` for mutations — the backend derives it from the token.
+- Raise a flag if you find any endpoint that accepts `companyId` from the client for a write operation.
 
 ### Deployment
 
@@ -157,7 +172,7 @@ npm install                    # Install all workspace dependencies
 docker compose up -d           # Start infrastructure (Postgres, Keycloak, walt.id services)
 npm run dev                    # Run all services concurrently (backend + all portals + provisioning)
 npm run dev:backend            # Backend only (Express on port 8000)
-npm run dev:dataspace          # Single portal (replace with dev:admin, dev:public, dev:wallet, dev:insurance, dev:company)
+npm run dev:dataspace          # Single portal (replace with dev:admin [port 3002 = company admin], dev:public, dev:wallet, dev:insurance, dev:company)
 ```
 
 ### Backend Database (Prisma)
@@ -185,11 +200,10 @@ npm run build                  # Build all workspaces
 ### Scripts
 ```bash
 npx ts-node scripts/verify-gaiax.ts        # Verify Gaia-X compliance
-npx ts-node scripts/seed-org-credential.ts  # Seed organization credentials
 ```
 
 ## Key Technologies
-
+.
 Eclipse Tractus-X - Dataspace framework
 Eclipse Dataspace Connector (EDC) - Secure data exchange between participants
 Gaia-X Verifiable Credentials - Trust and identity for dataspace participants

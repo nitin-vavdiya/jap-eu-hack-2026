@@ -13,10 +13,22 @@
   "emailTheme": "smartsense-loire",
   "roles": {
     "realm": [
-      { "name": "admin", "description": "TATA fleet management admin" },
-      { "name": "customer", "description": "Car buyer and wallet owner" },
-      { "name": "insurance_agent", "description": "Insurance portal agent" },
-      { "name": "company_admin", "description": "Dataspace/company portal admin" }
+      {
+        "name": "admin",
+        "description": "TATA fleet management admin"
+      },
+      {
+        "name": "customer",
+        "description": "Car buyer and wallet owner"
+      },
+      {
+        "name": "insurance_agent",
+        "description": "Insurance portal agent"
+      },
+      {
+        "name": "company_admin",
+        "description": "Dataspace/company portal admin"
+      }
     ]
   },
   "clients": [
@@ -24,8 +36,12 @@
       "clientId": "portal-dataspace",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:3001/*"],
-      "webOrigins": ["http://localhost:3001"],
+      "redirectUris": [
+        "http://localhost:3001/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3001"
+      ],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "protocol": "openid-connect",
@@ -49,8 +65,12 @@
       "clientId": "portal-tata-admin",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:3002/*"],
-      "webOrigins": ["http://localhost:3002"],
+      "redirectUris": [
+        "http://localhost:3002/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3002"
+      ],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "protocol": "openid-connect",
@@ -74,8 +94,12 @@
       "clientId": "portal-tata-public",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:3003/*"],
-      "webOrigins": ["http://localhost:3003"],
+      "redirectUris": [
+        "http://localhost:3003/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3003"
+      ],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "protocol": "openid-connect",
@@ -99,8 +123,12 @@
       "clientId": "portal-wallet",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:3004/*"],
-      "webOrigins": ["http://localhost:3004"],
+      "redirectUris": [
+        "http://localhost:3004/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3004"
+      ],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "protocol": "openid-connect",
@@ -124,8 +152,12 @@
       "clientId": "portal-insurance",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:3005/*"],
-      "webOrigins": ["http://localhost:3005"],
+      "redirectUris": [
+        "http://localhost:3005/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3005"
+      ],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "protocol": "openid-connect",
@@ -149,8 +181,12 @@
       "clientId": "portal-company",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:3006/*"],
-      "webOrigins": ["http://localhost:3006"],
+      "redirectUris": [
+        "http://localhost:3006/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3006"
+      ],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "protocol": "openid-connect",
@@ -176,54 +212,20 @@
       "bearerOnly": true,
       "publicClient": false,
       "protocol": "openid-connect"
+    },
+    {
+      "clientId": "realm_admin_client",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "description": "Service account client used by the backend to create Keycloak users during company onboarding"
     }
   ],
   "users": [
-    {
-      "username": "toyota-admin",
-      "enabled": true,
-      "email": "toyota-admin@toyota-global.com",
-      "firstName": "Toyota",
-      "lastName": "Admin",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "toyota-admin",
-          "temporary": false
-        }
-      ],
-      "realmRoles": ["admin"]
-    },
-    {
-      "username": "mario-sanchez",
-      "enabled": true,
-      "email": "mario.sanchez@email.com",
-      "firstName": "Mario",
-      "lastName": "Sanchez",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "mario",
-          "temporary": false
-        }
-      ],
-      "realmRoles": ["customer"]
-    },
-    {
-      "username": "tokiomarine-agent",
-      "enabled": true,
-      "email": "agent@tokiomarine.com",
-      "firstName": "Tokio Marine",
-      "lastName": "Agent",
-      "credentials": [
-        {
-          "type": "password",
-          "value": "tokiomarine",
-          "temporary": false
-        }
-      ],
-      "realmRoles": ["insurance_agent"]
-    },
     {
       "username": "company-admin",
       "enabled": true,
@@ -237,7 +239,9 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["company_admin"]
+      "realmRoles": [
+        "company_admin"
+      ]
     }
   ]
 }

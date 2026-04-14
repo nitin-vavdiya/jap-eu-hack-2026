@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../db';
+import logger from '../lib/logger';
 
 const EDC_MGMT_URL = process.env.EDC_CONSUMER_MANAGEMENT_URL || '';
 const EDC_API_KEY = process.env.EDC_CONSUMER_API_KEY || '';
@@ -25,7 +26,7 @@ function logCurl(method: string, url: string, hdrs: Record<string, string>, body
   const bodyFlag = body
     ? ` \\\n  -d '${JSON.stringify(body)}'`
     : '';
-  console.log(`[EDC cURL] curl -X ${method} \\\n  '${url}' \\\n${headerFlags}${bodyFlag}`);
+  logger.debug({ component: 'edc-consumer' }, `cURL: curl -X ${method} \\\n  '${url}' \\\n${headerFlags}${bodyFlag}`);
 }
 
 export interface EdcProviderConfig {
@@ -85,7 +86,7 @@ const STEP_NAMES = [
 
 // Step 1: Query catalog and find asset matching VIN
 export async function queryCatalog(vin: string, provider: EdcProviderConfig): Promise<{ assetId: string; offerId: string }> {
-  console.log(`[EDC Consumer] Querying catalog for VIN: ${vin} on EDC ${EDC_MGMT_URL} (provider DSP: ${provider.dspUrl})`);
+  logger.info({ component: 'edc-consumer', vin, edcMgmtUrl: EDC_MGMT_URL, providerDsp: provider.dspUrl }, 'Querying catalog');
   const payload = {
     '@context': {
       '@vocab': 'https://w3id.org/edc/v0.0.1/ns/',
@@ -128,7 +129,7 @@ export async function queryCatalog(vin: string, provider: EdcProviderConfig): Pr
 
 // Step 2: Initiate contract negotiation
 export async function initiateNegotiation(offerId: string, assetId: string, provider: EdcProviderConfig): Promise<string> {
-  console.log(`[EDC Consumer] Initiating contract negotiation for asset ${assetId} on EDC ${EDC_MGMT_URL} (provider: ${provider.bpnl})`);
+  logger.info({ component: 'edc-consumer', assetId, edcMgmtUrl: EDC_MGMT_URL, providerBpnl: provider.bpnl }, 'Initiating contract negotiation');
   const payload = {
     '@context': {
       '@vocab': 'https://w3id.org/edc/v0.0.1/ns/',
@@ -154,7 +155,7 @@ export async function initiateNegotiation(offerId: string, assetId: string, prov
 
 // Step 3: Poll for agreement until FINALIZED
 export async function waitForAgreement(negotiationId: string): Promise<string> {
-  console.log(`[EDC Consumer] Waiting for agreement finalization for negotiation ${negotiationId} on EDC ${EDC_MGMT_URL}`);
+  logger.info({ component: 'edc-consumer', negotiationId, edcMgmtUrl: EDC_MGMT_URL }, 'Waiting for agreement finalization');
   await sleep(NEGOTIATION_INITIAL_DELAY);
 
   for (let attempt = 1; attempt <= NEGOTIATION_MAX_RETRIES; attempt++) {
@@ -179,7 +180,7 @@ export async function waitForAgreement(negotiationId: string): Promise<string> {
 
 // Step 4: Initiate transfer
 export async function initiateTransfer(assetId: string, contractAgreementId: string, provider: EdcProviderConfig): Promise<string> {
-  console.log(`[EDC Consumer] Initiating data transfer for asset ${assetId} (agreement: ${contractAgreementId}) on EDC ${EDC_MGMT_URL}`);
+  logger.info({ component: 'edc-consumer', assetId, contractAgreementId, edcMgmtUrl: EDC_MGMT_URL }, 'Initiating data transfer');
   const payload = {
     '@context': {
       '@vocab': 'https://w3id.org/edc/v0.0.1/ns/',
@@ -217,20 +218,20 @@ export async function getTransferProcess(contractAgreementId: string): Promise<s
   };
 
   for (let attempt = 1; attempt <= NEGOTIATION_MAX_RETRIES; attempt++) {
-    console.log(`[EDC Consumer] EDR poll attempt ${attempt}/${NEGOTIATION_MAX_RETRIES}`);
+    logger.info({ component: 'edc-consumer', attempt, maxRetries: NEGOTIATION_MAX_RETRIES }, 'EDR poll attempt');
     logCurl('POST', `${EDC_MGMT_URL}/v3/edrs/request`, headers, payload);
     const response = await axios.post(`${EDC_MGMT_URL}/v3/edrs/request`, payload, { headers, timeout: 10000 });
-    console.log('[EDC Consumer] EDR response:', JSON.stringify(response.data, null, 2));
+    logger.debug({ component: 'edc-consumer', edrResponse: response.data }, 'EDR response received');
     const entries = response.data;
 
     if (entries && entries.length > 0) {
       const transferId = entries[0].transferProcessId || entries[0]['@id'];
-      console.log(`[EDC Consumer] Transfer process ID: ${transferId}`);
+      logger.info({ component: 'edc-consumer', transferId }, 'Transfer process ID resolved');
       return transferId;
     }
 
     if (attempt < NEGOTIATION_MAX_RETRIES) {
-      console.log(`[EDC Consumer] No EDR yet, waiting ${NEGOTIATION_POLL_INTERVAL}ms before retry...`);
+      logger.info({ component: 'edc-consumer', waitMs: NEGOTIATION_POLL_INTERVAL }, 'No EDR yet, waiting before retry');
       await sleep(NEGOTIATION_POLL_INTERVAL);
     }
   }
@@ -240,7 +241,7 @@ export async function getTransferProcess(contractAgreementId: string): Promise<s
 
 // Step 6: Get auth code (data address with endpoint + token)
 export async function getAuthCode(transferId: string): Promise<{ endpoint: string; authorization: string }> {
-  console.log(`[EDC Consumer] Obtaining auth token for transfer ${transferId} on EDC ${EDC_MGMT_URL}`);
+  logger.info({ component: 'edc-consumer', transferId, edcMgmtUrl: EDC_MGMT_URL }, 'Obtaining auth token for transfer');
   logCurl('GET', `${EDC_MGMT_URL}/v2/edrs/${transferId}/dataaddress?auto_refresh=true`, { 'x-api-key': EDC_API_KEY });
   const response = await axios.get(
     `${EDC_MGMT_URL}/v2/edrs/${transferId}/dataaddress?auto_refresh=true`,
@@ -259,7 +260,7 @@ export async function getAuthCode(transferId: string): Promise<{ endpoint: strin
 
 // Step 7: Fetch actual asset data from data plane
 export async function fetchAssetData(endpoint: string, authorization: string): Promise<any> {
-  console.log(`[EDC Consumer] Fetching asset data from data plane endpoint: ${endpoint}`);
+  logger.info({ component: 'edc-consumer', dataPlaneEndpoint: endpoint }, 'Fetching asset data from data plane');
   logCurl('GET', endpoint, { Authorization: authorization });
   const response = await axios.get(endpoint, {
     headers: { Authorization: authorization },

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import prisma from '../db';
+import logger from '../lib/logger';
 
 export interface EdcConfig {
   baseUrl: string;
@@ -12,15 +13,13 @@ export interface EdcConfig {
  * Returns null if the EDC is not yet ready (status != "ready").
  */
 export async function getEdcConfigForCompany(companyId: string): Promise<EdcConfig | null> {
-  console.log(`[edcService] Looking up EDC config for company ${companyId}`);
+  logger.info({ component: 'edcService', companyId }, 'Looking up EDC config for company');
   const prov = await prisma.edcProvisioning.findUnique({
     where: { companyId },
     select: { managementUrl: true, apiKey: true, status: true },
   });
   if (!prov || prov.status !== 'ready') {
-    console.warn(
-      `[edcService] EDC not ready for company ${companyId}, status: ${prov?.status ?? 'not found'}`,
-    );
+    logger.warn({ component: 'edcService', companyId, status: prov?.status ?? 'not found' }, 'EDC not ready for company');
     return null;
   }
   return { baseUrl: prov.managementUrl!, apiKey: prov.apiKey! };
@@ -61,10 +60,7 @@ export async function createAsset(
   }
 
   const payload = buildAssetPayload(vin, appBaseUrl);
-  console.log(
-    `[edcService] Creating asset for VIN ${vin} on ${edcConfig.baseUrl}`,
-    JSON.stringify(payload, null, 2),
-  );
+  logger.info({ component: 'edcService', vin, edcBaseUrl: edcConfig.baseUrl, payload }, 'Creating asset');
 
   try {
     const response = await axios.post(
@@ -78,10 +74,10 @@ export async function createAsset(
         timeout: 5000,
       },
     );
-    console.log(`[edcService] Asset created on EDC ${edcConfig.baseUrl}:`, JSON.stringify(response.data, null, 2));
+    logger.info({ component: 'edcService', edcBaseUrl: edcConfig.baseUrl, response: response.data }, 'Asset created on EDC');
     return response.data;
   } catch (error: any) {
-    console.error(`[edcService] Asset creation error on EDC ${edcConfig.baseUrl}:`, error.response?.data || error.message);
+    logger.error({ component: 'edcService', edcBaseUrl: edcConfig.baseUrl, err: error.response?.data || error.message }, 'Asset creation error');
     throw new Error(
       `Failed to create asset in EDC: ${error.response?.data?.message || error.message}`,
     );
@@ -119,10 +115,7 @@ export async function createContractDefinition(
   const resolvedContractPolicyId = contractPolicyId || process.env.EDC_CONTRACT_POLICY_ID || '';
 
   const payload = buildContractDefinitionPayload(assetId, resolvedAccessPolicyId, resolvedContractPolicyId);
-  console.log(
-    `[edcService] Creating contract definition for asset ${assetId} on ${edcConfig.baseUrl}`,
-    JSON.stringify(payload, null, 2),
-  );
+  logger.info({ component: 'edcService', assetId, edcBaseUrl: edcConfig.baseUrl, payload }, 'Creating contract definition');
 
   try {
     const response = await axios.post(
@@ -136,10 +129,10 @@ export async function createContractDefinition(
         timeout: 5000,
       },
     );
-    console.log(`[edcService] Contract definition created on EDC ${edcConfig.baseUrl}:`, JSON.stringify(response.data, null, 2));
+    logger.info({ component: 'edcService', edcBaseUrl: edcConfig.baseUrl, response: response.data }, 'Contract definition created on EDC');
     return response.data;
   } catch (error: any) {
-    console.error(`[edcService] Contract definition error on EDC ${edcConfig.baseUrl}:`, error.response?.data || error.message);
+    logger.error({ component: 'edcService', edcBaseUrl: edcConfig.baseUrl, err: error.response?.data || error.message }, 'Contract definition error');
     throw new Error(
       `Failed to create contract definition in EDC: ${error.response?.data?.message || error.message}`,
     );

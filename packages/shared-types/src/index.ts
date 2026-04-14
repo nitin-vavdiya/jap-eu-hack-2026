@@ -304,9 +304,9 @@ export interface Compliance {
   homologationStatus: string;
 }
 
-// --- Manufacturer Verifiable Credential ---
+// --- Asset / Participant Verifiable Credential ---
 
-export interface ManufacturerCredential {
+export interface DPPCredential {
   credentialId: string;
   type: "ManufacturerVC";
   issuer: string;
@@ -345,8 +345,8 @@ export interface DPP {
   ownershipChain: OwnershipChain;
   compliance: Compliance;
 
-  // Manufacturer VC
-  manufacturerCredential: ManufacturerCredential;
+  // Asset / Participant VC
+  credential: DPPCredential;
 }
 
 // --- Car (Digital Twin) ---

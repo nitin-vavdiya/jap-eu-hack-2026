@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import { getApiBase } from '@eu-jap-hack/auth'
+import { useAuthUser, createAuthAxios, getApiBase } from '@eu-jap-hack/auth'
 
 const API_BASE = getApiBase()
 
@@ -101,7 +100,7 @@ const sections: DPPSection[] = [
     statusFn: () => ({ label: 'Certified', color: 'text-emerald-500 bg-emerald-50' }) },
 
   // Verifiable Credential
-  { title: 'Manufacturer Credential', key: 'manufacturerCredential', groupHeader: 'Verifiable Credential',
+  { title: 'Manufacturer Credential', key: 'credential', groupHeader: 'Verifiable Credential',
     statusFn: (d) => d ? { label: 'Issued', color: 'text-indigo-500 bg-indigo-50' } : { label: 'Missing', color: 'text-red-400 bg-red-50' } },
 ]
 
@@ -153,12 +152,14 @@ function renderValue(value: unknown): JSX.Element {
 export default function CarDPP() {
   const { vin } = useParams<{ vin: string }>()
   const navigate = useNavigate()
+  const { accessToken } = useAuthUser()
+  const api = createAuthAxios(() => accessToken)
   const [car, setCar] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [openSections, setOpenSections] = useState<Set<number>>(new Set(Array.from({ length: sections.length }, (_, i) => i)))
 
   useEffect(() => {
-    axios.get(`${API_BASE}/cars/${vin}`).then(r => { setCar(r.data); setLoading(false) }).catch(() => setLoading(false))
+    api.get(`${API_BASE}/cars/${vin}`).then(r => { setCar(r.data); setLoading(false) }).catch(() => setLoading(false))
   }, [vin])
 
   const toggleSection = (i: number) => {
