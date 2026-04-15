@@ -58,8 +58,11 @@ From the conversation and git changes, identify:
 - Commands run: [e.g. /init, npm run dev:backend]
 - Outputs produced: [e.g. CLAUDE.md created, session-summary command built]
 
+### My Achievements
+[2–3 bullet points of what *you* specifically contributed — architectural decisions made, trade-offs evaluated, domain expertise applied, gaps identified, direction given to Claude Code]
+
 ### Key Learnings
-[2–3 bullet points of what was learned or demonstrated in this session, tied to the plan goals]
+[2–3 bullet points of what *you* learned — new Claude Code capabilities discovered, concepts understood, insights about working with AI on architecture tasks]
 
 ---
 ```
