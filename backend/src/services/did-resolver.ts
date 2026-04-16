@@ -4,15 +4,14 @@
  * Resolves did:web, did:eu-dataspace, and did:smartsense DIDs to DID documents.
  * Company DID documents are built dynamically from the database — no hardcoding.
  *
- * did:web DIDs are hosted at /company/<companyId>/did.json and automatically
- * include the DataService endpoint once EDC provisioning completes.
- * The platform's Gaia-X keypair is used as a custodial key for all company DIDs.
+ * Company verification methods always use cached walt.id JWKs (`#key-ed25519`,
+ * `#key-rsa`) after onboarding. There is no legacy custodial key path.
  */
 
 import prisma from '../db';
-import { getVPSigner } from './gaiax/vp-signer';
+import { getSmartsenseHolderPublicKeyJwk } from './vp-processor';
+import { certPemToX5cValue } from './wallet/x5c-utils';
 
-const REGISTRY_BASE = process.env.APP_BASE_URL || 'http://localhost:8000';
 const DID_DOMAIN = process.env.GAIAX_DID_DOMAIN || 'localhost%3A8000';
 
 // --------------- Types ---------------
@@ -47,6 +46,30 @@ export interface DidResolutionResult {
   didDocumentMetadata: { created?: string; updated?: string };
 }
 
+/** Thrown when a company row exists but the walt.id wallet / JWKs are not ready. */
+export class CompanyWalletNotProvisionedError extends Error {
+  readonly companyId: string;
+
+  constructor(companyId: string) {
+    super(`Company wallet not provisioned (missing JWKs or wallet flag): ${companyId}`);
+    this.name = 'CompanyWalletNotProvisionedError';
+    this.companyId = companyId;
+  }
+}
+
+export type CompanyDidSource = {
+  id: string;
+  did: string | null;
+  bpn: string | null;
+  name: string;
+  createdAt: Date;
+  updatedAt?: Date;
+  walletProvisioned?: boolean;
+  ed25519PublicJwk?: unknown;
+  rsaPublicJwk?: unknown;
+  rsaCertPem?: string | null;
+};
+
 // --------------- Service Type Constants ---------------
 
 export const SERVICE_TYPES = {
@@ -70,17 +93,15 @@ export function buildCompanyDidWeb(companyId: string): string {
  * Dynamically includes DataService if EDC provisioning is ready.
  */
 export function buildCompanyDidDocument(
-  company: { id: string; did: string | null; bpn: string | null; name: string; createdAt: Date },
+  company: CompanyDidSource,
   edcProvisioning: { status: string; protocolUrl: string | null } | null,
 ): DidDocument {
   const did = company.did || buildCompanyDidWeb(company.id);
-  const keyId = `${did}#key-1`;
-
-  const signer = getVPSigner();
+  const edKeyId = `${did}#key-ed25519`;
+  const rsaKeyId = `${did}#key-rsa`;
 
   const services: ServiceEndpoint[] = [];
 
-  // Add DataService endpoint if EDC is provisioned and ready
   if (edcProvisioning?.status === 'ready' && edcProvisioning.protocolUrl && company.bpn) {
     services.push({
       id: `${did}#data-service`,
@@ -92,30 +113,52 @@ export function buildCompanyDidDocument(
     });
   }
 
-  return {
-    '@context': [
-      'https://www.w3.org/ns/did/v1',
-      'https://w3id.org/security/suites/jws-2020/v1',
-    ],
-    id: did,
-    verificationMethod: [
-      {
-        id: keyId,
-        type: 'JsonWebKey2020',
-        controller: did,
-        publicKeyJwk: signer.getPublicKeyJwk(),
-      },
-    ],
-    authentication: [keyId],
-    assertionMethod: [keyId],
-    service: services.length > 0 ? services : undefined,
-  };
+  const edJwkRaw = company.ed25519PublicJwk as Record<string, unknown> | null | undefined;
+  const rsaJwkRaw = company.rsaPublicJwk as Record<string, unknown> | null | undefined;
+
+  if (company.walletProvisioned && edJwkRaw?.kty && rsaJwkRaw?.kty) {
+    const edJwk = { ...edJwkRaw, kid: edKeyId };
+    // gx-compliance validates the DID document key trust chain via x5u (URL) not x5c (inline DER).
+    // jose.importX509(cert, null) fails when cert PEM has no line breaks (the x5c path);
+    // x5u fetches proper PEM with line breaks from the /company/:id/cert.pem endpoint → works.
+    const domain = (process.env.GAIAX_DID_DOMAIN || 'localhost:8000').replace(/%3A/g, ':');
+    const rsaJwk: Record<string, unknown> = { ...rsaJwkRaw, kid: rsaKeyId, alg: 'RS256' };
+    if (company.rsaCertPem) {
+      rsaJwk.x5u = `https://${domain}/company/${company.id}/cert.pem`;
+    }
+    return {
+      '@context': [
+        'https://www.w3.org/ns/did/v1',
+        'https://w3id.org/security/suites/jws-2020/v1',
+      ],
+      id: did,
+      verificationMethod: [
+        {
+          id: edKeyId,
+          type: 'JsonWebKey2020',
+          controller: did,
+          publicKeyJwk: edJwk,
+        },
+        {
+          id: rsaKeyId,
+          type: 'JsonWebKey2020',
+          controller: did,
+          publicKeyJwk: rsaJwk,
+        },
+      ],
+      authentication: [edKeyId],
+      assertionMethod: [edKeyId, rsaKeyId],
+      service: services.length > 0 ? services : undefined,
+    };
+  }
+
+  throw new CompanyWalletNotProvisionedError(company.id);
 }
 
 function buildUserDidDocument(userId: string): DidDocument {
   const did = `did:smartsense:${userId}`;
   const keyId = `${did}#key-1`;
-  const signer = getVPSigner();
+  const publicKeyJwk = getSmartsenseHolderPublicKeyJwk(did);
 
   return {
     '@context': [
@@ -128,7 +171,7 @@ function buildUserDidDocument(userId: string): DidDocument {
         id: keyId,
         type: 'JsonWebKey2020',
         controller: did,
-        publicKeyJwk: signer.getPublicKeyJwk(),
+        publicKeyJwk,
       },
     ],
     authentication: [keyId],
@@ -145,27 +188,39 @@ function buildUserDidDocument(userId: string): DidDocument {
  * For did:smartsense user DIDs — builds a minimal document.
  */
 export async function resolveDid(did: string): Promise<DidResolutionResult> {
-  // Handle did:web company DIDs and legacy did:eu-dataspace company DIDs
   const company = await prisma.company.findFirst({
     where: { did },
     include: { edcProvisioning: true },
   });
 
   if (company) {
-    return {
-      didDocument: buildCompanyDidDocument(
-        company,
-        company.edcProvisioning,
-      ),
-      didResolutionMetadata: { contentType: 'application/did+ld+json' },
-      didDocumentMetadata: {
-        created: company.createdAt.toISOString(),
-        updated: company.updatedAt.toISOString(),
-      },
-    };
+    try {
+      return {
+        didDocument: buildCompanyDidDocument(
+          company,
+          company.edcProvisioning,
+        ),
+        didResolutionMetadata: { contentType: 'application/did+ld+json' },
+        didDocumentMetadata: {
+          created: company.createdAt.toISOString(),
+          updated: (company.updatedAt ?? company.createdAt).toISOString(),
+        },
+      };
+    } catch (e) {
+      if (e instanceof CompanyWalletNotProvisionedError) {
+        return {
+          didDocument: null,
+          didResolutionMetadata: { error: 'companyWalletNotProvisioned', contentType: 'application/did+ld+json' },
+          didDocumentMetadata: {
+            created: company.createdAt.toISOString(),
+            updated: (company.updatedAt ?? company.createdAt).toISOString(),
+          },
+        };
+      }
+      throw e;
+    }
   }
 
-  // Handle user DIDs (did:smartsense:*)
   if (did.startsWith('did:smartsense:')) {
     const userId = did.replace('did:smartsense:', '');
     return {

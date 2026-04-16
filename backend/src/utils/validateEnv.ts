@@ -1,7 +1,7 @@
 /**
  * Startup environment variable validation.
  *
- * REQUIRED vars — backend refuses to start if any are missing in production.
+ * REQUIRED vars — backend refuses to start if any are missing (includes Vault for wallet secrets).
  * APP_BASE_URL is REQUIRED in staging/production and RECOMMENDED in development
  * (must be a stable public HTTPS URL for Gaia-X DID resolution to succeed).
  *
@@ -17,6 +17,8 @@ const REQUIRED_VARS = [
   'KEYCLOAK_REALM',
   'KEYCLOAK_ADMIN_CLIENT_ID',
   'KEYCLOAK_ADMIN_CLIENT_SECRET',
+  'VAULT_ADDR',
+  'VAULT_TOKEN',
 ];
 
 /**

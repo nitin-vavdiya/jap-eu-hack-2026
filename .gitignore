@@ -39,3 +39,7 @@ yarn-error.log*
 
 
 .context/**
+
+.venv-code-review-graph/**
+# Added by code-review-graph
+.code-review-graph/

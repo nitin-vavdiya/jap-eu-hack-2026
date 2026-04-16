@@ -173,6 +173,21 @@ function getHolderKeys(holderId: string): KeyPair {
 }
 
 /**
+ * Public JWK for a `did:smartsense:{userId}` holder (portal-wallet dev keys under `.keys/`).
+ * Used by DID resolution — not the Gaia-X platform operator wallet.
+ */
+export function getSmartsenseHolderPublicKeyJwk(holderDid: string): Record<string, unknown> {
+  if (!holderDid.startsWith('did:smartsense:')) {
+    throw new Error(`Expected did:smartsense holder DID, got: ${holderDid}`);
+  }
+  const userId = holderDid.replace('did:smartsense:', '');
+  const keys = getHolderKeys(userId);
+  const jwk = crypto.createPublicKey(keys.publicKey).export({ format: 'jwk' }) as Record<string, unknown>;
+  const kid = `${holderDid}#key-1`;
+  return { ...jwk, kid, alg: 'RS256' };
+}
+
+/**
  * Get the public key for any known entity DID.
  * Used by verifiers to verify signatures.
  */

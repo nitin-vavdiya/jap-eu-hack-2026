@@ -47,8 +47,10 @@ import verifierRouter from './routes/verifier';
 import walletVPRouter from './routes/wallet-vp';
 import underwritingRouter from './routes/underwriting';
 import usersRouter from './routes/users';
-import { GaiaXClient, getVPSigner, getVPSignerAsync } from './services/gaiax';
-import { buildCompanyDidDocument } from './services/did-resolver';
+import { GaiaXClient } from './services/gaiax';
+import { bootstrapOperatorWallet } from './services/wallet/operator-wallet-service';
+import { getPlatformOperatorDidDocument } from './services/wallet/platform-operator-did';
+import { buildCompanyDidDocument, CompanyWalletNotProvisionedError } from './services/did-resolver';
 import prisma from './db';
 import { requireRole } from './middleware/auth';
 import { OrgCredentialRecord } from './services/gaiax/types';
@@ -87,22 +89,24 @@ app.get('/.well-known/vehicle-registry', (_req, res) => {
   res.redirect('/api/vehicle-registry/well-known');
 });
 
-// DID document for did:web resolution (needed by GXDCH compliance)
-// Platform's own DID document (did:web:<domain>:<path>)
-const didJsonHandler = (_req: any, res: any) => {
-  const signer = getVPSigner();
-  res.json({
-    '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
-    id: signer.getDid(),
-    verificationMethod: [{
-      id: signer.getKid(),
-      type: 'JsonWebKey2020',
-      controller: signer.getDid(),
-      publicKeyJwk: signer.getPublicKeyJwk(),
-    }],
-    authentication: [signer.getKid()],
-    assertionMethod: [signer.getKid()],
-  });
+// DID document for did:web resolution — operator walt.id wallet JWKs (no legacy VPSigner).
+const didJsonHandler = async (_req: express.Request, res: express.Response) => {
+  try {
+    const doc = await getPlatformOperatorDidDocument();
+    if (!doc) {
+      return res.status(503).json({
+        error: 'operator_wallet_not_ready',
+        message:
+          'Platform did.json requires a provisioned operator walt.id wallet and cached JWKs. Set Vault operator credentials and restart so bootstrap can run.',
+      });
+    }
+    res.setHeader('Content-Type', 'application/did+ld+json');
+    res.json(doc);
+  } catch (e: unknown) {
+    const err = e as Error;
+    logger.error({ component: 'platform-did', err: err.message }, 'Failed to build platform DID document');
+    res.status(500).json({ error: 'platform_did_failed', message: err.message });
+  }
 };
 app.get('/.well-known/did.json', didJsonHandler);
 
@@ -118,22 +122,68 @@ app.get('/company/:companyId/did.json', async (req, res) => {
     return res.status(404).json({ error: 'Company not found' });
   }
 
-  const didDocument = buildCompanyDidDocument(company, company.edcProvisioning);
-  res.setHeader('Content-Type', 'application/did+ld+json');
-  res.json(didDocument);
+  try {
+    const didDocument = buildCompanyDidDocument(company, company.edcProvisioning);
+    res.setHeader('Content-Type', 'application/did+ld+json');
+    res.json(didDocument);
+  } catch (e) {
+    if (e instanceof CompanyWalletNotProvisionedError) {
+      return res.status(503).json({
+        error: 'company_wallet_not_provisioned',
+        message: 'Company walt.id wallet and cached JWKs are required before this DID document can be served.',
+      });
+    }
+    throw e;
+  }
+});
+
+// Company RSA certificate PEM endpoint — serves the company cert with proper line breaks.
+// x5u in DID document publicKeyJwk points here; gx-compliance fetches this URL and parses PEM.
+app.get('/company/:companyId/cert.pem', async (req, res) => {
+  const company = await prisma.company.findUnique({
+    where: { id: req.params.companyId },
+    select: { rsaCertPem: true },
+  });
+  if (!company?.rsaCertPem) {
+    return res.status(404).json({ error: 'Certificate not found' });
+  }
+  res.setHeader('Content-Type', 'application/x-pem-file');
+  res.send(company.rsaCertPem);
 });
 
 // Platform path-based DID resolution (e.g., did:web:<domain>:v1 → /v1/did.json)
 app.get('/:path/did.json', didJsonHandler);
 
 // VC resolution endpoints — makes VC URIs publicly resolvable
+// Gaia-X compliance `vcid` must resolve to a raw VC-JWS. Content-Type must match JWT typ header.
+// Our VCs use typ=vc+ld+json+jwt (VCDM 2.0 / Gaia-X ICAM), so serve application/vc+ld+json+jwt.
+app.get('/vc/:id/jwt', async (req, res) => {
+  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  if (!row) return res.status(404).json({ error: 'Credential not found' });
+
+  if (!row.lpVcJwt) {
+    return res.status(503).json({
+      error: 'LEGAL_PARTICIPANT_JWT_NOT_AVAILABLE',
+      message: 'Legal Participant VC-JWT is not published on this credential yet.',
+    });
+  }
+
+  res.setHeader('Content-Type', 'application/vc+ld+json+jwt');
+  return res.send(row.lpVcJwt);
+});
+
 app.get('/vc/:id', async (req, res) => {
   const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
   if (!row) return res.status(404).json({ error: 'Credential not found' });
 
   const record = row as unknown as OrgCredentialRecord;
-  const signer = getVPSigner();
-  const vc = buildLegalParticipantVC(record, signer.getDid());
+  if (!row.did) {
+    return res.status(503).json({
+      error: 'ORG_CREDENTIAL_DID_MISSING',
+      message: 'This credential has no company DID; complete wallet onboarding before resolving the VC document.',
+    });
+  }
+  const vc = buildLegalParticipantVC(record, row.did);
 
   const response: Record<string, unknown> = {
     ...vc,
@@ -141,10 +191,6 @@ app.get('/vc/:id', async (req, res) => {
   };
   if (row.complianceResult) {
     response.complianceResult = row.complianceResult;
-  }
-  const issuedVCs = (row.issuedVCs as any[]) || [];
-  if (issuedVCs.length > 0) {
-    response.issuedVCs = issuedVCs;
   }
 
   res.json(response);
@@ -154,8 +200,13 @@ app.get('/vc/:id/tandc', async (req, res) => {
   const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
   if (!row) return res.status(404).json({ error: 'Credential not found' });
 
-  const signer = getVPSigner();
-  const tandc = buildTermsAndConditionsVC(signer.getDid(), row.id);
+  if (!row.did) {
+    return res.status(503).json({
+      error: 'ORG_CREDENTIAL_DID_MISSING',
+      message: 'This credential has no company DID.',
+    });
+  }
+  const tandc = buildTermsAndConditionsVC(row.did, row.id);
   res.json(tandc);
 });
 
@@ -164,8 +215,13 @@ app.get('/vc/:id/lrn', async (req, res) => {
   if (!row) return res.status(404).json({ error: 'Credential not found' });
 
   const record = row as unknown as OrgCredentialRecord;
-  const signer = getVPSigner();
-  const lrn = buildRegistrationNumberVC(signer.getDid(), row.id, record.legalRegistrationNumber, record.legalAddress.countryCode);
+  if (!row.did) {
+    return res.status(503).json({
+      error: 'ORG_CREDENTIAL_DID_MISSING',
+      message: 'This credential has no company DID.',
+    });
+  }
+  const lrn = buildRegistrationNumberVC(row.did, row.id, record.legalRegistrationNumber, record.legalAddress.countryCode);
   res.json(lrn);
 });
 
@@ -206,14 +262,13 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Initialize VPSigner (loads keypair from DB/filesystem) before accepting requests
-getVPSignerAsync()
+bootstrapOperatorWallet()
   .then(() => {
     app.listen(PORT, () => {
       logger.info({ port: PORT }, 'Backend server started');
     });
   })
   .catch((err) => {
-    logger.error({ err }, 'Failed to initialize VPSigner');
+    logger.error({ err }, 'Failed to bootstrap operator wallet');
     process.exit(1);
   });

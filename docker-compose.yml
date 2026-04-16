@@ -1,5 +1,8 @@
 version: "3.9"
 
+# Walt.id images pinned to digests captured 2026-04-16 (v0.19.0 / latest at that date).
+# Digests recorded in docs/agreements/001-ssi-implementation-agreement.md §6.1.
+# To update: docker compose pull && re-capture digests with docker image inspect.
 services:
   keycloak:
     image: keycloak/keycloak:26.0
@@ -14,16 +17,17 @@ services:
       - ./keycloak/themes/smartsense-loire:/opt/keycloak/themes/smartsense-loire
 
   waltid-wallet-api:
-    image: waltid/wallet-api:latest
+    image: waltid/wallet-api@sha256:17963c8421f27d36aa23572761a74886a901e7aa0b6864998b07458e6ca15a7d
     ports:
       - "7001:7001"
     volumes:
       - ./waltid/wallet-api/db.conf:/waltid-wallet-api/config/db.conf
       - ./waltid/wallet-api/auth.conf:/waltid-wallet-api/config/auth.conf
       - ./waltid/wallet-api/web.conf:/waltid-wallet-api/config/web.conf
+      - waltid_wallet_data:/waltid-wallet-api/data
 
   waltid-issuer-api:
-    image: waltid/issuer-api:latest
+    image: waltid/issuer-api@sha256:3b1bf788e474db5d62a4744f9b5c8ad771d6dd0abe21d75aa1f1e4a702bb1e65
     ports:
       - "7002:7002"
     volumes:
@@ -32,7 +36,7 @@ services:
       - ./waltid/issuer-api/credential-issuer-metadata.conf:/waltid-issuer-api/config/credential-issuer-metadata.conf
 
   waltid-verifier-api:
-    image: waltid/verifier-api:latest
+    image: waltid/verifier-api@sha256:143674012c543189b80c22d764d6324f17ab11f925ac2a4503839171e5635994
     ports:
       - "7003:7003"
     volumes:
@@ -55,5 +59,47 @@ services:
       timeout: 5s
       retries: 5
 
+  # ---------------------------------------------------------------------------
+  # HashiCorp Vault — dev mode (in-memory, auto-unsealed, root token = dev-root-token)
+  # NOT for production. Data is lost on container restart.
+  # ---------------------------------------------------------------------------
+  vault:
+    image: hashicorp/vault:1.17
+    container_name: jap-eu-hack-vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "dev-root-token"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    command: server -dev
+
+  # ---------------------------------------------------------------------------
+  # Walt.id Demo Wallet UI — white-label credential viewer (internal only, proxied via caddy-wallet)
+  # Login with company-{companyId}@wallet.internal / password from Vault
+  # ---------------------------------------------------------------------------
+  waltid-demo-wallet:
+    image: waltid/waltid-demo-wallet:latest
+    environment:
+      PORT: "7101"
+    depends_on:
+      - waltid-wallet-api
+
+  # ---------------------------------------------------------------------------
+  # Caddy reverse proxy for wallet UI — routes /wallet-api/* to wallet API,
+  # everything else to the demo wallet frontend. Access at http://localhost:7101
+  # ---------------------------------------------------------------------------
+  caddy-wallet:
+    image: caddy:2-alpine
+    ports:
+      - "7101:7101"
+    volumes:
+      - ./waltid/Caddyfile-wallet:/etc/caddy/Caddyfile
+    depends_on:
+      - waltid-demo-wallet
+      - waltid-wallet-api
+
 volumes:
   postgres_data:
+  waltid_wallet_data:

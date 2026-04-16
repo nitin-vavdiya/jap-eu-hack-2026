@@ -56,6 +56,14 @@ backend:
     WALTID_ISSUER_URL: "http://eu-jap-hack-waltid-issuer:7002"
     WALTID_WALLET_URL: "http://eu-jap-hack-waltid-wallet:7001"
     WALTID_VERIFIER_URL: "http://eu-jap-hack-waltid-verifier:7003"
+    OPERATOR_WALLET_EMAIL: "operator@wallet.internal"
+    OPERATOR_WALLET_PASSWORD: "<path:k8s-stack/data/jap-eu-hack#operatorWalletPassword>"
+    OPERATOR_WALLET_DISPLAY_NAME: "SmartSense Operator"
+    OPERATOR_WALLET_FAIL_ON_ERROR: "true"
+    VAULT_ADDR: "http://vault.vault.svc.cluster.local:8200"
+    VAULT_TOKEN: "<path:k8s-stack/data/jap-eu-hack#vaultBackendToken>"
+    VAULT_KV_MOUNT: "secret"
+    VAULT_OPERATOR_WALLET_PATH: "operator/wallet"
   resources:
     requests:
       cpu: 10m

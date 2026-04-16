@@ -1,0 +1,12 @@
+{
+	auto_https off
+	admin off
+}
+
+:7101 {
+	# Route wallet API calls to the backend
+	reverse_proxy /wallet-api/* waltid-wallet-api:7001
+
+	# Route everything else to the demo wallet frontend
+	reverse_proxy waltid-demo-wallet:7101
+}

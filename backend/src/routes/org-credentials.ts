@@ -5,7 +5,7 @@ import { requireRole } from '../middleware/auth';
 import { GaiaXClient } from '../services/gaiax/client';
 import { GaiaXLiveClient } from '../services/gaiax/live-client';
 import { GaiaXOrchestrator } from '../services/gaiax/orchestrator';
-import { getVPSigner } from '../services/gaiax/vp-signer';
+import { issueLegalParticipantVcJwtForCompany, storeVcInCompanyWalletViaOID4VCI } from '../services/wallet/company-wallet-service';
 import { validateOrgCredentialFields, buildLegalParticipantVC, getVCBaseUrl } from '../services/gaiax/vc-builder';
 import { OrgCredentialRecord } from '../services/gaiax/types';
 import { listWalletCredentials } from '../services/waltid';
@@ -15,7 +15,6 @@ const gaiaxClient = new GaiaXClient();
 const gaiaxLiveClient = new GaiaXLiveClient();
 const orchestrator = new GaiaXOrchestrator(gaiaxClient);
 
-// Helper to convert Prisma OrgCredential row to the OrgCredentialRecord shape used by services
 function toRecord(row: any): OrgCredentialRecord {
   return {
     ...row,
@@ -23,8 +22,8 @@ function toRecord(row: any): OrgCredentialRecord {
     legalAddress: row.legalAddress as any,
     headquartersAddress: row.headquartersAddress as any,
     verificationAttempts: (row.verificationAttempts as any) || [],
-    issuedVCs: (row.issuedVCs as any) || [],
     vcPayload: row.vcPayload as any,
+    walletCredentialId: row.walletCredentialId ?? undefined,
     complianceResult: row.complianceResult as any,
     notaryResult: row.notaryResult as any,
     validFrom: row.validFrom.toISOString(),
@@ -34,7 +33,6 @@ function toRecord(row: any): OrgCredentialRecord {
   };
 }
 
-// POST /api/org-credentials - Create org credential
 router.post('/', requireRole('company_admin'), async (req: Request, res: Response) => {
   const data = req.body;
   const errors = validateOrgCredentialFields(data);
@@ -44,11 +42,21 @@ router.post('/', requireRole('company_admin'), async (req: Request, res: Respons
 
   const id = uuidv4();
   const now = new Date();
-  const signer = getVPSigner();
+  const companyIdForCred = data.companyId || id;
+  const companyRow = await prisma.company.findUnique({
+    where: { id: companyIdForCred },
+    select: { walletProvisioned: true, did: true },
+  });
+  if (!companyRow?.walletProvisioned || !companyRow.did) {
+    return res.status(400).json({
+      error: 'COMPANY_WALLET_REQUIRED',
+      message: 'Company must complete onboarding with a provisioned walt.id wallet before creating org credentials.',
+    });
+  }
 
   const record: OrgCredentialRecord = {
     id,
-    companyId: data.companyId || id,
+    companyId: companyIdForCred,
     legalName: data.legalName,
     legalRegistrationNumber: {
       vatId: data.legalRegistrationNumber?.vatId,
@@ -74,18 +82,33 @@ router.post('/', requireRole('company_admin'), async (req: Request, res: Respons
     },
     website: data.website,
     contactEmail: data.contactEmail,
-    did: data.did || signer.getDid(),
+    did: data.did || companyRow.did,
     validFrom: (data.validFrom || now.toISOString()),
     validUntil: (data.validUntil || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()),
     verificationStatus: 'draft',
     verificationAttempts: [],
-    issuedVCs: [],
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
   };
 
-  record.vcPayload = buildLegalParticipantVC(record);
-  record.vcJwt = signer.signVC(record.vcPayload as unknown as Record<string, unknown>);
+  record.vcPayload = buildLegalParticipantVC(record, record.did);
+  const holderDid = record.did!;
+  const issued = await issueLegalParticipantVcJwtForCompany({
+    companyId: companyIdForCred,
+    companyDid: holderDid,
+    vcPayload: record.vcPayload as unknown as Record<string, unknown>,
+  });
+  if (!issued) {
+    return res.status(502).json({ error: 'WALT_VC_ISSUANCE_FAILED', message: 'Could not issue VC via walt.id' });
+  }
+
+  // Store LP VC in wallet via OID4VCI and persist JWT for public /vc/:id/jwt URL.
+  const walletCredId = await storeVcInCompanyWalletViaOID4VCI({
+    companyId: companyIdForCred,
+    companyDid: holderDid,
+    credentialPayload: record.vcPayload as unknown as Record<string, unknown>,
+  });
+  record.walletCredentialId = walletCredId ?? issued.walletCredentialId;
 
   await prisma.orgCredential.create({
     data: {
@@ -103,28 +126,25 @@ router.post('/', requireRole('company_admin'), async (req: Request, res: Respons
       verificationStatus: record.verificationStatus,
       verificationAttempts: record.verificationAttempts as any,
       vcPayload: record.vcPayload as any,
-      vcJwt: record.vcJwt,
-      issuedVCs: record.issuedVCs as any,
+      walletCredentialId: record.walletCredentialId,
+      lpVcJwt: issued.jwt,
     },
   });
 
   res.status(201).json(record);
 });
 
-// GET /api/org-credentials - List all
 router.get('/', async (_req: Request, res: Response) => {
   const rows = await prisma.orgCredential.findMany();
   res.json(rows.map(toRecord));
 });
 
-// GET /api/org-credentials/:id - Get by ID
 router.get('/:id', async (req: Request, res: Response) => {
   const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
   if (!row) return res.status(404).json({ error: 'Organization credential not found' });
   res.json(toRecord(row));
 });
 
-// POST /api/org-credentials/:id/verify - Trigger GXDCH verification (real or mock)
 router.post('/:id/verify', requireRole('company_admin'), async (req: Request, res: Response) => {
   const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
   if (!row) return res.status(404).json({ error: 'Organization credential not found' });
@@ -143,15 +163,17 @@ router.post('/:id/verify', requireRole('company_admin'), async (req: Request, re
     const complianceOk = result.complianceResult.status === 'compliant';
     const isVerified = complianceOk || (notaryOk && !gaiaxClient.isMockMode);
 
+    // walletCredentialIds.legalParticipant is the real wallet record ID returned after import.
+    const lpWalletCredId = result.walletCredentialIds.legalParticipant;
+
     const updated = await prisma.orgCredential.update({
       where: { id: req.params.id },
       data: {
         verificationStatus: isVerified ? 'verified' : 'failed',
         vcPayload: result.vc as any,
-        vcJwt: getVPSigner().signVC(result.vc as unknown as Record<string, unknown>),
+        ...(lpWalletCredId ? { walletCredentialId: lpWalletCredId } : {}),
         complianceResult: result.complianceResult as any,
         notaryResult: result.notaryResult as any,
-        issuedVCs: [...(record.issuedVCs || []), ...result.issuedVCs] as any,
         verificationAttempts: [...record.verificationAttempts, ...result.attempts] as any,
       },
     });
@@ -174,13 +196,17 @@ router.post('/:id/verify', requireRole('company_admin'), async (req: Request, re
   }
 });
 
-// POST /api/org-credentials/:id/notary-check - Check registration number via real GXDCH notary
 router.post('/:id/notary-check', requireRole('company_admin'), async (req: Request, res: Response) => {
   const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
   if (!row) return res.status(404).json({ error: 'Not found' });
 
   const record = toRecord(row);
-  const signer = getVPSigner();
+  if (!record.did) {
+    return res.status(503).json({
+      error: 'ORG_CREDENTIAL_DID_MISSING',
+      message: 'Notary check requires a company DID on this org credential.',
+    });
+  }
   const regEntry = gaiaxLiveClient.getNotaryType(record.legalRegistrationNumber);
   if (!regEntry) {
     return res.status(400).json({ error: 'No supported registration number type (need VAT, EORI, LEI, or Tax ID)' });
@@ -192,7 +218,7 @@ router.post('/:id/notary-check', requireRole('company_admin'), async (req: Reque
     regEntry.type,
     regEntry.value,
     `${getVCBaseUrl()}/vc/${record.id}`,
-    record.did || signer.getDid(),
+    record.did,
   );
 
   res.json({
@@ -203,7 +229,6 @@ router.post('/:id/notary-check', requireRole('company_admin'), async (req: Reque
   });
 });
 
-// GET /api/org-credentials/:id/status
 router.get('/:id/status', async (req: Request, res: Response) => {
   const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
   if (!row) return res.status(404).json({ error: 'Not found' });
@@ -215,8 +240,9 @@ router.get('/:id/status', async (req: Request, res: Response) => {
     legalName: record.legalName,
     verificationStatus: record.verificationStatus,
     did: record.did,
-    hasVcJwt: !!record.vcJwt,
-    issuedVCCount: record.issuedVCs?.length || 0,
+    hasWalletCredential: !!record.walletCredentialId,
+    walletCredentialId: record.walletCredentialId,
+    hasLpVcJwt: !!(row as any).lpVcJwt,
     complianceResult: record.complianceResult ? {
       status: record.complianceResult.status,
       complianceLevel: record.complianceResult.complianceLevel,
@@ -236,7 +262,6 @@ router.get('/:id/status', async (req: Request, res: Response) => {
   });
 });
 
-// GET /api/org-credentials/:id/proof
 router.get('/:id/proof', async (req: Request, res: Response) => {
   const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
   if (!row) return res.status(404).json({ error: 'Not found' });
@@ -245,49 +270,77 @@ router.get('/:id/proof', async (req: Request, res: Response) => {
 
   res.json({
     vcPayload: record.vcPayload,
-    vcJwt: record.vcJwt,
+    walletCredentialId: record.walletCredentialId,
     complianceResult: record.complianceResult,
     notaryResult: record.notaryResult,
-    issuedVCs: record.issuedVCs,
     verificationAttempts: record.verificationAttempts,
   });
 });
 
-// GET /api/org-credentials/:id/issued-vcs - List issued VCs for this credential
 router.get('/:id/issued-vcs', async (req: Request, res: Response) => {
-  const row = await prisma.orgCredential.findUnique({ where: { id: req.params.id } });
+  const row = await prisma.orgCredential.findUnique({
+    where: { id: req.params.id },
+    select: { companyId: true, did: true },
+  });
   if (!row) return res.status(404).json({ error: 'Not found' });
 
-  const record = toRecord(row);
-  res.json(record.issuedVCs || []);
+  // Credentials live in the wallet — proxy list from walt.id wallet API.
+  // Falls back to empty array if wallet is unreachable (non-fatal).
+  const credentials = await listWalletCredentials().catch(() => []);
+  res.json(credentials);
 });
 
-// GET /api/org-credentials/wallet/credentials - List all VCs in the walt.id wallet
 router.get('/wallet/credentials', async (_req: Request, res: Response) => {
   const credentials = await listWalletCredentials();
   res.json(credentials || []);
 });
 
-// POST /api/org-credentials/test-verification
-router.post('/test-verification', requireRole('company_admin'), async (_req: Request, res: Response) => {
-  const sampleOrg: OrgCredentialRecord = {
-    id: `test-${uuidv4().slice(0, 8)}`,
-    companyId: 'test-company',
-    legalName: 'Toyota Motor Corporation',
-    legalRegistrationNumber: { vatId: 'JP-TOYOTA-VAT-2024' },
-    legalAddress: { streetAddress: '1 Toyota-cho', locality: 'Toyota City', postalCode: '471-8571', countryCode: 'JP', countrySubdivisionCode: 'JP-23' },
-    headquartersAddress: { streetAddress: '1 Toyota-cho', locality: 'Toyota City', postalCode: '471-8571', countryCode: 'JP', countrySubdivisionCode: 'JP-23' },
-    website: 'https://www.toyota-global.com',
-    contactEmail: 'admin@toyota-global.com',
-    did: getVPSigner().getDid(),
-    validFrom: new Date().toISOString(),
-    validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-    verificationStatus: 'draft',
-    verificationAttempts: [],
-    issuedVCs: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+router.post('/test-verification', requireRole('company_admin'), async (req: Request, res: Response) => {
+  let sampleOrg: OrgCredentialRecord;
+
+  if (!gaiaxClient.isMockMode) {
+    const companyId = (req.body as { companyId?: string } | undefined)?.companyId;
+    if (!companyId || typeof companyId !== 'string') {
+      return res.status(400).json({
+        error: 'COMPANY_ID_REQUIRED',
+        message: 'Live Gaia-X mode requires JSON body { "companyId": "<uuid>" } for a wallet-provisioned company with an org credential.',
+      });
+    }
+    const oc = await prisma.orgCredential.findFirst({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!oc) return res.status(404).json({ error: 'No org credential for this company' });
+    const co = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { walletProvisioned: true },
+    });
+    if (!co?.walletProvisioned) {
+      return res.status(400).json({
+        error: 'COMPANY_WALLET_REQUIRED',
+        message: 'Company must have walletProvisioned before live Gaia-X verification.',
+      });
+    }
+    sampleOrg = toRecord(oc);
+  } else {
+    sampleOrg = {
+      id: `test-${uuidv4().slice(0, 8)}`,
+      companyId: 'test-company',
+      legalName: 'Toyota Motor Corporation',
+      legalRegistrationNumber: { vatId: 'JP-TOYOTA-VAT-2024' },
+      legalAddress: { streetAddress: '1 Toyota-cho', locality: 'Toyota City', postalCode: '471-8571', countryCode: 'JP', countrySubdivisionCode: 'JP-23' },
+      headquartersAddress: { streetAddress: '1 Toyota-cho', locality: 'Toyota City', postalCode: '471-8571', countryCode: 'JP', countrySubdivisionCode: 'JP-23' },
+      website: 'https://www.toyota-global.com',
+      contactEmail: 'admin@toyota-global.com',
+      did: 'did:web:mock.local%3A8000:company:mock-gaiax-test',
+      validFrom: new Date().toISOString(),
+      validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      verificationStatus: 'draft',
+      verificationAttempts: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  }
 
   try {
     const result = await orchestrator.verify(sampleOrg);
@@ -300,7 +353,7 @@ router.post('/test-verification', requireRole('company_admin'), async (_req: Req
       complianceStatus: result.complianceResult.status,
       complianceErrors: result.complianceResult.errors,
       endpointSetUsed: result.complianceResult.endpointSetUsed,
-      issuedVCCount: result.issuedVCs.length,
+      walletCredentialIds: result.walletCredentialIds,
       attempts: result.attempts,
     });
   } catch (e: unknown) {

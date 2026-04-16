@@ -118,23 +118,12 @@ export interface OrgCredentialRecord {
   verificationStatus: 'draft' | 'submitted' | 'verifying' | 'verified' | 'failed';
   verificationAttempts: VerificationAttempt[];
   vcPayload?: LegalParticipantVC;
-  vcJwt?: string;
+  /** walt.id wallet credential id for the primary LegalParticipant VC. All VCs stored in wallet. */
+  walletCredentialId?: string | null;
   complianceResult?: ComplianceResult;
   notaryResult?: NotaryResult;
-  issuedVCs?: IssuedVC[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface IssuedVC {
-  id: string;
-  type: string;
-  jwt?: string;
-  json?: Record<string, unknown>;
-  issuedAt: string;
-  issuer: string;
-  storedInWallet: boolean;
-  walletId?: string;
 }
 
 export interface VerificationAttempt {

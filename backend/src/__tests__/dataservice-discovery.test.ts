@@ -8,21 +8,9 @@ import {
   parseDataServiceEndpoint,
   DataServiceDiscoveryError,
 } from '../services/dataservice-discovery';
+import logger from '../lib/logger';
 import { buildCompanyDidDocument } from '../services/did-resolver';
 import type { DidDocument, ServiceEndpoint } from '../services/did-resolver';
-
-// Mock VPSigner
-jest.mock('../services/gaiax/vp-signer', () => ({
-  getVPSigner: () => ({
-    getPublicKeyJwk: () => ({
-      kty: 'RSA',
-      n: 'test-n',
-      e: 'AQAB',
-      kid: 'did:web:test:v1#key-1',
-      alg: 'RS256',
-    }),
-  }),
-}));
 
 const TOYOTA_COMPANY = {
   id: 'company-toyota-001',
@@ -40,9 +28,18 @@ const TOKIO_COMPANY = {
   createdAt: new Date('2024-01-01'),
 };
 
+const walletJwks = {
+  walletProvisioned: true as const,
+  ed25519PublicJwk: { kty: 'OKP' as const, crv: 'Ed25519' as const, x: 'dGVzdC14LWJ5dGVzLWZvci1lZDI1NTE5LWtleQ' },
+  rsaPublicJwk: { kty: 'RSA' as const, n: 'dGVzdC1u', e: 'AQAB' },
+};
+
+const TOYOTA_WALLET = { ...TOYOTA_COMPANY, ...walletJwks };
+const TOKIO_WALLET = { ...TOKIO_COMPANY, ...walletJwks };
+
 describe('discoverDataService', () => {
   it('should discover DataService from company with ready EDC', () => {
-    const doc = buildCompanyDidDocument(TOYOTA_COMPANY, {
+    const doc = buildCompanyDidDocument(TOYOTA_WALLET, {
       status: 'ready',
       protocolUrl: 'https://toyota-protocol.tx.the-sense.io/api/v1/dsp',
     });
@@ -57,7 +54,7 @@ describe('discoverDataService', () => {
   });
 
   it('should throw NO_DATASERVICE for company without EDC', () => {
-    const doc = buildCompanyDidDocument(TOKIO_COMPANY, null);
+    const doc = buildCompanyDidDocument(TOKIO_WALLET, null);
     expect(() => discoverDataService(doc)).toThrow(DataServiceDiscoveryError);
 
     try {
@@ -94,15 +91,16 @@ describe('discoverDataService', () => {
       ],
     };
 
-    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const warnSpy = jest.spyOn(logger, 'warn').mockImplementation();
     const result = discoverDataService(doc);
 
     expect(result.dspUrl).toBe('https://first.example.com/dsp');
     expect(result.issuerBpnl).toBe('BPNL000000000001');
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ component: 'dataservice-discovery', did: 'did:test:multi' }),
       expect.stringContaining('Multiple DataService entries'),
     );
-    consoleSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 });
 
@@ -229,7 +227,7 @@ describe('parseDataServiceEndpoint', () => {
 
 describe('end-to-end: buildCompanyDidDocument → DataService discovery', () => {
   it('should extract DSP URL and BPNL from company with ready EDC', () => {
-    const doc = buildCompanyDidDocument(TOYOTA_COMPANY, {
+    const doc = buildCompanyDidDocument(TOYOTA_WALLET, {
       status: 'ready',
       protocolUrl: 'https://toyota-protocol.tx.the-sense.io/api/v1/dsp',
     });
@@ -240,7 +238,7 @@ describe('end-to-end: buildCompanyDidDocument → DataService discovery', () => 
   });
 
   it('should fail gracefully for company without DataService', () => {
-    const doc = buildCompanyDidDocument(TOKIO_COMPANY, null);
+    const doc = buildCompanyDidDocument(TOKIO_WALLET, null);
 
     expect(() => discoverDataService(doc)).toThrow(DataServiceDiscoveryError);
     try {

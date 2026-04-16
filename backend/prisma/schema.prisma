@@ -27,6 +27,18 @@ model Company {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Walt.id per-company wallet (optional until provisioned)
+  walletAccountId     String?
+  walletId            String?
+  ed25519KeyId        String?
+  rsaKeyId            String?
+  ed25519PublicJwk    Json?
+  rsaPublicJwk        Json?
+  rsaCertPem          String?
+  walletProvisioned   Boolean  @default(false)
+  /// Operator-issued Membership VC claimed into this company's walt.id wallet (wallet credential id).
+  membershipWalletCredentialId String?
+
   users           CompanyUser[]
   edcProvisioning EdcProvisioning?
   orgCredentials  OrgCredential[]
@@ -236,10 +248,12 @@ model OrgCredential {
   verificationStatus      String   @default("draft")
   verificationAttempts    Json     @default("[]")
   vcPayload               Json?
-  vcJwt                   String?
+  walletCredentialId      String?
   complianceResult        Json?
   notaryResult            Json?
-  issuedVCs               Json     @default("[]")
+  /// Compact LP VC-JWT, persisted solely for public /vc/:id/jwt URL serving (GXDCH resolution).
+  /// All other credentials live in the company's walt.id wallet.
+  lpVcJwt                 String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
@@ -362,12 +376,16 @@ model PresentationSession {
   @@map("presentation_sessions")
 }
 
-model PlatformKeypair {
-  id         String   @id @default("platform-signer")
-  privateKey String
-  publicKey  String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+/// Singleton row for platform operator walt.id wallet (trust anchor). Populated by OperatorWalletService.bootstrapOnStartup.
+model OperatorWallet {
+  id                String   @id @default(cuid())
+  walletAccountId   String
+  walletId          String
+  ed25519KeyId      String
+  rsaKeyId          String
+  ed25519PublicJwk  Json?
+  rsaPublicJwk      Json?
+  provisionedAt     DateTime @default(now())
 
-  @@map("platform_keypairs")
+  @@map("operator_wallet")
 }

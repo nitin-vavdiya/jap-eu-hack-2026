@@ -1,5 +1,6 @@
 import axios from 'axios';
 import logger from '../lib/logger';
+import { WALTID_DEFAULT_JWT_VC_CONFIGURATION_ID } from './wallet/waltid-oid4vci-defaults';
 
 const WALTID_ISSUER_URL = process.env.WALTID_ISSUER_URL || 'http://localhost:7002';
 const WALTID_WALLET_URL = process.env.WALTID_WALLET_URL || 'http://localhost:7001';
@@ -47,7 +48,7 @@ export async function issueCredentialDirect(params: {
     const response = await issuerApi.post('/openid4vc/jwt/issue', {
       issuerKey: { type: 'jwk', jwk: params.issuerKey },
       issuerDid: params.issuerDid,
-      credentialConfigurationId: `${params.type[params.type.length - 1]}_jwt_vc_json`,
+      credentialConfigurationId: WALTID_DEFAULT_JWT_VC_CONFIGURATION_ID,
       credentialData: {
         '@context': ['https://www.w3.org/2018/credentials/v1'],
         type: params.type,
@@ -65,12 +66,9 @@ export async function issueCredentialDirect(params: {
   }
 }
 
-// walt.id built-in credential config IDs — custom IDs are not supported
-const WALTID_CONFIG_ID = 'UniversityDegree_jwt_vc_json';
-
 /**
  * Simple wrapper for legacy callers that don't have an issuerKey.
- * Uses a built-in walt.id credential config ID with custom credential data.
+ * Uses {@link WALTID_DEFAULT_JWT_VC_CONFIGURATION_ID} with arbitrary credential data until schemas are fixed.
  */
 export async function issueCredentialSimple(params: {
   type: string;
@@ -81,7 +79,7 @@ export async function issueCredentialSimple(params: {
   try {
     const response = await issuerApi.post('/openid4vc/jwt/issue', {
       issuerDid: params.issuerDid,
-      credentialConfigurationId: WALTID_CONFIG_ID,
+      credentialConfigurationId: WALTID_DEFAULT_JWT_VC_CONFIGURATION_ID,
       credentialData: {
         '@context': ['https://www.w3.org/2018/credentials/v1'],
         type: ['VerifiableCredential', params.type],

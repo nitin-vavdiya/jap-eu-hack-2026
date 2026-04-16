@@ -8,8 +8,9 @@ import { NotaryResult, ComplianceResult, GaiaXEndpointSet } from './types';
  *   - Returns a signed VC-JWT attesting the registration number
  *
  * Compliance: POST /api/credential-offers/standard-compliance?vcid={url}
- *   - Content-Type: application/vnd.ietf.jose.presentation+jwt
+ *   - Content-Type: application/vp+jwt (raw compact VP-JWS)
  *   - Body: VP-JWT string
+ *   - `vcid` must be an HTTPS URL that returns raw LegalParticipant VC-JWS (application/vc+jwt), e.g. /vc/{id}/jwt
  *   - Returns: 201 with compliance credential JWT
  */
 export class GaiaXLiveClient {
@@ -98,10 +99,9 @@ export class GaiaXLiveClient {
   }
 
   /**
-   * Submit a VP-JWT to the real GXDCH compliance service.
-   * Expects the VP to be signed with a key that has x5u/x5c certificate chain
-   * rooted in a Gaia-X Trust Anchor. For demo purposes, we submit with a self-signed
-   * key and capture the (expected) error response for transparency.
+   * Submit a compact VP-JWT to the real GXDCH compliance service (v2 Loire format).
+   * Content-Type: application/vp+jwt (matches VP_JWT_MIME_TYPE constant in gx-compliance).
+   * The VP payload uses EnvelopedVerifiableCredential with data:application/vc+jwt,{jwt}.
    */
   async submitCompliance(
     complianceBaseUrl: string,
@@ -119,9 +119,9 @@ export class GaiaXLiveClient {
           'Content-Type': 'application/vp+jwt',
           Accept: 'application/vc+jwt, application/json',
         },
+        transformRequest: [(body) => body],
         responseType: 'text',
         transformResponse: [(data) => data],
-        // Don't throw on 4xx so we can capture the error body
         validateStatus: (status) => status < 500,
       });
 
