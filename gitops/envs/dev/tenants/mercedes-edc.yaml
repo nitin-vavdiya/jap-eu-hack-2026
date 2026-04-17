@@ -1,11 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: edc-honda-cars
+  name: edc-mercedes
   namespace: argocd
   labels:
-    tenant: "honda-cars"
+    tenant: "mercedes"
     managed-by: edc-provisioning
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
@@ -18,10 +20,10 @@ spec:
         - name: VAULT_SECRET
           value: vault-secret
         - name: HELM_VALUES_FILE
-          value: "values.yaml -f values-honda-cars.yaml"
+          value: "values.yaml -f values-mercedes.yaml"
   destination:
     server: https://kubernetes.default.svc
-    namespace: edc-honda-cars
+    namespace: edc-mercedes-dev
   syncPolicy:
     automated:
       prune: true

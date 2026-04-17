@@ -23,7 +23,7 @@ spec:
           value: "values.yaml -f values-smartsense-consulting-solution.yaml"
   destination:
     server: https://kubernetes.default.svc
-    namespace: edc-smartsense-consulting-solution
+    namespace: edc-smartsense-consulting-solution-dev
   syncPolicy:
     automated:
       prune: true

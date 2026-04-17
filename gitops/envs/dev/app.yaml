@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-dev
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    argocd-image-updater.argoproj.io/image-list: |
+      backend=public.ecr.aws/smartsense/backend,
+      portal-dataspace=public.ecr.aws/smartsense/portal-dataspace,
+      portal-tata-admin=public.ecr.aws/smartsense/portal-tata-admin,
+      portal-tata-public=public.ecr.aws/smartsense/portal-tata-public,
+      portal-wallet=public.ecr.aws/smartsense/portal-wallet,
+      portal-insurance=public.ecr.aws/smartsense/portal-insurance,
+      portal-company=public.ecr.aws/smartsense/portal-company,
+      keycloak=public.ecr.aws/smartsense/keycloak
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/git-branch: main
+    argocd-image-updater.argoproj.io/backend.update-strategy: semver
+    argocd-image-updater.argoproj.io/backend.helm.image-tag: backend.image.tag
+    argocd-image-updater.argoproj.io/portal-dataspace.update-strategy: semver
+    argocd-image-updater.argoproj.io/portal-dataspace.helm.image-tag: portalDataspace.image.tag
+    argocd-image-updater.argoproj.io/portal-tata-admin.update-strategy: semver
+    argocd-image-updater.argoproj.io/portal-tata-admin.helm.image-tag: portalTataAdmin.image.tag
+    argocd-image-updater.argoproj.io/portal-tata-public.update-strategy: semver
+    argocd-image-updater.argoproj.io/portal-tata-public.helm.image-tag: portalTataPublic.image.tag
+    argocd-image-updater.argoproj.io/portal-wallet.update-strategy: semver
+    argocd-image-updater.argoproj.io/portal-wallet.helm.image-tag: portalWallet.image.tag
+    argocd-image-updater.argoproj.io/portal-insurance.update-strategy: semver
+    argocd-image-updater.argoproj.io/portal-insurance.helm.image-tag: portalInsurance.image.tag
+    argocd-image-updater.argoproj.io/portal-company.update-strategy: semver
+    argocd-image-updater.argoproj.io/portal-company.helm.image-tag: portalCompany.image.tag
+    argocd-image-updater.argoproj.io/keycloak.update-strategy: semver
+    argocd-image-updater.argoproj.io/keycloak.helm.image-tag: keycloak.image.tag
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/smartSenseSolutions/jap-eu-hack-2026
+    targetRevision: main
+    path: helm/app-chart
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: apps
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

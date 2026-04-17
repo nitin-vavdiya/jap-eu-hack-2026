@@ -1,13 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: edc-toyota-motor-belgium
+  name: edc-honda-cars
   namespace: argocd
   labels:
-    tenant: "toyota-motor-belgium"
+    tenant: "honda-cars"
     managed-by: edc-provisioning
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
@@ -20,10 +18,10 @@ spec:
         - name: VAULT_SECRET
           value: vault-secret
         - name: HELM_VALUES_FILE
-          value: "values.yaml -f values-toyota-motor-belgium.yaml"
+          value: "values.yaml -f values-honda-cars.yaml"
   destination:
     server: https://kubernetes.default.svc
-    namespace: edc-toyota-motor-belgium
+    namespace: edc-honda-cars-dev
   syncPolicy:
     automated:
       prune: true

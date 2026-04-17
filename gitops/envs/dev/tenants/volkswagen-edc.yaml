@@ -23,7 +23,7 @@ spec:
           value: "values.yaml -f values-volkswagen.yaml"
   destination:
     server: https://kubernetes.default.svc
-    namespace: edc-volkswagen
+    namespace: edc-volkswagen-dev
   syncPolicy:
     automated:
       prune: true

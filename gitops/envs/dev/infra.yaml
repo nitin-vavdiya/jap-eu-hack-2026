@@ -1,32 +1,29 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: edc-mercedes
+  name: infra-dev
   namespace: argocd
-  labels:
-    tenant: "mercedes"
-    managed-by: edc-provisioning
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/smartSenseSolutions/jap-eu-hack-2026
-    targetRevision: HEAD
-    path: edc/tx-edc-eleven
-    plugin:
-      name: argocd-vault-plugin-helm
-      env:
-        - name: VAULT_SECRET
-          value: vault-secret
-        - name: HELM_VALUES_FILE
-          value: "values.yaml -f values-mercedes.yaml"
+    targetRevision: main
+    path: helm/infra-chart
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: edc-mercedes
+    namespace: infra
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
