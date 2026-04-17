@@ -1,5 +1,12 @@
 name: Docker Build & Push
 
+# =============================================================================
+# DEPRECATED — kept as one-release fallback.
+# Use .github/workflows/release-build.yml (tag-triggered) for normal releases.
+# Use .github/workflows/promote.yml (workflow_dispatch) for qa/prod promotion.
+# Planned removal: after the first successful release cycle of the new workflows.
+# =============================================================================
+
 on:
   workflow_dispatch:
     inputs:

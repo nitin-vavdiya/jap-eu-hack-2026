@@ -1,0 +1,156 @@
+name: Promote to Env
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: "Target environment"
+        required: true
+        type: choice
+        options: [qa, prod]
+      app:
+        description: "App name (e.g. backend, portal-tata-admin, keycloak)"
+        required: true
+        type: string
+      version:
+        description: "Version to promote (e.g. 1.2.3)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote-${{ inputs.env }}-${{ inputs.app }}
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check authorized actor
+        env:
+          ALLOWED: ${{ secrets.ALLOWED_ACTORS }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          IFS=',' read -ra USERS <<< "${ALLOWED}"
+          for USER in "${USERS[@]}"; do
+            TRIMMED="${USER#"${USER%%[![:space:]]*}"}"
+            TRIMMED="${TRIMMED%"${TRIMMED##*[![:space:]]}"}"
+            if [ "${TRIMMED}" = "${ACTOR}" ]; then exit 0; fi
+          done
+          echo "Error: ${ACTOR} not authorized."
+          exit 1
+
+      - name: Validate inputs
+        env:
+          APP: ${{ inputs.app }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "${APP}" =~ ^[a-z0-9-]+$ ]]; then
+            echo "::error::Invalid app name: '${APP}'"
+            exit 1
+          fi
+          if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo "::error::Invalid semver: '${VERSION}'"
+            exit 1
+          fi
+
+  validate-image:
+    needs: authorize
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Verify image exists in ECR Public
+        env:
+          ECR_NAMESPACE: ${{ secrets.ECR_NAMESPACE }}
+          APP: ${{ inputs.app }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! aws ecr-public describe-images \
+            --repository-name "${ECR_NAMESPACE}/${APP}" \
+            --image-ids imageTag="${VERSION}" \
+            --region us-east-1 >/dev/null; then
+            echo "::error::Image ${ECR_NAMESPACE}/${APP}:${VERSION} not found in ECR Public"
+            exit 1
+          fi
+
+  bump-values:
+    needs: validate-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT_VALUES_WRITE }}
+          persist-credentials: false        # don't leave PAT in .git/config
+
+      - name: Install yq (pinned + checksum verified)
+        env:
+          YQ_VERSION: v4.44.3
+          YQ_SHA256: a2c097180dd884a8d50c956ee16a9cec070f30a7947cf4ebf87d5f36213e9ed7
+        run: |
+          set -euo pipefail
+          sudo curl -fsSL -o /usr/local/bin/yq \
+            "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          echo "${YQ_SHA256}  /usr/local/bin/yq" | sha256sum -c -
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Map app to values key
+        id: map
+        env:
+          APP: ${{ inputs.app }}
+        run: |
+          case "$APP" in
+            backend)              KEY="backend.image.tag" ;;
+            portal-dataspace)     KEY="portalDataspace.image.tag" ;;
+            portal-tata-admin)    KEY="portalTataAdmin.image.tag" ;;
+            portal-tata-public)   KEY="portalTataPublic.image.tag" ;;
+            portal-wallet)        KEY="portalWallet.image.tag" ;;
+            portal-insurance)     KEY="portalInsurance.image.tag" ;;
+            portal-company)       KEY="portalCompany.image.tag" ;;
+            keycloak)             KEY="keycloak.image.tag" ;;
+            provisioning)         KEY="provisioning.image.tag" ;;
+            *) echo "Unknown app"; exit 1 ;;
+          esac
+          echo "key=$KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Bump values file
+        env:
+          KEY: ${{ steps.map.outputs.key }}
+          VERSION: ${{ inputs.version }}
+          ENV: ${{ inputs.env }}
+        run: |
+          # VERSION via strenv to avoid yq-expression injection.
+          yq -i "${KEY} = strenv(VERSION)" "helm/app-chart/values-${ENV}.yaml"
+          echo "=== diff ==="
+          git diff --stat "helm/app-chart/values-${ENV}.yaml" || true
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GH_PAT_VALUES_WRITE }}
+          branch: promote/${{ inputs.env }}-${{ inputs.app }}-${{ inputs.version }}
+          commit-message: "promote(${{ inputs.env }}): ${{ inputs.app }} → ${{ inputs.version }}"
+          title: "promote(${{ inputs.env }}): ${{ inputs.app }} → ${{ inputs.version }}"
+          body: |
+            Manual promotion.
+
+            - Env: `${{ inputs.env }}`
+            - App: `${{ inputs.app }}`
+            - Version: `${{ inputs.version }}`
+
+            Merging will trigger Argo CD sync for the ${{ inputs.env }} environment.
+          base: main

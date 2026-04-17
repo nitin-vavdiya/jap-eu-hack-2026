@@ -1,0 +1,209 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - "backend-v*"
+      - "portal-dataspace-v*"
+      - "portal-tata-admin-v*"
+      - "portal-tata-public-v*"
+      - "portal-wallet-v*"
+      - "portal-insurance-v*"
+      - "portal-company-v*"
+      - "keycloak-v*"
+      - "provisioning-v*"
+
+# Least-privilege default; bump-dev-values overrides with what it needs.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check authorized actor
+        env:
+          ALLOWED: ${{ secrets.ALLOWED_ACTORS }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          echo "Actor: ${ACTOR}"
+          IFS=',' read -ra USERS <<< "${ALLOWED}"
+          for USER in "${USERS[@]}"; do
+            TRIMMED="${USER#"${USER%%[![:space:]]*}"}"
+            TRIMMED="${TRIMMED%"${TRIMMED##*[![:space:]]}"}"
+            if [ "${TRIMMED}" = "${ACTOR}" ]; then
+              echo "Authorization granted for ${ACTOR}"
+              exit 0
+            fi
+          done
+          echo "Error: ${ACTOR} is not authorized to trigger this workflow."
+          exit 1
+
+  build-and-push:
+    needs: authorize
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      app: ${{ steps.parse.outputs.app }}
+      version: ${{ steps.parse.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse and validate tag
+        id: parse
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          APP="${TAG%-v*}"
+          VERSION="${TAG##*-v}"
+          # Validate format to avoid malformed refs cascading downstream.
+          if ! [[ "$APP" =~ ^[a-z0-9-]+$ ]]; then
+            echo "::error::Invalid app name parsed from tag '$TAG': '$APP'"
+            exit 1
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo "::error::Invalid semver parsed from tag '$TAG': '$VERSION'"
+            exit 1
+          fi
+          echo "app=${APP}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Parsed: app=${APP}, version=${VERSION}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to ECR Public
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: public
+
+      - name: Resolve Dockerfile and context
+        id: dockerfile
+        env:
+          APP: ${{ steps.parse.outputs.app }}
+        run: |
+          case "$APP" in
+            backend)
+              echo "file=backend/Dockerfile" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "build_args=" >> "$GITHUB_OUTPUT"
+              ;;
+            portal-*)
+              echo "file=apps/Dockerfile" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "build_args=APP_NAME=$APP" >> "$GITHUB_OUTPUT"
+              ;;
+            keycloak)
+              echo "file=keycloak/Dockerfile" >> "$GITHUB_OUTPUT"
+              echo "context=keycloak/" >> "$GITHUB_OUTPUT"
+              echo "build_args=" >> "$GITHUB_OUTPUT"
+              ;;
+            provisioning)
+              echo "file=provisioning/Dockerfile" >> "$GITHUB_OUTPUT"
+              echo "context=." >> "$GITHUB_OUTPUT"
+              echo "build_args=" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown app: $APP" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.dockerfile.outputs.context }}
+          file: ${{ steps.dockerfile.outputs.file }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: ${{ steps.dockerfile.outputs.build_args }}
+          tags: |
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_NAMESPACE }}/${{ steps.parse.outputs.app }}:${{ steps.parse.outputs.version }}
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_NAMESPACE }}/${{ steps.parse.outputs.app }}:latest
+
+  bump-dev-values:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT_VALUES_WRITE }}
+          persist-credentials: false       # don't leave PAT in .git/config
+
+      - name: Install yq (pinned + checksum verified)
+        env:
+          YQ_VERSION: v4.44.3
+          YQ_SHA256: a2c097180dd884a8d50c956ee16a9cec070f30a7947cf4ebf87d5f36213e9ed7
+        run: |
+          set -euo pipefail
+          sudo curl -fsSL -o /usr/local/bin/yq \
+            "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          echo "${YQ_SHA256}  /usr/local/bin/yq" | sha256sum -c -
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Map app to values key
+        id: map
+        env:
+          APP: ${{ needs.build-and-push.outputs.app }}
+        run: |
+          case "$APP" in
+            backend)              KEY="backend.image.tag" ;;
+            portal-dataspace)     KEY="portalDataspace.image.tag" ;;
+            portal-tata-admin)    KEY="portalTataAdmin.image.tag" ;;
+            portal-tata-public)   KEY="portalTataPublic.image.tag" ;;
+            portal-wallet)        KEY="portalWallet.image.tag" ;;
+            portal-insurance)     KEY="portalInsurance.image.tag" ;;
+            portal-company)       KEY="portalCompany.image.tag" ;;
+            keycloak)             KEY="keycloak.image.tag" ;;
+            provisioning)         KEY="provisioning.image.tag" ;;
+            *) echo "Unknown app: $APP" >&2; exit 1 ;;
+          esac
+          echo "key=$KEY" >> "$GITHUB_OUTPUT"
+
+      - name: Bump values-dev.yaml
+        env:
+          KEY: ${{ steps.map.outputs.key }}
+          VERSION: ${{ needs.build-and-push.outputs.version }}
+        run: |
+          # VERSION is read as an env value via strenv; this avoids yq-expression
+          # injection even if VERSION contains yq-special characters. KEY is
+          # produced only by the whitelist case statement above.
+          yq -i "${KEY} = strenv(VERSION)" helm/app-chart/values-dev.yaml
+          echo "=== diff ==="
+          git diff --stat helm/app-chart/values-dev.yaml || true
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GH_PAT_VALUES_WRITE }}
+          branch: chore/bump-dev-${{ needs.build-and-push.outputs.app }}-${{ needs.build-and-push.outputs.version }}
+          commit-message: "chore(dev): bump ${{ needs.build-and-push.outputs.app }} → ${{ needs.build-and-push.outputs.version }}"
+          title: "chore(dev): bump ${{ needs.build-and-push.outputs.app }} → ${{ needs.build-and-push.outputs.version }}"
+          body: |
+            Automated dev tag bump. Argo CD will sync after merge.
+
+            App: `${{ needs.build-and-push.outputs.app }}`
+            Version: `${{ needs.build-and-push.outputs.version }}`
+          base: main
