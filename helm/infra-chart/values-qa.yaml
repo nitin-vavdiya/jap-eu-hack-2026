@@ -1,0 +1,7 @@
+global:
+  envPrefix: qa
+
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      retention: 7d

@@ -1,0 +1,26 @@
+global:
+  envPrefix: dev
+  imageRegistry: public.ecr.aws/smartsense     # confirm actual ECR_NAMESPACE before deploy
+
+backend:
+  image:
+    tag: latest
+  replicaCount: 1
+
+portalDataspace:    { image: { tag: latest } }
+portalTataAdmin:    { image: { tag: latest } }
+portalTataPublic:   { image: { tag: latest } }
+portalWallet:       { image: { tag: latest } }
+portalInsurance:    { image: { tag: latest } }
+portalCompany:      { image: { tag: latest } }
+
+keycloak:
+  enabled: true
+  image: { tag: latest }
+
+postgres:
+  storage:
+    size: 10Gi
+
+backup:
+  retentionDays: 3

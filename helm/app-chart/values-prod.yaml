@@ -1,0 +1,22 @@
+global:
+  envPrefix: prod
+  imageRegistry: public.ecr.aws/smartsense
+
+backend:            { image: { tag: "0.1.0" }, replicaCount: 1 }
+portalDataspace:    { image: { tag: "0.1.0" } }
+portalTataAdmin:    { image: { tag: "0.1.0" } }
+portalTataPublic:   { image: { tag: "0.1.0" } }
+portalWallet:       { image: { tag: "0.1.0" } }
+portalInsurance:    { image: { tag: "0.1.0" } }
+portalCompany:      { image: { tag: "0.1.0" } }
+
+keycloak:
+  enabled: true
+  image: { tag: "0.1.0" }
+
+postgres:
+  storage:
+    size: 50Gi
+
+backup:
+  retentionDays: 14

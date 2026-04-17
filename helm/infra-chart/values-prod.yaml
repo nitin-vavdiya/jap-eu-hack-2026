@@ -1,0 +1,25 @@
+global:
+  envPrefix: prod
+
+# Prod never uses LE staging — avoid accidentally issuing fake certs
+issuers:
+  letsencryptStaging:
+    enabled: false
+  letsencryptProd:
+    enabled: true
+
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      retention: 14d
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            resources:
+              requests:
+                storage: 20Gi
+
+loki:
+  singleBinary:
+    persistence:
+      size: 20Gi

@@ -1,0 +1,25 @@
+global:
+  envPrefix: dev
+
+# Use LE staging in dev to avoid rate limits while iterating
+issuers:
+  letsencryptStaging:
+    enabled: true
+  letsencryptProd:
+    enabled: true
+
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      retention: 3d
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            resources:
+              requests:
+                storage: 5Gi
+
+loki:
+  singleBinary:
+    persistence:
+      size: 5Gi
