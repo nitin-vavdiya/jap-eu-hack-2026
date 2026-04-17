@@ -1,0 +1,212 @@
+# =============================================================================
+# Global — overridden per env in values-{dev,qa,prod}.yaml
+# =============================================================================
+global:
+  domain: dataspace.smartsenselabs.com
+  envPrefix: dev                    # dev | qa | prod
+  letsencryptEmail: devops@smartsenselabs.com
+
+# =============================================================================
+# HAProxy Kubernetes Ingress Controller (hostNetwork, single-node)
+# =============================================================================
+haproxy:
+  enabled: true
+  controller:
+    kind: DaemonSet
+    ingressClass: haproxy
+    ingressClassResource:
+      default: false
+      name: haproxy
+    daemonset:
+      useHostNetwork: true
+      useHostPort: true
+      hostPorts:
+        http: 80
+        https: 443
+        stat: 1024
+    service:
+      enabled: false               # we use hostNetwork, not a Service LB
+    defaultTLSSecret:
+      enabled: false
+
+# =============================================================================
+# cert-manager + Let's Encrypt HTTP-01 ClusterIssuers
+# =============================================================================
+certManager:
+  enabled: true
+
+cert-manager:
+  installCRDs: true
+  global:
+    leaderElection:
+      namespace: cert-manager
+
+issuers:
+  letsencryptStaging:
+    enabled: true
+    email: ""                     # defaults to global.letsencryptEmail
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+  letsencryptProd:
+    enabled: true
+    email: ""
+    server: https://acme-v02.api.letsencrypt.org/directory
+
+# =============================================================================
+# local-path-provisioner (Rancher)
+# =============================================================================
+localPath:
+  enabled: true
+  isDefault: true
+
+local-path-provisioner:
+  storageClass:
+    defaultClass: true
+    name: local-path
+  nodePathMap:
+    - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
+      paths:
+        - /data/local-path
+
+# =============================================================================
+# HashiCorp Vault (prod-mode, file backend, auto-unseal from k8s Secret)
+# =============================================================================
+vault:
+  enabled: true
+  server:
+    standalone:
+      enabled: true
+      config: |
+        ui = true
+        listener "tcp" {
+          address = "0.0.0.0:8200"
+          tls_disable = 1
+        }
+        storage "file" {
+          path = "/vault/data"
+        }
+    dataStorage:
+      enabled: true
+      size: 5Gi
+      storageClass: local-path
+      accessMode: ReadWriteOnce
+    dev:
+      enabled: false
+    ingress:
+      enabled: false              # internal-only; accessed via port-forward
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits:   { cpu: 500m, memory: 512Mi }
+  injector:
+    enabled: false                # we use direct API from apps, not sidecar injection
+  ui:
+    enabled: true
+
+# Auto-unseal Job (own template; reads k8s Secret vault-unseal-keys)
+vaultUnseal:
+  enabled: true
+  keysSecretName: vault-unseal-keys
+  image: hashicorp/vault:1.17
+
+# =============================================================================
+# Argo CD
+# =============================================================================
+argocd:
+  enabled: true
+
+argo-cd:
+  global:
+    domain: ""                    # built from global.envPrefix in own argocd-ingress.yaml template
+  configs:
+    params:
+      server.insecure: true       # HAProxy terminates TLS
+  server:
+    service:
+      type: ClusterIP
+    ingress:
+      enabled: false              # own template renders it
+    extraArgs:
+      - --insecure
+  controller:
+    replicas: 1
+  repoServer:
+    replicas: 1
+  applicationSet:
+    enabled: true
+  notifications:
+    enabled: false
+  dex:
+    enabled: false
+
+# Argo CD Image Updater (sidecar model — deployed via own manifest, not subchart)
+imageUpdater:
+  enabled: true                   # only effective in dev
+  image:
+    repository: quay.io/argoprojlabs/argocd-image-updater
+    tag: v0.15.1
+  gitSSHSecretName: argocd-image-updater-ssh
+
+# =============================================================================
+# Monitoring: Prometheus + Grafana + Loki + Promtail
+# =============================================================================
+monitoring:
+  prom:
+    enabled: true
+  loki:
+    enabled: true
+  promtail:
+    enabled: true
+
+kube-prometheus-stack:
+  alertmanager:
+    enabled: false
+  prometheus:
+    prometheusSpec:
+      retention: 7d
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: local-path
+            resources:
+              requests:
+                storage: 10Gi
+  grafana:
+    ingress:
+      enabled: false              # own template
+    persistence:
+      enabled: true
+      storageClassName: local-path
+      size: 2Gi
+    adminPassword: ""              # overridden per env; operator sets via values or Secret
+  prometheusOperator:
+    enabled: true                  # kept for ServiceMonitor CRDs
+  nodeExporter:
+    enabled: true
+  kubeStateMetrics:
+    enabled: true
+
+loki:
+  deploymentMode: SingleBinary
+  loki:
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: filesystem
+  singleBinary:
+    replicas: 1
+    persistence:
+      enabled: true
+      storageClass: local-path
+      size: 10Gi
+  monitoring:
+    lokiCanary:
+      enabled: false
+    selfMonitoring:
+      enabled: false
+  test:
+    enabled: false
+
+promtail:
+  config:
+    clients:
+      - url: http://infra-loki:3100/loki/api/v1/push

@@ -43,3 +43,9 @@ yarn-error.log*
 .venv-code-review-graph/**
 # Added by code-review-graph
 .code-review-graph/
+
+# Helm subchart artifacts
+helm/infra-chart/charts/
+helm/infra-chart/Chart.lock
+helm/app-chart/charts/
+helm/app-chart/Chart.lock

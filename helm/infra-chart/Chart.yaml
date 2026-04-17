@@ -1,0 +1,48 @@
+apiVersion: v2
+name: infra-chart
+description: Cluster-level infrastructure (ingress, cert-manager, vault, argocd, storage, monitoring) for jap-eu-hack-2026
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: kubernetes-ingress
+    version: "1.49.0"
+    repository: https://haproxytech.github.io/helm-charts
+    condition: haproxy.enabled
+    alias: haproxy
+
+  - name: cert-manager
+    version: "v1.16.2"
+    repository: https://charts.jetstack.io
+    condition: certManager.enabled
+
+  - name: local-path-provisioner
+    version: "0.0.30"
+    repository: https://charts.containeroo.ch
+    condition: localPath.enabled
+
+  - name: vault
+    version: "0.29.1"
+    repository: https://helm.releases.hashicorp.com
+    condition: vault.enabled
+
+  - name: argo-cd
+    version: "7.7.10"
+    repository: https://argoproj.github.io/argo-helm
+    condition: argocd.enabled
+
+  - name: kube-prometheus-stack
+    version: "65.5.1"
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: monitoring.prom.enabled
+
+  - name: loki
+    version: "6.18.0"
+    repository: https://grafana.github.io/helm-charts
+    condition: monitoring.loki.enabled
+
+  - name: promtail
+    version: "6.16.6"
+    repository: https://grafana.github.io/helm-charts
+    condition: monitoring.promtail.enabled
