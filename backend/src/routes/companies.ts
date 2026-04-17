@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import prisma from '../db';
 import { authenticate, requireRole } from '../middleware/auth';
-import { issueCredentialSimple } from '../services/waltid';
+import { issueCredentialSimple } from '../services/wallet/walt-generic-client';
 import { generateBpn } from '../utils/bpn';
 import { toTenantCode } from '../utils/tenantCode';
 import { buildCompanyDidWeb } from '../services/did-resolver';

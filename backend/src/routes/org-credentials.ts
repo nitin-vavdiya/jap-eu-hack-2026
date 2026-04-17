@@ -5,10 +5,10 @@ import { requireRole } from '../middleware/auth';
 import { GaiaXClient } from '../services/gaiax/client';
 import { GaiaXLiveClient } from '../services/gaiax/live-client';
 import { GaiaXOrchestrator } from '../services/gaiax/orchestrator';
-import { issueLegalParticipantVcJwtForCompany, storeVcInCompanyWalletViaOID4VCI } from '../services/wallet/company-wallet-service';
+import { issueLegalParticipantVcJwtForCompany, storeVcInCompanyWalletViaOID4VCI, getCompanyWalletContext } from '../services/wallet/company-wallet-service';
 import { validateOrgCredentialFields, buildLegalParticipantVC, getVCBaseUrl } from '../services/gaiax/vc-builder';
 import { OrgCredentialRecord } from '../services/gaiax/types';
-import { listWalletCredentials } from '../services/waltid';
+import { listWalletCredentials } from '../services/wallet/wallet-api-client';
 
 const router = Router();
 const gaiaxClient = new GaiaXClient();
@@ -284,15 +284,39 @@ router.get('/:id/issued-vcs', async (req: Request, res: Response) => {
   });
   if (!row) return res.status(404).json({ error: 'Not found' });
 
-  // Credentials live in the wallet — proxy list from walt.id wallet API.
-  // Falls back to empty array if wallet is unreachable (non-fatal).
-  const credentials = await listWalletCredentials().catch(() => []);
-  res.json(credentials);
+  // Credentials live in the company's wallet — proxy list using the company's wallet session.
+  // Falls back to empty array if wallet is unreachable or company has no wallet (non-fatal).
+  try {
+    const ctx = await getCompanyWalletContext(row.companyId);
+    if (!ctx) return res.json([]);
+    const credentials = await listWalletCredentials(ctx.session, ctx.walletId);
+    res.json(credentials);
+  } catch {
+    res.json([]);
+  }
 });
 
-router.get('/wallet/credentials', async (_req: Request, res: Response) => {
-  const credentials = await listWalletCredentials();
-  res.json(credentials || []);
+router.get('/wallet/credentials', async (req: Request, res: Response) => {
+  const companyId = typeof req.query.companyId === 'string' ? req.query.companyId : undefined;
+  if (!companyId) {
+    return res.status(400).json({
+      error: 'COMPANY_ID_REQUIRED',
+      message: 'Query param `companyId` is required to select the company wallet to list credentials from.',
+    });
+  }
+  const ctx = await getCompanyWalletContext(companyId);
+  if (!ctx) {
+    return res.status(404).json({
+      error: 'COMPANY_WALLET_NOT_FOUND',
+      message: 'Company has no provisioned wallet or wallet credentials could not be loaded.',
+    });
+  }
+  try {
+    const credentials = await listWalletCredentials(ctx.session, ctx.walletId);
+    res.json(credentials);
+  } catch (e) {
+    res.status(502).json({ error: 'WALLET_API_FAILED', message: (e as Error).message });
+  }
 });
 
 router.post('/test-verification', requireRole('company_admin'), async (req: Request, res: Response) => {

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '../db';
 import { requireRole } from '../middleware/auth';
-import { issueCredentialSimple } from '../services/waltid';
+import { issueCredentialSimple } from '../services/wallet/walt-generic-client';
 import { getVCBaseUrl } from '../services/gaiax/vc-builder';
 
 const router = Router();

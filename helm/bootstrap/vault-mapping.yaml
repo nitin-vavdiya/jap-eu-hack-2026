@@ -1,0 +1,30 @@
+# Maps .env.<env> keys to Vault KV paths.
+# Used by bootstrap.sh step_vault_populate.
+mappings:
+  - envKey: POSTGRES_PASSWORD
+    vaultPath: secret/postgres/admin
+    vaultKey: password
+  - envKey: POSTGRES_BACKEND_PASSWORD
+    vaultPath: secret/postgres/backend
+    vaultKey: password
+  - envKey: POSTGRES_KEYCLOAK_PASSWORD
+    vaultPath: secret/postgres/keycloak
+    vaultKey: password
+  - envKey: POSTGRES_WALTID_WALLET_PASSWORD
+    vaultPath: secret/postgres/waltid_wallet
+    vaultKey: password
+  - envKey: KEYCLOAK_ADMIN_PASSWORD
+    vaultPath: secret/keycloak/admin
+    vaultKey: password
+  - envKey: GRAFANA_ADMIN_PASSWORD
+    vaultPath: secret/grafana/admin
+    vaultKey: password
+  - envKey: OPERATOR_WALLET_PASSWORD
+    vaultPath: secret/operator/wallet
+    vaultKey: password
+  - envKey: PROVISIONING_CALLBACK_SECRET
+    vaultPath: secret/provisioning/callback
+    vaultKey: secret
+  - envKey: GIT_AUTH_TOKEN
+    vaultPath: secret/provisioning/git
+    vaultKey: token

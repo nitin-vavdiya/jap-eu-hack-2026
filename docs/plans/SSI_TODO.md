@@ -1,33 +1,28 @@
 # SSI Implementation — Remaining TODO
 
-**Last updated:** 2026-04-16  
+**Last updated:** 2026-04-17  
 **Context:** Per-company wallet SSI architecture is largely implemented. This file tracks what remains before the first milestone is complete.
 
 ---
 
-## High Priority
+## Completed 2026-04-17
 
-### 1. Fix `/wallet/credentials` — returns wrong wallet
-**File:** `backend/src/routes/org-credentials.ts` (line ~289, ~294)
-
-`listWalletCredentials()` is called without a company wallet context — it returns operator wallet credentials (or fails). The endpoint should proxy the **company's** wallet using the company's session.
-
-**Fix needed:**
-- Accept `companyId` as a query param or derive from auth context
-- Call `getCompanyWalletContext(companyId)` → pass `session` + `walletId` to `listWalletCredentials`
+- **`/wallet/credentials` fixed** — now requires `?companyId=<uuid>`, loads company wallet context via `getCompanyWalletContext(companyId)`, returns that company's credentials (not operator's). `/:id/issued-vcs` follows the same pattern using `orgCredential.companyId`. (`backend/src/routes/org-credentials.ts`)
+- **`waltid.ts` monolith removed** — generic helpers moved to `backend/src/services/wallet/walt-generic-client.ts` (`issueCredentialSimple`, `verifyPresentationOID4VP`). `listWalletCredentials` now imported from `wallet-api-client.ts` with proper `(session, walletId)` signature. All import sites updated. `backend/src/services/waltid.ts` deleted.
+- **`backend/.keys/gaiax-{private,public}.pem` deleted** — old platform keypair files. `holder-mario-sanchez-*.pem` retained (still used by `vp-processor.ts` for portal DPP / `did:smartsense:` flow — separate subsystem from Gaia-X per-company wallet).
+- **ADR-002 marked `Accepted`** with acceptance date 2026-04-17.
 
 ---
 
-### 2. Verify operator bootstrap idempotency
-After today's container restart + stale row deletion, the operator wallet will be re-provisioned on next backend start.
+## Open — to verify on next backend run
 
-**Verify:**
+### 1. Operator bootstrap idempotency (code-verified, runtime not yet re-confirmed)
+`OperatorWalletService.bootstrapOnStartup()` early-returns when `prisma.operatorWallet.findFirst()` returns a row, so idempotency is structurally correct. Runtime check still outstanding after the 2026-04-16 container restart + stale-row cleanup:
+
 ```bash
-# Start backend — watch for:
-# "Operator walt.id wallet provisioned and recorded"
-
-# Then restart backend again — must NOT create a second operator wallet account:
-# "Operator wallet already recorded — skipping bootstrap"
+# Start backend — watch for exactly one of:
+#   "Operator walt.id wallet provisioned and recorded"  (first run)
+#   "Operator wallet already recorded — skipping bootstrap"  (subsequent runs)
 
 # Confirm Vault was written:
 curl -s -H "X-Vault-Token: dev-root-token" \
@@ -36,33 +31,10 @@ curl -s -H "X-Vault-Token: dev-root-token" \
 
 ---
 
-## Medium Priority
+### 2. ADR ↔ implementation deviation to document
+ADR-002 §Non-negotiables #2 says "private keys never leave walt.id … no in-process crypto.sign". The current per-company VC/VP signing path (`company-wallet-service.ts` → `getCompanyPrivatePem` → `jwt.sign`) **does** export the RSA private JWK transiently and signs locally. Reason: Gaia-X ICAM requires `iss` in the JOSE header and walt.id `/keys/{id}/sign` does not give header control.
 
-### 3. Remove `waltid.ts` monolith
-**File:** `backend/src/services/waltid.ts`
-
-Per plan Phase 7 — logic should live under `services/wallet/`. Currently still used for `listWalletCredentials` and `SimpleWalletCredential` type.
-
-**Steps:**
-1. Move `listWalletCredentials` into `wallet-api-client.ts` (or `company-wallet-service.ts`)
-2. Update all import sites
-3. Delete `waltid.ts`
-
----
-
-### 4. Check/delete `backend/.keys/` directory
-Per plan Phase 7 — the old platform keypair filesystem store should no longer exist.
-
-```bash
-ls backend/.keys/ 2>/dev/null && echo "EXISTS — delete it" || echo "Already gone"
-```
-
----
-
-### 5. ADR status → Accepted
-**File:** `docs/adr/002-per-company-wallet-ssi-architecture.md`
-
-Change `Status: Proposed` → `Status: Accepted` now that the implementation is in place and spikes are resolved.
+**Action:** either (a) soften the non-negotiable to "no long-lived private keys on disk/DB; transient in-memory export is allowed for Gaia-X ICAM-mandated header fields that walt.id signing cannot produce", or (b) implement the walt.id signing path once walt.id adds full JWS header control. Currently the ADR is marked Accepted with this gap unresolved.
 
 ---
 

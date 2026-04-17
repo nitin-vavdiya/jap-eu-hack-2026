@@ -1,7 +1,8 @@
 # ADR-002: Per-Company Wallet & Self-Sovereign Identity Architecture
 
-- **Status**: Proposed
+- **Status**: Accepted
 - **Date**: 2026-04-15
+- **Accepted**: 2026-04-17 (implementation landed; spikes resolved — see `docs/plans/SSI_TODO.md`)
 - **Decision Makers**: Nitin Vavdiya
 - **Related PRD**: `docs/brainstorms/per-company-wallet-ssi-requirements.md`
 - **Implementation gate:** `docs/agreements/001-ssi-implementation-agreement.md` (includes **§6** — walt.id Docker image lines + Gaia-X lab URL defaults from this repo)

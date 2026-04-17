@@ -7,42 +7,50 @@ description: "Claude-mem context from past sessions (auto-updated)"
 
 The following context is from claude-mem, a persistent memory system that tracks your coding sessions.
 
-# $CMEM jap-eu-hack-2026 2026-04-16 4:14pm GMT+5:30
+# [jap-eu-hack-2026] recent context, 2026-04-17 3:38pm GMT+5:30
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 20 obs (7,949t read) | 92,640t work | 91% savings
+Stats: 20 obs (7,359t read) | 264,943t work | 97% savings
 
-### Apr 16, 2026
-661 4:00p 🔵 Gaia-X Compliance Rejects VP-JWT: "Not a Valid JWT and Was Not Decoded"
-662 " 🔵 VP-JWT Header Uses Non-Standard typ "vp+ld+json+jwt" — Likely Cause of Compliance Rejection
-663 4:01p 🔵 LegalParticipant VC-JWT Uses Wrong Encoding — Missing Standard JWT VC Claim Wrapper
-664 " 🔵 GXDCH Compliance Rejects VP-JWT Regardless of Content-Type Header
-665 4:02p 🔵 VP-JWT Missing Standard "vp" Claim Wrapper — JSON-LD VP Placed Directly in Payload
-666 4:06p 🔵 Claude Startup "Context Economics" Display Explained
-667 " 🔵 GXDCH Compliance API Rejects Both JSON VP Payload and JWT-Wrapped Formats
-668 " 🔵 Gaia-X VP Structure Confirmed: Three VCs with Correct Types and LEI Code
-669 4:07p 🔵 Local VC Server Endpoints: LRN Returns JSON, JWT Endpoint Available via Ngrok
-670 " 🔵 VP and VC JWTs Missing Standard JWT Claims: No `iss`, `sub`, or `nbf`
-671 4:08p 🔵 Backend Routes: Only `/vc/:id/jwt` Serves Signed JWT; LRN and TandC Endpoints Return Unsigned JSON
-672 " 🔵 `/vc/:id/jwt` Serves Only the LegalParticipantVC JWT, Not the Full VP
-673 " 🔵 VC JWT Content-Type Should Be `application/vc+ld+json+jwt` to Match VCs' `typ` Header
-674 4:09p 🔴 Fixed VC JWT Endpoint Content-Type to `application/vc+ld+json+jwt`
-675 " 🔵 GXDCH Now Receives VP JWT But Rejects It as "Not a Valid JWT"
-S401 GXDCH Development Instance Is Version 2.11.0 with Swagger Docs Available (Apr 16 at 4:09 PM)
-676 4:10p 🔵 GXDCH Development Instance Is Version 2.11.0 with Swagger Docs Available
-S402 GXDCH Requires `iss` in the JOSE Header of the VP JWT, Not the Payload (Apr 16 at 4:10 PM)
-677 4:12p 🔵 GXDCH Requires `iss` in the JOSE Header of the VP JWT, Not the Payload
-S403 Stored LegalParticipantVC JWT Lacks `iss` in JOSE Header; Prior Compliance Failure Persisted in DB (Apr 16 at 4:12 PM)
-678 " 🔵 Stored LegalParticipantVC JWT Lacks `iss` in JOSE Header; Prior Compliance Failure Persisted in DB
-S404 GXDCH Rejects LP VC JWT Submitted Directly: Missing `iss` in JOSE Header (Apr 16 at 4:12 PM)
-679 4:14p 🔵 GXDCH Rejects LP VC JWT Submitted Directly: Missing `iss` in JOSE Header
-680 " 🔵 VP JWT Has `iss` in JOSE Header But Not in Payload; GXDCH May Require Both
-S405 VP JWT Has `iss` in JOSE Header But Not in Payload; GXDCH May Require Both (Apr 16 at 4:14 PM)
+### Apr 17, 2026
+S427 Helm app-chart Section 4/11 Design Review — Templates, Values Shape, and Postgres Architecture (Apr 17 at 12:48 PM)
+S429 K8s Self-Managed DevOps Design Spec — Session Preservation After Context Limit (Apr 17 at 12:49 PM)
+S430 K8s DevOps Design Spec — Section 5: GitOps / Argo CD Structure Written (Apr 17 at 12:56 PM)
+S431 CI/CD Pipeline Design — Section 6/11 of K8s deployment spec for jap-eu-hack-2026 (Apr 17 at 12:57 PM)
+712 1:29p ✅ 11-Section K8s DevOps Design Spec Created — jap-eu-hack-2026
+713 " ⚖️ infra-chart / app-chart Split as Lifecycle Boundary — Not File Organisation
+714 " ⚖️ Vault Unseal Keys in K8s Secret — Explicit MVP Trade-off Documented
+716 1:30p ✅ K8s Implementation Started — Task 8 In Progress
+717 1:31p 🔵 Helm values.yaml — Portal + Keycloak + Walt.id + Provisioning Config Mapped
+719 " 🔵 Helm Template Architecture — Backend Secret Filtering + Portal Loop Pattern
+720 " 🔵 Argo CD Application Pattern — EDC Tenant via argocd-vault-plugin-helm
+723 3:31p 🟣 Three-Workflow CI/CD Pipeline Implemented — ci + release-build + promote
+724 " 🟣 GitOps App-of-Apps Pattern Implemented — Per-Env ArgoCD Structure
+725 " 🟣 infra-chart Helm Chart Created — LE Issuers, Vault Unseal, Ingresses, Image Updater
+726 " 🔄 app-chart Renamed from eu-jap-hack — Postgres, Backup, NetworkPolicy, Vault Wiring Added
+727 " 🟣 Per-Company Wallet SSI Architecture Implemented — Full Wallet Service Layer
+728 " 🟣 Gaia-X Compliance Diagnostics Service Added — compliance-diagnostics.ts
+729 " ✅ Session Summary for 2026-04-17 — K8s GitOps + SSI Wallet Architecture Day
+731 3:33p ✅ Session 3 Log Written — Tasks 21/22/24 Marked Completed in Learning Tracker
+732 " 🔴 waltid.ts Monolith Removed — Credential Endpoints Fixed for Per-Company Wallet Context
+733 " ⚖️ ADR-002 Marked Accepted — Per-Company Wallet SSI Architecture Formally Closed
+734 3:34p 🟣 Helm infra-chart Scaffold + Base Values Committed
+736 3:36p ✅ Session Log Corrected — Cursor Authorship Disclosed, Tasks 21/22/24 Unmarked
+737 " 🟣 Full 6-Phase K8s DevOps Implementation Committed — Cursor Execution of Claude Code Spec
+S435 Milestone 6 DevOps Task Status Check — In-Progress Items Identified (Apr 17 at 3:37 PM)
+**Investigated**: Milestone 6 task list reviewed for jap-eu-hack-2026 project. Tasks 21–24 examined for current status. Attribution question raised: spec authored in Claude Code (Session 2), but implementation code executed via Cursor.
 
-Access 93k tokens of past work via get_observations([IDs]) or mem-search skill.
+**Learned**: Milestone 6 has 4 DevOps tasks. Tasks 21 (Helm Charts), 22 (Argo Workflow/CI-CD), and 24 (Multi-Env Config) have code shipped but via Cursor not Claude Code. Task 23 (Cloud Infra Review) not started. Attribution framing is contested — whether Cursor execution disqualifies Claude Code credit for spec-driven work.
+
+**Completed**: Status table produced for all Milestone 6 tasks. Three tasks marked 🔄 In Progress (21, 22, 24). One task marked ⬜ Not Started (23). User given two framing options: keep 🔄 or flip to ✅ based on whether spec authorship counts.
+
+**Next Steps**: User needs to decide attribution framing (spec = credit vs execution tool = credit). Likely next: update task statuses in milestone tracker, then address Task 23 (Cloud Infra Review and Documentation).
+
+
+Access 265k tokens of past work via get_observations([IDs]) or mem-search skill.
 
 ---
 *Updated after last session. Use claude-mem's MCP search tools for more detailed queries.*

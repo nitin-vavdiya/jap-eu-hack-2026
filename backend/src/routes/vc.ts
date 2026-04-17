@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
-import { issueCredentialSimple, verifyPresentationOID4VP } from '../services/waltid';
+import { issueCredentialSimple, verifyPresentationOID4VP } from '../services/wallet/walt-generic-client';
 
 const router = Router();
 

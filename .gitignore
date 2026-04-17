@@ -49,3 +49,8 @@ helm/infra-chart/charts/
 helm/infra-chart/Chart.lock
 helm/app-chart/charts/
 helm/app-chart/Chart.lock
+
+# Bootstrap sensitive files (per-env secrets, Vault init material)
+helm/bootstrap/.env.*
+!helm/bootstrap/.env.example
+helm/bootstrap/.vault-init-*.json
