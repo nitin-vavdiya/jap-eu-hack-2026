@@ -2,9 +2,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "eu-jap-hack.fullname" . }}-provisioning
+  name: {{ include "app-chart.fullname" . }}-provisioning
   labels:
-    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    {{- include "app-chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: provisioning
 spec:
   replicas: {{ .Values.provisioning.replicaCount }}
@@ -46,7 +46,7 @@ spec:
             - name: GIT_AUTH_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "eu-jap-hack.fullname" . }}-provisioning-secret
+                  name: {{ include "app-chart.fullname" . }}-provisioning-secret
                   key: GIT_AUTH_TOKEN
           volumeMounts:
             - name: repo
@@ -54,7 +54,7 @@ spec:
 
       containers:
         - name: provisioning
-          image: {{ include "eu-jap-hack.image" (dict "global" .Values.global "image" .Values.provisioning.image) }}
+          image: {{ include "app-chart.image" (dict "global" .Values.global "image" .Values.provisioning.image) }}
           imagePullPolicy: {{ .Values.provisioning.image.pullPolicy }}
           ports:
             - containerPort: 3001
@@ -69,8 +69,11 @@ spec:
             {{- end }}
           envFrom:
             - secretRef:
-                name: {{ include "eu-jap-hack.fullname" . }}-provisioning-secret
+                name: {{ include "app-chart.fullname" . }}-provisioning-secret
                 optional: true
+            - secretRef:
+                name: provisioning-vault-token    # created by bootstrap.sh
+                optional: false
           volumeMounts:
             - name: repo
               mountPath: /repo

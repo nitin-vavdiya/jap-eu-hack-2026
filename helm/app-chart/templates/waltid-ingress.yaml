@@ -1,0 +1,44 @@
+{{- $svcs := dict
+  "waltid-wallet" (dict "val" .Values.waltidWalletApi)
+  "waltid-issuer" (dict "val" .Values.waltidIssuerApi)
+  "waltid-verifier" (dict "val" .Values.waltidVerifierApi)
+}}
+{{- range $name, $cfg := $svcs }}
+{{- $v := $cfg.val }}
+{{- if $v.ingress.subdomain }}
+{{- $host := include "app-chart.host" (dict "subdomain" $v.ingress.subdomain "ctx" $) }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app-chart.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "app-chart.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name }}-api
+  annotations:
+    haproxy.org/server-ssl: "false"
+    {{- if $.Values.ingress.tls }}
+    cert-manager.io/cluster-issuer: {{ $.Values.ingress.clusterIssuer | quote }}
+    haproxy.org/ssl-redirect: "true"
+    {{- end }}
+spec:
+  ingressClassName: {{ $.Values.ingress.className }}
+  {{- if $.Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ $host }}
+      secretName: {{ $v.ingress.subdomain }}-tls
+  {{- end }}
+  rules:
+    - host: {{ $host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app-chart.fullname" $ }}-{{ $name }}
+                port:
+                  number: {{ $v.service.port }}
+{{- end }}
+{{- end }}

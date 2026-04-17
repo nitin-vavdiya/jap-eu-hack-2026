@@ -21,7 +21,6 @@ backend:
   env:
     DATABASE_URL: "postgresql://postgres:postgres@postgres-host:5432/eu_jap_hack"
     ENABLE_EDC: "true"
-    AUTH_ENABLED: "false"
     APP_BASE_URL: "https://api.eu-jap-hack.example.com"
 
 portalDataspace:

@@ -1,6 +1,8 @@
 global:
-  imageRegistry: ""
-  imagePullSecrets: []
+  imageRegistry: public.ecr.aws/smartsense    # placeholder; override per env
+  imagePullSecrets: []                        # ECR Public = anonymous pulls
+  domain: dataspace.smartsenselabs.com
+  envPrefix: dev                              # dev | qa | prod
 
 # -- Ingress class name (haproxy)
 ingressClassName: haproxy
@@ -9,6 +11,12 @@ ingressClassName: haproxy
 tls:
   enabled: true
   clusterIssuer: letsencrypt-prod
+
+# -- Ingress defaults used by per-app ingress templates (Task 14)
+ingress:
+  className: haproxy
+  clusterIssuer: letsencrypt-prod
+  tls: true
 
 # =============================================================================
 # Backend API
@@ -22,11 +30,10 @@ backend:
   service:
     port: 8000
   ingress:
-    host: ""  # e.g. api.example.com
+    subdomain: api
   env:
     DATABASE_URL: ""  # e.g. postgresql://user:pass@host:5432/db
     ENABLE_EDC: "true"
-    AUTH_ENABLED: "false"
     GAIAX_DID_DOMAIN: ""
     GAIAX_DID_PATH: ""
     EDC_BASE_URL: ""
@@ -84,7 +91,7 @@ portalDataspace:
   service:
     port: 80
   ingress:
-    host: ""  # e.g. dataspace.example.com
+    subdomain: portal-dataspace
   env:
     VITE_KEYCLOAK_URL: ""
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
@@ -106,7 +113,7 @@ portalTataAdmin:
   service:
     port: 80
   ingress:
-    host: ""  # e.g. admin.example.com
+    subdomain: portal-admin
   env:
     VITE_KEYCLOAK_URL: ""
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
@@ -128,7 +135,7 @@ portalTataPublic:
   service:
     port: 80
   ingress:
-    host: ""  # e.g. public.example.com
+    subdomain: portal-public
   env:
     VITE_KEYCLOAK_URL: ""
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
@@ -150,7 +157,7 @@ portalWallet:
   service:
     port: 80
   ingress:
-    host: ""  # e.g. wallet.example.com
+    subdomain: portal-wallet
   env:
     VITE_KEYCLOAK_URL: ""
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
@@ -172,7 +179,7 @@ portalInsurance:
   service:
     port: 80
   ingress:
-    host: ""  # e.g. insurance.example.com
+    subdomain: portal-insurance
   env:
     VITE_KEYCLOAK_URL: ""
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
@@ -194,7 +201,7 @@ portalCompany:
   service:
     port: 80
   ingress:
-    host: ""  # e.g. company.example.com
+    subdomain: portal-company
   env:
     VITE_KEYCLOAK_URL: ""
     VITE_KEYCLOAK_REALM: "eu-jap-hack"
@@ -220,13 +227,15 @@ keycloak:
   adminUsername: admin
   adminPassword: ""  # required — set in values-custom or secret
   db:
-    url: ""  # e.g. <path:k8s-stack/data/jap-eu-hack#dbhost>:5432/keycloak
-    username: ""
-    password: ""
+    vendor: postgres
+    host: ""                        # templated at render: <fullname>-postgres
+    database: keycloak
+    username: keycloak
+    # password resolved via envFrom → <fullname>-postgres-creds (KC_DB_PASSWORD=POSTGRES_KEYCLOAK_PASSWORD)
   service:
     port: 8080
   ingress:
-    host: ""  # e.g. centralidp.example.com
+    subdomain: auth
   resources:
     requests:
       cpu: 500m
@@ -248,7 +257,11 @@ waltidWalletApi:
   service:
     port: 7001
   ingress:
-    host: ""  # e.g. waltid-wallet.example.com
+    subdomain: waltid-wallet
+  storage:
+    enabled: true
+    size: 2Gi
+    storageClass: local-path
   resources:
     requests:
       cpu: 100m
@@ -267,7 +280,7 @@ waltidIssuerApi:
   service:
     port: 7002
   ingress:
-    host: ""  # e.g. waltid-issuer.example.com
+    subdomain: waltid-issuer
   resources:
     requests:
       cpu: 100m
@@ -286,7 +299,7 @@ waltidVerifierApi:
   service:
     port: 7003
   ingress:
-    host: ""  # e.g. waltid-verifier.example.com
+    subdomain: waltid-verifier
   resources:
     requests:
       cpu: 100m
@@ -328,3 +341,50 @@ provisioning:
     limits:
       cpu: 300m
       memory: 256Mi
+
+# =============================================================================
+# Postgres (single pod, multiple DBs)
+# =============================================================================
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  storage:
+    size: 20Gi
+    storageClass: local-path
+  databases:
+    - name: backend
+      user: backend
+    - name: keycloak
+      user: keycloak
+    - name: waltid_wallet
+      user: waltid
+  superuser: postgres
+  # Admin + per-DB passwords are resolved from Vault (via bootstrap) into
+  # the k8s Secret "<release>-app-chart-postgres-creds" (envFrom below).
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits:   { cpu: 1500m, memory: 2Gi }
+
+# =============================================================================
+# Nightly pg_dump backup CronJob → hostPath
+# =============================================================================
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retentionDays: 14
+  hostPath: /data/backups
+  image:
+    repository: postgres
+    tag: "16-alpine"
+
+# =============================================================================
+# NetworkPolicy (default-deny with haproxy + intra-ns allow)
+# =============================================================================
+networkPolicy:
+  enabled: true
+  ingressNamespace: infra         # namespace where haproxy runs (= infra-chart release ns)

@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "eu-jap-hack.name" -}}
+{{- define "app-chart.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
-Create a default fully qualified app name.
+Fully qualified app name.
 */}}
-{{- define "eu-jap-hack.fullname" -}}
+{{- define "app-chart.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,24 +24,26 @@ Create a default fully qualified app name.
 {{/*
 Common labels
 */}}
-{{- define "eu-jap-hack.labels" -}}
-helm.sh/chart: {{ include "eu-jap-hack.name" . }}
+{{- define "app-chart.labels" -}}
+helm.sh/chart: {{ include "app-chart.name" . }}-{{ .Chart.Version }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
-app.kubernetes.io/part-of: eu-jap-hack
+app.kubernetes.io/part-of: jap-eu-hack-2026
+app.kubernetes.io/env: {{ .Values.global.envPrefix | default "dev" }}
 {{- end }}
 
 {{/*
 Selector labels for a component
 */}}
-{{- define "eu-jap-hack.selectorLabels" -}}
+{{- define "app-chart.selectorLabels" -}}
 app.kubernetes.io/name: {{ .name }}
 app.kubernetes.io/instance: {{ .release }}
 {{- end }}
 
 {{/*
-Image helper
+Image helper — supports per-chart registry override via global.imageRegistry.
+Usage: {{ include "app-chart.image" (dict "global" .Values.global "image" .Values.backend.image) }}
 */}}
-{{- define "eu-jap-hack.image" -}}
+{{- define "app-chart.image" -}}
 {{- if .image.registry -}}
 {{ .image.registry }}/{{ .image.repository }}:{{ .image.tag }}
 {{- else if .global.imageRegistry -}}
@@ -50,3 +52,13 @@ Image helper
 {{ .image.repository }}:{{ .image.tag }}
 {{- end -}}
 {{- end }}
+
+{{/*
+Host helper — per-env <subdomain>.<envPrefix>.<domain>
+Usage: {{ include "app-chart.host" (dict "subdomain" "api" "ctx" .) }}
+*/}}
+{{- define "app-chart.host" -}}
+{{- $subdomain := .subdomain -}}
+{{- $ctx := .ctx -}}
+{{- printf "%s.%s.%s" $subdomain $ctx.Values.global.envPrefix $ctx.Values.global.domain -}}
+{{- end -}}

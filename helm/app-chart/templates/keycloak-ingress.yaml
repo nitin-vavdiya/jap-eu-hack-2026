@@ -1,0 +1,35 @@
+{{- if and .Values.keycloak.enabled .Values.keycloak.ingress.subdomain }}
+{{- $host := include "app-chart.host" (dict "subdomain" .Values.keycloak.ingress.subdomain "ctx" .) -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "app-chart.fullname" . }}-keycloak
+  labels:
+    {{- include "app-chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: keycloak
+  annotations:
+    haproxy.org/server-ssl: "false"
+    {{- if .Values.ingress.tls }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
+    haproxy.org/ssl-redirect: "true"
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ $host }}
+      secretName: {{ .Values.keycloak.ingress.subdomain }}-tls
+  {{- end }}
+  rules:
+    - host: {{ $host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "app-chart.fullname" . }}-keycloak
+                port:
+                  number: {{ .Values.keycloak.service.port }}
+{{- end }}

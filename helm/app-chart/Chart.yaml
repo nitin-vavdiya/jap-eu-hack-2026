@@ -1,0 +1,6 @@
+apiVersion: v2
+name: app-chart
+description: Application workloads (backend, portals, keycloak, waltid, postgres, provisioning) for jap-eu-hack-2026
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

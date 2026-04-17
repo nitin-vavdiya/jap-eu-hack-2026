@@ -26,7 +26,6 @@ backend:
   env:
     DATABASE_URL: "postgresql://<path:k8s-stack/data/jap-eu-hack#dbuser>:<path:k8s-stack/data/jap-eu-hack#dbpass>@<path:k8s-stack/data/jap-eu-hack#dbhost>:5432/<path:k8s-stack/data/jap-eu-hack#backend_dbname>"
     ENABLE_EDC: "true"
-    AUTH_ENABLED: "true"
     KEYCLOAK_URL: "https://auth.tx.the-sense.io"
     KEYCLOAK_REALM: "eu-jap-hack"
     KEYCLOAK_ADMIN_CLIENT_ID: "realm_admin_client"

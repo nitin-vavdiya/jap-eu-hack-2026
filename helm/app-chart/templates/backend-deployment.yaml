@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "eu-jap-hack.fullname" . }}-backend
+  name: {{ include "app-chart.fullname" . }}-backend
   labels:
-    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    {{- include "app-chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend
 spec:
   replicas: {{ .Values.backend.replicaCount }}
@@ -24,7 +24,7 @@ spec:
       {{- end }}
       containers:
         - name: backend
-          image: {{ include "eu-jap-hack.image" (dict "global" .Values.global "image" .Values.backend.image) }}
+          image: {{ include "app-chart.image" (dict "global" .Values.global "image" .Values.backend.image) }}
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
           ports:
             - containerPort: 8000
@@ -38,8 +38,14 @@ spec:
             {{- end }}
           envFrom:
             - secretRef:
-                name: {{ include "eu-jap-hack.fullname" . }}-backend-secret
+                name: {{ include "app-chart.fullname" . }}-backend-secret
                 optional: true
+            - secretRef:
+                name: backend-vault-token         # created by bootstrap.sh
+                optional: false
+            - secretRef:
+                name: {{ include "app-chart.fullname" . }}-postgres-creds
+                optional: false
           livenessProbe:
             httpGet:
               path: /api/health

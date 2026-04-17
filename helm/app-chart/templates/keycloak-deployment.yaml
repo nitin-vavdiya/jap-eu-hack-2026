@@ -2,9 +2,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "eu-jap-hack.fullname" . }}-keycloak
+  name: {{ include "app-chart.fullname" . }}-keycloak
   labels:
-    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    {{- include "app-chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: keycloak
 spec:
   replicas: {{ .Values.keycloak.replicaCount }}
@@ -25,7 +25,7 @@ spec:
       {{- end }}
       containers:
         - name: keycloak
-          image: {{ include "eu-jap-hack.image" (dict "global" .Values.global "image" .Values.keycloak.image) }}
+          image: {{ include "app-chart.image" (dict "global" .Values.global "image" .Values.keycloak.image) }}
           imagePullPolicy: {{ .Values.keycloak.image.pullPolicy }}
           ports:
             - containerPort: 8080
@@ -39,15 +39,34 @@ spec:
               value: "true"
             - name: KC_PROXY_HEADERS
               value: "xforwarded"
+            - name: KEYCLOAK_ADMIN
+              value: {{ .Values.keycloak.adminUsername | quote }}
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin
+                  key: password
+            - name: KC_DB
+              value: {{ .Values.keycloak.db.vendor | quote }}
+            - name: KC_DB_URL
+              value: {{ printf "jdbc:postgresql://%s-postgres:5432/%s" (include "app-chart.fullname" .) .Values.keycloak.db.database | quote }}
+            - name: KC_DB_USERNAME
+              value: {{ .Values.keycloak.db.username | quote }}
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "app-chart.fullname" . }}-postgres-creds
+                  key: POSTGRES_KEYCLOAK_PASSWORD
             - name: KC_HOSTNAME
-              value: {{ .Values.keycloak.ingress.host | quote }}
+              value: {{ include "app-chart.host" (dict "subdomain" "auth" "ctx" .) | quote }}
             - name: KC_HOSTNAME_STRICT
               value: "false"
-            - name: KC_DB_URL
-              value: {{ .Values.keycloak.db.url | quote }}
+            - name: KC_PROXY
+              value: edge
           envFrom:
             - secretRef:
-                name: {{ include "eu-jap-hack.fullname" . }}-keycloak-secret
+                name: {{ include "app-chart.fullname" . }}-keycloak-secret
+                optional: true
           livenessProbe:
             httpGet:
               path: /health/live

@@ -2,9 +2,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "eu-jap-hack.fullname" . }}-waltid-wallet
+  name: {{ include "app-chart.fullname" . }}-waltid-wallet
   labels:
-    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    {{- include "app-chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: waltid-wallet-api
 spec:
   type: ClusterIP
@@ -19,9 +19,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "eu-jap-hack.fullname" . }}-waltid-issuer
+  name: {{ include "app-chart.fullname" . }}-waltid-issuer
   labels:
-    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    {{- include "app-chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: waltid-issuer-api
 spec:
   type: ClusterIP
@@ -36,9 +36,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "eu-jap-hack.fullname" . }}-waltid-verifier
+  name: {{ include "app-chart.fullname" . }}-waltid-verifier
   labels:
-    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    {{- include "app-chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: waltid-verifier-api
 spec:
   type: ClusterIP

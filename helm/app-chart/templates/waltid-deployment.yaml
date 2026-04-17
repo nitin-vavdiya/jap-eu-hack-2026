@@ -1,10 +1,25 @@
+{{- if .Values.waltidWalletApi.storage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "app-chart.fullname" . }}-waltid-wallet-data
+  labels:
+    {{- include "app-chart.labels" . | nindent 4 }}
+    app.kubernetes.io/component: waltid-wallet
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.waltidWalletApi.storage.storageClass | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.waltidWalletApi.storage.size }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "eu-jap-hack.fullname" . }}-waltid-wallet
+  name: {{ include "app-chart.fullname" . }}-waltid-wallet
   labels:
-    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    {{- include "app-chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: waltid-wallet-api
 spec:
   replicas: {{ .Values.waltidWalletApi.replicaCount }}
@@ -25,7 +40,7 @@ spec:
       {{- end }}
       containers:
         - name: waltid-wallet-api
-          image: {{ include "eu-jap-hack.image" (dict "global" .Values.global "image" .Values.waltidWalletApi.image) }}
+          image: {{ include "app-chart.image" (dict "global" .Values.global "image" .Values.waltidWalletApi.image) }}
           imagePullPolicy: {{ .Values.waltidWalletApi.image.pullPolicy }}
           ports:
             - containerPort: 7001
@@ -40,19 +55,28 @@ spec:
             - name: config
               mountPath: /waltid-wallet-api/config/web.conf
               subPath: web.conf
+            {{- if .Values.waltidWalletApi.storage.enabled }}
+            - name: data
+              mountPath: /waltid-wallet-api/data
+            {{- end }}
           resources:
             {{- toYaml .Values.waltidWalletApi.resources | nindent 12 }}
       volumes:
         - name: config
           configMap:
-            name: {{ include "eu-jap-hack.fullname" . }}-waltid-wallet
+            name: {{ include "app-chart.fullname" . }}-waltid-wallet
+        {{- if .Values.waltidWalletApi.storage.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "app-chart.fullname" . }}-waltid-wallet-data
+        {{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "eu-jap-hack.fullname" . }}-waltid-issuer
+  name: {{ include "app-chart.fullname" . }}-waltid-issuer
   labels:
-    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    {{- include "app-chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: waltid-issuer-api
 spec:
   replicas: {{ .Values.waltidIssuerApi.replicaCount }}
@@ -73,7 +97,7 @@ spec:
       {{- end }}
       containers:
         - name: waltid-issuer-api
-          image: {{ include "eu-jap-hack.image" (dict "global" .Values.global "image" .Values.waltidIssuerApi.image) }}
+          image: {{ include "app-chart.image" (dict "global" .Values.global "image" .Values.waltidIssuerApi.image) }}
           imagePullPolicy: {{ .Values.waltidIssuerApi.image.pullPolicy }}
           ports:
             - containerPort: 7002
@@ -93,14 +117,14 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "eu-jap-hack.fullname" . }}-waltid-issuer
+            name: {{ include "app-chart.fullname" . }}-waltid-issuer
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "eu-jap-hack.fullname" . }}-waltid-verifier
+  name: {{ include "app-chart.fullname" . }}-waltid-verifier
   labels:
-    {{- include "eu-jap-hack.labels" . | nindent 4 }}
+    {{- include "app-chart.labels" . | nindent 4 }}
     app.kubernetes.io/component: waltid-verifier-api
 spec:
   replicas: {{ .Values.waltidVerifierApi.replicaCount }}
@@ -121,7 +145,7 @@ spec:
       {{- end }}
       containers:
         - name: waltid-verifier-api
-          image: {{ include "eu-jap-hack.image" (dict "global" .Values.global "image" .Values.waltidVerifierApi.image) }}
+          image: {{ include "app-chart.image" (dict "global" .Values.global "image" .Values.waltidVerifierApi.image) }}
           imagePullPolicy: {{ .Values.waltidVerifierApi.image.pullPolicy }}
           ports:
             - containerPort: 7003
@@ -138,4 +162,4 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "eu-jap-hack.fullname" . }}-waltid-verifier
+            name: {{ include "app-chart.fullname" . }}-waltid-verifier
