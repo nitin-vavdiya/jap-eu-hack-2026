@@ -1,0 +1,39 @@
+{{- if .Values.certManager.enabled -}}
+{{- if .Values.issuers.letsencryptStaging.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  labels:
+    {{- include "infra-chart.labels" . | nindent 4 }}
+spec:
+  acme:
+    email: {{ default .Values.global.letsencryptEmail .Values.issuers.letsencryptStaging.email | quote }}
+    server: {{ .Values.issuers.letsencryptStaging.server | quote }}
+    privateKeySecretRef:
+      name: letsencrypt-staging-account
+    solvers:
+      - http01:
+          ingress:
+            class: haproxy
+{{- end }}
+---
+{{- if .Values.issuers.letsencryptProd.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    {{- include "infra-chart.labels" . | nindent 4 }}
+spec:
+  acme:
+    email: {{ default .Values.global.letsencryptEmail .Values.issuers.letsencryptProd.email | quote }}
+    server: {{ .Values.issuers.letsencryptProd.server | quote }}
+    privateKeySecretRef:
+      name: letsencrypt-prod-account
+    solvers:
+      - http01:
+          ingress:
+            class: haproxy
+{{- end }}
+{{- end }}

@@ -1,0 +1,63 @@
+{{- if and .Values.vault.enabled .Values.vaultUnseal.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-unseal
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "infra-chart.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 10
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        {{- include "infra-chart.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: vault-unseal
+      restartPolicy: OnFailure
+      containers:
+        - name: unseal
+          image: {{ .Values.vaultUnseal.image | quote }}
+          env:
+            - name: VAULT_ADDR
+              value: "http://vault.{{ .Release.Namespace }}.svc.cluster.local:8200"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              echo "Waiting for Vault to be reachable..."
+              until vault status >/dev/null 2>&1 || [ $? -eq 2 ]; do
+                sleep 2
+              done
+              SEALED=$(vault status -format=json | awk -F: '/"sealed"/ {gsub(/[ ,]/, ""); print $2; exit}')
+              if [ "$SEALED" = "false" ]; then
+                echo "Vault already unsealed."
+                exit 0
+              fi
+              if [ ! -f /unseal/keys.json ]; then
+                echo "ERROR: no unseal keys mounted. Run bootstrap.sh vault-init first."
+                exit 1
+              fi
+              KEY1=$(sed -n 's/.*"unseal_key_1":"\([^"]*\)".*/\1/p' /unseal/keys.json)
+              KEY2=$(sed -n 's/.*"unseal_key_2":"\([^"]*\)".*/\1/p' /unseal/keys.json)
+              KEY3=$(sed -n 's/.*"unseal_key_3":"\([^"]*\)".*/\1/p' /unseal/keys.json)
+              vault operator unseal "$KEY1"
+              vault operator unseal "$KEY2"
+              vault operator unseal "$KEY3"
+              echo "Vault unsealed."
+          volumeMounts:
+            - name: unseal-keys
+              mountPath: /unseal
+              readOnly: true
+      volumes:
+        - name: unseal-keys
+          secret:
+            secretName: {{ .Values.vaultUnseal.keysSecretName }}
+            optional: true
+{{- end }}

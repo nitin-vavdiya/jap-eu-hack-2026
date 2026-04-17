@@ -1,0 +1,38 @@
+{{- if and .Values.vault.enabled .Values.vaultUnseal.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault-unseal
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "infra-chart.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vault-unseal
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "infra-chart.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["{{ .Values.vaultUnseal.keysSecretName }}"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vault-unseal
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "infra-chart.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: vault-unseal
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: vault-unseal
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
