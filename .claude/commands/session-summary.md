@@ -6,15 +6,74 @@ Follow these steps exactly:
 
 Run these commands to understand what happened:
 - `date` — get current date and time
-- `git log --since="midnight" --oneline` — today's commits
+- `git log --since="midnight" --oneline` — today's commits in this repo
 - `git diff --stat HEAD~10..HEAD` — recent file changes
-- `ls claude_plan/progress_report/sessions/` — check existing session files for today
+- `Glob` with pattern `claude_plan/progress_report/sessions/*.md` — check existing session files (safe if dir missing, unlike `ls`)
 
 Also review the current conversation history — what was discussed, what was built, what was explained.
 
+## Step 1.5: Query claude-mem for cross-project / cross-LLM context
+
+The current conversation only shows *this* Claude Code session in *this* repo. Learning work spans multiple projects (backend, devops specs, scratch experiments in `~/.claude/`, and non-Claude-Code tools like Cursor CLI, Copilot CLI, Gemini) that persist their structured observations to claude-mem even after the originating conversation has ended. A global/unscoped `timeline` query will MISS work from corpora other than the one implicitly anchored — this has produced silent coverage gaps before (e.g. 2026-04-21, where Cursor CLI work on `data-connector` was stored in claude-mem but absent from the generated session file). The per-corpus loop below is MANDATORY, not optional.
+
+Before any MCP call, load the deferred tool schemas — these are not in the default tool set:
+
+```
+ToolSearch select:mcp__plugin_claude-mem_mcp-search__list_corpora,mcp__plugin_claude-mem_mcp-search__timeline,mcp__plugin_claude-mem_mcp-search__get_observations,mcp__plugin_claude-mem_mcp-search__smart_search
+```
+
+Then execute this exact sequence:
+
+### Step 1.5.a — enumerate corpora
+
+Call `mcp__plugin_claude-mem_mcp-search__list_corpora` (no args). Record every project name returned. Do not filter by "looks relevant" — a corpus you have never seen before may hold today's work from a different LLM tool.
+
+### Step 1.5.b — per-corpus timeline query (REQUIRED LOOP)
+
+For EACH corpus returned in 1.5.a, call `mcp__plugin_claude-mem_mcp-search__timeline` with:
+- `project: "<corpus_name>"`
+- `query: "<today-YYYY-MM-DD>"` OR a high-recall phrase that an observation written today would plausibly match (e.g. a project-keyword, `"session"`, `"prompt"`, `"task"`, `"milestone"`)
+- `depth_before: 20`, `depth_after: 20` to sweep the day
+
+Keep every returned observation ID whose `created_at` falls in today's local-day window. A corpus with zero hits for today is fine — but skipping the call is NOT. Silent omission is the failure mode this loop exists to prevent.
+
+If `list_corpora` returns `[]` or errors, fall back to a broad `timeline` call with `query: "<today-YYYY-MM-DD>"` and NO `project` filter — document the fallback in the session's `### Coverage Gaps` line.
+
+### Step 1.5.c — hydrate relevant observations
+
+Batch the collected IDs into a single `mcp__plugin_claude-mem_mcp-search__get_observations` call to pull full facts, narratives, and `files_modified`. Use these as primary evidence in the session block — they are more reliable than the conversation history for sessions that have already ended.
+
+### Step 1.5.d — supplementary smart search
+
+Run `mcp__plugin_claude-mem_mcp-search__smart_search` with queries `"milestone"`, `"task"`, `"onboarding"`, `"claude code"`, `"prompt"` to catch same-day observations whose timeline query missed them (e.g. written with unusual wording).
+
+### Step 1.5.e — anchor hours on observation span, not guess
+
+Hour estimate for Step 5 = `(last_observation_today.created_at − first_observation_today.created_at)` across ALL corpora, rounded up to 0.5h. Add up to +0.5h for active conversation time before the first observation and after the last (LLM observer writes on flush, not on prompt). If claude-mem is empty for the day, fall back to conversation-length estimate and prefix the figure with `~` to signal approximate.
+
+### Step 1.5.f — coverage-gap disclosure
+
+For each session block, if work was done in a tool that did NOT write to claude-mem and is not visible in git, add an explicit `### Coverage Gaps` line naming the tool and a one-sentence summary of what is missing. The journal must stay honest about what it cannot see.
+
 ## Step 2: Read the Learning Plan
 
-Read `claude_plan/Nitin_Personalized_Onboarding_Plan.pdf` to confirm milestone and task details.
+Source of truth: `claude_plan/Nitin_Personalized_Onboarding_Plan.pdf`.
+
+To avoid re-parsing the PDF every run, cache milestone + task titles at `claude_plan/progress_report/plan_index.json`:
+
+- If `plan_index.json` **missing** OR PDF mtime newer than JSON mtime: read the PDF, extract milestones 1–10 + tasks 1–40 + titles + hours, write JSON.
+- Otherwise: read `plan_index.json` only.
+
+JSON shape:
+```json
+{
+  "plan_mtime": "2026-04-21T10:00:00Z",
+  "milestones": [
+    { "n": 1, "title": "Orientation & Setup", "hours": 10,
+      "tasks": [ { "n": 1, "title": "Watch & Read: Claude Code vs Cursor", "hours": 1.5 } ] }
+  ]
+}
+```
 
 ## Step 3: Identify Plan Coverage
 
@@ -45,6 +104,11 @@ From the conversation and git changes, identify:
 ```
 ## Session N — HH:MM
 
+### Tool / Model
+[e.g. Claude Code · claude-opus-4-7 · this-repo
+      or: Cursor · gpt-5 · <project-slug>
+      or: Copilot CLI · claude-sonnet-4-6 · <project-slug>]
+
 ### Milestones & Tasks Covered
 | Milestone | Task | Status |
 |-----------|------|--------|
@@ -54,15 +118,19 @@ From the conversation and git changes, identify:
 [2–4 sentences. Be specific — mention actual files, commands, features built, concepts explored.]
 
 ### Evidence
-- Files changed: [list from git]
+- Files changed: [list from git + any non-repo artifacts pulled from claude-mem]
 - Commands run: [e.g. /init, npm run dev:backend]
 - Outputs produced: [e.g. CLAUDE.md created, session-summary command built]
+- claude-mem observation IDs: [list IDs from timeline that anchor this session, if any]
 
 ### My Achievements
 [2–3 bullet points of what *you* specifically contributed — architectural decisions made, trade-offs evaluated, domain expertise applied, gaps identified, direction given to Claude Code]
 
 ### Key Learnings
 [2–3 bullet points of what *you* learned — new Claude Code capabilities discovered, concepts understood, insights about working with AI on architecture tasks]
+
+### Coverage Gaps
+[Optional. Only include if work was done in a tool that did NOT write to claude-mem and is not visible in git — note what is missing from the evidence trail.]
 
 ---
 ```
@@ -78,8 +146,13 @@ From the conversation and git changes, identify:
 - ⬜ Not Started → 🔄 In Progress (if partially done)
 - 🔄 In Progress → ✅ Completed (if fully done, add date as a deep link — see below)
 - Update `Last Updated` field to today's date
-- Increment `Hours Logged` by an estimated amount based on session length
+- Increment `Hours Logged` using the claude-mem timeline span from Step 1.5 (first → last observation today across all corpora). If claude-mem empty for the day, fall back to conversation-length estimate and mark the figure with `~` to signal it is approximate.
 - Update `Overall Progress` count
+
+**Dedupe rule (task appears in multiple sessions same day):**
+- If any session marks it ✅ Completed → link to that session (the first Completed wins).
+- If all sessions mark it 🔄 Partial → link to the **latest** session (most recent progress).
+- Never link to a ⬜ Not Started row — that state should not appear in a session block.
 
 **Date Done deep-link format:**
 

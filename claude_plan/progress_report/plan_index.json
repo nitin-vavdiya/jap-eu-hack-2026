@@ -1,0 +1,116 @@
+{
+  "plan_mtime": "2026-04-03T12:59:00+05:30",
+  "source": "claude_plan/Nitin_Personalized_Onboarding_Plan.pdf",
+  "milestones": [
+    {
+      "n": 1,
+      "title": "Orientation & Setup",
+      "hours": 10,
+      "tasks": [
+        { "n": 1, "title": "Watch & Read: Claude Code vs Cursor", "hours": 1.5 },
+        { "n": 2, "title": "Setup: Install and First Session on Real Project", "hours": 1.5 },
+        { "n": 3, "title": "Study: Context Window, Plan Mode, Approval Flow", "hours": 3 },
+        { "n": 4, "title": "Study: Advanced Prompting for Architects", "hours": 4 }
+      ]
+    },
+    {
+      "n": 2,
+      "title": "CLAUDE.md — Architectural Context Files",
+      "hours": 10,
+      "tasks": [
+        { "n": 5, "title": "Study: CLAUDE.md for Architects — Beyond Basic Context", "hours": 2 },
+        { "n": 6, "title": "Exercise: Build CLAUDE.md for Primary Architecture Project", "hours": 3 },
+        { "n": 7, "title": "Exercise: Test and Refine Your CLAUDE.md", "hours": 2 },
+        { "n": 8, "title": "Exercise: Build CLAUDE.md for Secondary Projects and Global Preferences", "hours": 3 }
+      ]
+    },
+    {
+      "n": 3,
+      "title": "First Win — Real Architectural Work",
+      "hours": 14,
+      "tasks": [
+        { "n": 9, "title": "Study: The Complete Anthropic Academy Course", "hours": 2 },
+        { "n": 10, "title": "Identify Your First Real Task", "hours": 2 },
+        { "n": 11, "title": "Exercise: Complete Your First Real Architecture Task", "hours": 4 },
+        { "n": 12, "title": "Study: Advanced Workflows and Common Patterns", "hours": 6 }
+      ]
+    },
+    {
+      "n": 4,
+      "title": "Microservice Development Acceleration",
+      "hours": 18,
+      "tasks": [
+        { "n": 13, "title": "Exercise: Complete Microservice Scaffolding Workflow", "hours": 4 },
+        { "n": 14, "title": "Exercise: Spring Security and Keycloak Integration Workflows", "hours": 4 },
+        { "n": 15, "title": "Exercise: SSI/DID and Blockchain Credentialing Workflows", "hours": 5 },
+        { "n": 16, "title": "Exercise: Multi-Service Refactoring and Cross-Cutting Changes", "hours": 5 }
+      ]
+    },
+    {
+      "n": 5,
+      "title": "Architecture Documentation and Decision Records",
+      "hours": 14,
+      "tasks": [
+        { "n": 17, "title": "Exercise: Architecture Decision Records (ADR) Generation", "hours": 3 },
+        { "n": 18, "title": "Exercise: System Architecture Documentation Generation", "hours": 3 },
+        { "n": 19, "title": "Exercise: API Contract Documentation and Review", "hours": 4 },
+        { "n": 20, "title": "Exercise: Technical Specification and RFC Generation", "hours": 4 }
+      ]
+    },
+    {
+      "n": 6,
+      "title": "DevOps, Cloud, and Infrastructure Workflows",
+      "hours": 16,
+      "tasks": [
+        { "n": 21, "title": "Exercise: Kubernetes Manifest and Helm Chart Generation", "hours": 4 },
+        { "n": 22, "title": "Exercise: Argo Workflow and CI/CD Pipeline Generation", "hours": 4 },
+        { "n": 23, "title": "Exercise: Cloud Infrastructure Review and Documentation", "hours": 4 },
+        { "n": 24, "title": "Exercise: Multi-Environment Configuration Management", "hours": 4 }
+      ]
+    },
+    {
+      "n": 7,
+      "title": "Team Leadership and Code Review Workflows",
+      "hours": 14,
+      "tasks": [
+        { "n": 25, "title": "Exercise: AI-Augmented Code Review", "hours": 3 },
+        { "n": 26, "title": "Exercise: Junior Developer Mentoring Acceleration", "hours": 3 },
+        { "n": 27, "title": "Exercise: Error Recovery and the 3-Strike Rule", "hours": 4 },
+        { "n": 28, "title": "Exercise: Multi-Session Architecture Projects", "hours": 4 }
+      ]
+    },
+    {
+      "n": 8,
+      "title": "Advanced Capabilities and Custom Workflows",
+      "hours": 16,
+      "tasks": [
+        { "n": 29, "title": "Exercise: Build Your Custom Slash Command Library", "hours": 4 },
+        { "n": 30, "title": "Exercise: MCP Server Integration", "hours": 4 },
+        { "n": 31, "title": "Exercise: Security and Compliance Review Workflows", "hours": 4 },
+        { "n": 32, "title": "Exercise: Open Source Contribution Acceleration (Tractus-X)", "hours": 4 }
+      ]
+    },
+    {
+      "n": 9,
+      "title": "Team Standards and Knowledge Multiplication",
+      "hours": 14,
+      "tasks": [
+        { "n": 33, "title": "Study: Team Best Practices, Security, and Anti-Patterns", "hours": 3 },
+        { "n": 34, "title": "Exercise: Build the Team's CLAUDE.md Library", "hours": 3 },
+        { "n": 35, "title": "Exercise: Build the Team's Architecture Prompt Library", "hours": 4 },
+        { "n": 36, "title": "Exercise: Establish AI-First Architecture Practices for Your Team", "hours": 4 }
+      ]
+    },
+    {
+      "n": 10,
+      "title": "Capstone — Build Something Real",
+      "hours": 14,
+      "tasks": [
+        { "n": 37, "title": "Capstone Prep: Design the Capstone Project", "hours": 2 },
+        { "n": 38, "title": "Capstone: Build the Project", "hours": 8 },
+        { "n": 39, "title": "Capstone: Measure, Document, and Write Before/After Story", "hours": 2 },
+        { "n": 40, "title": "Capstone: Present at Showcase and Lead Knowledge Transfer", "hours": 2 }
+      ]
+    }
+  ]
+}

@@ -3,8 +3,8 @@
 **Role:** Solution Architect · smartSense Consulting Solutions  
 **Plan:** 160 hours · 10 milestones · 40 tasks  
 **Started:** 2026-04-03  
-**Last Updated:** 2026-04-17  
-**Hours Logged:** ~51.5 of 160  
+**Last Updated:** 2026-04-21  
+**Hours Logged:** ~55 of 160  
 **Overall Progress:** 27/40 tasks complete  
 
 ---
@@ -112,8 +112,8 @@
 |---|------|-------|--------|-----------|
 | 33 | Study: Team Best Practices, Security, and Anti-Patterns | 3h | 🔄 In Progress | — |
 | 34 | Exercise: Build the Team's CLAUDE.md Library | 3h | ⬜ Not Started | — |
-| 35 | Exercise: Build the Team's Architecture Prompt Library | 4h | ⬜ Not Started | — |
-| 36 | Exercise: Establish AI-First Architecture Practices for Your Team | 4h | ⬜ Not Started | — |
+| 35 | Exercise: Build the Team's Architecture Prompt Library | 4h | 🔄 In Progress | — |
+| 36 | Exercise: Establish AI-First Architecture Practices for Your Team | 4h | 🔄 In Progress | — |
 
 ---
 
@@ -141,3 +141,4 @@
 | [2026-04-15](sessions/2026-04-15.md) | 5 | Tasks 13, 15, 17, 18, 29, 30 | ~6h |
 | [2026-04-16](sessions/2026-04-16.md) | 2 | Tasks 15, 27, 31 (extensions) | ~5h |
 | [2026-04-17](sessions/2026-04-17.md) | 2 + addendum | Tasks 15, 17, 20, 21, 22, 24, 29 (extensions/partial); spec→Cursor handoff addendum | ~3.5h |
+| [2026-04-21](sessions/2026-04-21.md) | 4 | Tasks 20 (technical-spec extension in `docs/plan.md` + ADR set), 33, 35, 36 (partial, team prompting/AI-first standards); Tasks 29, 30 (extensions/partial, incl. /session-summary execution validation run) | ~4h |
